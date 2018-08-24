@@ -13,244 +13,162 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\graphics">
-      <UniqueIdentifier>{26ac138a-c15e-4fa9-bb9f-a10e8b2104c2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\engine">
-      <UniqueIdentifier>{bdd4a023-ce67-4d7a-9b3a-2cb877db570e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\engine\physics">
-      <UniqueIdentifier>{db37a6bf-6481-400d-b251-71e2e76d9cfc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\engine\standard-components">
-      <UniqueIdentifier>{185c1944-701d-4609-bf5e-b45fd9fd1a37}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\util">
-      <UniqueIdentifier>{0378d7c7-3afb-43b4-86d5-8c0deb41df5f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\graphics\buffer">
-      <UniqueIdentifier>{3f3c1cab-444e-483c-bb69-df94bc3f4040}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\graphics\buffer\view">
-      <UniqueIdentifier>{a5b97827-6604-411a-829d-060f6f586337}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\graphics\model">
-      <UniqueIdentifier>{747bbf36-177b-4f6d-85c8-cc5299db8ed1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\graphics\texture">
-      <UniqueIdentifier>{c97fbe96-5769-4b32-8d76-2ea11c350102}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\graphics\shader">
-      <UniqueIdentifier>{9c9d3fb2-0d03-4339-87be-c4c17ebc404a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\engine\resources">
-      <UniqueIdentifier>{69760039-2b3e-4a34-a0e6-1ef4ecf10c9a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\engine\geom">
-      <UniqueIdentifier>{d021ef09-99e0-41cd-8ef4-a7261f779f53}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\engine">
-      <UniqueIdentifier>{b4619ccc-18ed-452e-8b12-985bdf93921a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\graphics">
-      <UniqueIdentifier>{32633bdd-c482-46ae-b742-1f4bf6ac7379}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\util">
-      <UniqueIdentifier>{e730325f-4fb3-4133-92c8-169b2965bf4c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\engine\geom">
-      <UniqueIdentifier>{c3f5d14c-c773-498c-9dba-4de217bb5760}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\engine\physics">
-      <UniqueIdentifier>{32010b8c-df8b-4b70-bfc6-7d71f4897dae}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\engine\resources">
-      <UniqueIdentifier>{c4fe7fe6-b730-4a69-b7ac-32a87cd2bbdc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\engine\standard-components">
-      <UniqueIdentifier>{121b5318-23f5-40fe-bcc0-d56c1d7e3a97}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="citrus.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="util.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="lodepng.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="rigidBody.cpp">
-      <Filter>Source Files\engine\physics</Filter>
-    </ClCompile>
-    <ClCompile Include="world.cpp">
-      <Filter>Source Files\engine\physics</Filter>
-    </ClCompile>
-    <ClCompile Include="collisionShape.cpp">
-      <Filter>Source Files\engine\physics</Filter>
-    </ClCompile>
-    <ClCompile Include="modelLoader.cpp">
-      <Filter>Source Files\engine\resources</Filter>
-    </ClCompile>
-    <ClCompile Include="shaderLoader.cpp">
-      <Filter>Source Files\engine\resources</Filter>
-    </ClCompile>
-    <ClCompile Include="textureLoader.cpp">
-      <Filter>Source Files\engine\resources</Filter>
-    </ClCompile>
-    <ClCompile Include="camera.cpp">
-      <Filter>Source Files\engine</Filter>
-    </ClCompile>
-    <ClCompile Include="window.cpp">
-      <Filter>Source Files\graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="engine.cpp">
-      <Filter>Source Files\engine</Filter>
-    </ClCompile>
-    <ClCompile Include="shader.cpp">
-      <Filter>Source Files\graphics</Filter>
-    </ClCompile>
-    <ClCompile Include="debugComponent.cpp">
-      <Filter>Source Files\engine\standard-components</Filter>
-    </ClCompile>
-    <ClCompile Include="transform.cpp">
-      <Filter>Source Files\engine</Filter>
-    </ClCompile>
-    <ClCompile Include="renderManager.cpp">
-      <Filter>Source Files\engine\standard-components</Filter>
-    </ClCompile>
-    <ClCompile Include="freeCam.cpp">
-      <Filter>Source Files\engine\standard-components</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="graphics_h.h">
-      <Filter>Header Files\graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="camera.h">
-      <Filter>Header Files\engine</Filter>
-    </ClInclude>
-    <ClInclude Include="collisionShape.h">
-      <Filter>Header Files\engine\physics</Filter>
-    </ClInclude>
-    <ClInclude Include="engine.h">
-      <Filter>Header Files\engine</Filter>
-    </ClInclude>
-    <ClInclude Include="typeEnums.h">
-      <Filter>Header Files\graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="rigidBody.h">
-      <Filter>Header Files\engine\physics</Filter>
-    </ClInclude>
-    <ClInclude Include="rigidBodyComponent.h">
-      <Filter>Header Files\engine\standard-components</Filter>
-    </ClInclude>
-    <ClInclude Include="window.h">
-      <Filter>Header Files\graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="mesh.h">
-      <Filter>Header Files\engine\geom</Filter>
-    </ClInclude>
-    <ClInclude Include="fundamental.h">
-      <Filter>Header Files\engine\geom</Filter>
-    </ClInclude>
-    <ClInclude Include="world.h">
-      <Filter>Header Files\engine\physics</Filter>
-    </ClInclude>
-    <ClInclude Include="buffer.h">
-      <Filter>Header Files\graphics\buffer</Filter>
-    </ClInclude>
-    <ClInclude Include="bufferView.h">
-      <Filter>Header Files\graphics\buffer\view</Filter>
-    </ClInclude>
-    <ClInclude Include="indexView.h">
-      <Filter>Header Files\graphics\buffer\view</Filter>
-    </ClInclude>
-    <ClInclude Include="vertexView.h">
-      <Filter>Header Files\graphics\buffer\view</Filter>
-    </ClInclude>
-    <ClInclude Include="lodepng.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="stdresources.h">
-      <Filter>Header Files\graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="storageView.h">
-      <Filter>Header Files\graphics\buffer\view</Filter>
-    </ClInclude>
-    <ClInclude Include="colorTexture.h">
-      <Filter>Header Files\graphics\texture</Filter>
-    </ClInclude>
-    <ClInclude Include="depthTexture.h">
-      <Filter>Header Files\graphics\texture</Filter>
-    </ClInclude>
-    <ClInclude Include="image.h">
-      <Filter>Header Files\graphics\texture</Filter>
-    </ClInclude>
-    <ClInclude Include="shader.h">
-      <Filter>Header Files\graphics\shader</Filter>
-    </ClInclude>
-    <ClInclude Include="computeprogram.h">
-      <Filter>Header Files\graphics\shader</Filter>
-    </ClInclude>
-    <ClInclude Include="texture.h">
-      <Filter>Header Files\graphics\texture</Filter>
-    </ClInclude>
-    <ClInclude Include="model.h">
-      <Filter>Header Files\graphics\model</Filter>
-    </ClInclude>
-    <ClInclude Include="vertexarray.h">
-      <Filter>Header Files\graphics\model</Filter>
-    </ClInclude>
-    <ClInclude Include="framebuffer.h">
-      <Filter>Header Files\graphics</Filter>
-    </ClInclude>
-    <ClInclude Include="forwardModelComponent.h">
-      <Filter>Header Files\engine\standard-components</Filter>
-    </ClInclude>
-    <ClInclude Include="glmUtil.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="stdUtil.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="layer.h">
-      <Filter>Header Files\engine</Filter>
-    </ClInclude>
-    <ClInclude Include="manager.h">
-      <Filter>Header Files\engine</Filter>
-    </ClInclude>
-    <ClInclude Include="element.h">
-      <Filter>Header Files\engine</Filter>
-    </ClInclude>
-    <ClInclude Include="transform.h">
-      <Filter>Header Files\engine</Filter>
-    </ClInclude>
-    <ClInclude Include="entity.h">
-      <Filter>Header Files\engine</Filter>
-    </ClInclude>
-    <ClInclude Include="freeCam.h">
-      <Filter>Header Files\engine\standard-components</Filter>
-    </ClInclude>
-    <ClInclude Include="renderManager.h">
-      <Filter>Header Files\engine\standard-components</Filter>
-    </ClInclude>
-    <ClInclude Include="tilemapFont.h">
-      <Filter>Header Files\engine</Filter>
-    </ClInclude>
-    <ClInclude Include="standaloneFramebuffer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="bugs.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\citrus.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dynamics\physics\collisionShape.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dynamics\physics\rigidBody.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dynamics\physics\world.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\dynamics\transform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\engine\elements\freeCam.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\engine\elements\renderManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\engine\engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\camera\camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\shader\shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\window\window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="include\lodepng\lodepng.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\dynamics\physics\collisionShape.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dynamics\physics\rigidBody.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dynamics\physics\world.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dynamics\transform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\element.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\elements\freeCam.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\elements\renderManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\elements\rigidBodyComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\engine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\entity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\buffer\buffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\buffer\bufferView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\buffer\indexView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\buffer\storageView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\buffer\vertexView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\camera\camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\framebuffer\framebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\framebuffer\standaloneFramebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\geometry\mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\geometry\model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\geometry\vertexarray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\image\image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\shader\computeprogram.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\shader\shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\texture\colorTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\texture\depthTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\texture\texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\graphics\window\window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\highlevel\tilemapFont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\glmUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\graphics_h.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\stdUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\typeEnums.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dynamics\geometry\geom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
