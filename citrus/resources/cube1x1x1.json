@@ -1,0 +1,7 @@
+{
+	"type": "model",
+	"name": "Cube",
+	"texture": "Grid",
+	"shader": "Textured Surface",
+	"meshPath": "meshes/cube1x1x1.dae"
+}

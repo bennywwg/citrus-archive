@@ -1,0 +1,6 @@
+{
+	"type": "shader",
+	"name": "Physical Shader",
+	"vertPath": "shaders/surface.vert",
+	"fragPath": "shaders/surface.frag"
+}
