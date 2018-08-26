@@ -47,15 +47,13 @@ namespace citrus {
 		}
 
 		void renderManager::onCreate() {
-			vr::EVRInitError er;
-			vr::EVRApplicationType t = vr::EVRApplicationType::VRApplication_Scene;
-			vr::VR_Init(&er, t);
-			int x = 5;
+			//vr::EVRInitError er;
+			//vr::EVRApplicationType t = vr::EVRApplicationType::VRApplication_Scene;
+			//vr::VR_Init(&er, t);
+			//int x = 5;
 		}
 		void renderManager::render() {
 			flushShaders();
-
-			
 
 			auto win = e->getWindow();
 			auto size = win->framebufferSize();
@@ -89,6 +87,8 @@ namespace citrus {
 			composite->setSampler("topDepth", *(textFBO->getDepth()));
 			graphics::vertexArray::drawOne();
 			composite->unuse();
+			auto val = glGetError();
+			if(val != 0) std::cout << val << "\n";
 		}
 		void renderManager::onDestroy() {
 			

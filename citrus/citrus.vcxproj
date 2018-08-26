@@ -116,8 +116,7 @@
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(SolutionDir)packages\openvr\bin\openvr_api.dll $(OutDir)openvr-api.dll
-copy $(SolutionDir)packages\openvr\bin\openvr_api.pdb $(OutDir)openvr-api.pdb</Command>
+      <Command>copy $(ProjectDir)lib\openvr\openvr_api.dll $(OutDir)openvr-api.dll</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

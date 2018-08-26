@@ -45,7 +45,7 @@ namespace citrus {
 				if (!isInputType(inputType)) throw std::exception("Not an input type");
 				glGenTextures(1, &_ptr);
 				glBindTexture(GL_TEXTURE_2D, _ptr);
-				auto er = glGetError();
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 				glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, inputFormat, inputType, data);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

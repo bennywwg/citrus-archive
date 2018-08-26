@@ -102,7 +102,7 @@ namespace citrus {
 				setViewport(0, 0, _width, _height);
 			}
 			~frameBuffer() {
-				glDeleteFramebuffers(1, &_ptr);
+				if(_ptr != 0) glDeleteFramebuffers(1, &_ptr);
 			}
 		private:
 			frameBuffer(const frameBuffer& other) = delete;

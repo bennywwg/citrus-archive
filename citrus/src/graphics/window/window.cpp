@@ -111,7 +111,7 @@ namespace citrus {
 			_win = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
 			_windowTable[_win] = this;
 			glfwSetKeyCallback(_win, buttonCallback);
-			setButtonCallback([](int, int, int, int){});
+			setButtonCallback([](int, int, int, int){ });
 			glfwSetCursorPosCallback(_win, cursorCallback);
 			setCursorCallback([](double, double) { });
 
