@@ -8,34 +8,85 @@
 #include <shared_mutex>
 #include <atomic>
 
-#include "element.h"
-
-#include "entity.h"
+#include <engine/element.h>
+#include <engine/entity.h>
+#include <util/util.h>
 
 namespace citrus {
 	namespace engine {
 		class manager;
 		class engine;
-		
 
+		class eleInitBase {
+			public:
+			const std::type_index type;
+			const nlohmann::json data;
+			public:
+			eleInitBase(std::type_index type, nlohmann::json data) : type(type), data(data) { }
+		};
+		template<class T>
+		class eleInit : public eleInitBase {
+			public:
+			eleInit(nlohmann::json data) : eleInitBase(typeid(T), data) { }
+		};
+		
 		class manager {
 			engine* const _eng;
 
 			struct elementInfo {
 				std::function<void(element*, entity*)> ctor;
 				std::function<void(element*)> dtor;
-				std::vector<std::pair<const elementMeta*, entity*>> toCreate;
-				std::vector<std::pair<const elementMeta*, entity*>> toDestroy;
+				std::vector<std::tuple<element*, entity*, nlohmann::json>> toCreate;
+				std::vector<std::pair<element*, entity*>> toDestroy;
 				std::vector<element*> existing;
 				std::vector<entity*> existingEntities;
 				int size;
+				std::string name;
 				std::type_index type;
+
+				int findInToCreate(element* ele) {
+					for(int i = 0; i < toCreate.size(); ++i)
+						if(std::get<0>(toCreate[i]) == ele)
+							return i;
+
+					return -1;
+				}
+				int findInToDestroy(element* ele) {
+					for(int i = 0; i < toDestroy.size(); ++i)
+						if(toDestroy[i].first == ele)
+							return i;
+
+					return -1;
+				}
+				int findInExisting(element* ele) {
+					for(int i = 0; i < existing.size(); ++i)
+						if(existing[i] == ele)
+							return i;
+
+					return -1;
+				}
+				int findInExistingEntities(entity* ent) {
+					for(int i = 0; i < existingEntities.size(); ++i)
+						if(existingEntities[i] == ent)
+							return i;
+
+					return -1;
+				}
 
 				elementInfo() : type(typeid(void)) { }
 			};
 			std::map<std::type_index, elementInfo> _data;
 
 			std::vector<std::type_index> _order;
+
+			private:
+			int findEntity(const std::vector<entity*>& entities, entity* ent) {
+				for(int i = 0; i < entities.size(); ++i)
+					if(entities[i] == ent)
+						return i;
+
+				return -1;
+			}
 
 			private: std::vector<entity*> _toCreate;
 			public: std::shared_mutex toCreateMut;
@@ -57,58 +108,22 @@ namespace citrus {
 				}
 			}
 
-			void checkType(const std::type_index& type) {
-				for(unsigned int i = 0; i < _order.size(); i++)
-					if(_order[i] == type)
-						return;
-				throw std::exception("manager type check failed");
-			}
-
-			//returns if a vector of types contains a certain type
-			//O(types.size())
 			bool containsType(const std::vector<std::type_index>& types, const std::type_index& type) {
 				for(const auto& t : types)
 					if(t == type)
 						return true;
 				return false;
 			}
-
-			int findEntity(const std::vector<entity*>& entities, entity* ent) {
-				for(unsigned int i = 0; i < entities.size(); ++i)
-					if(ent == entities[i])
+			int containsType(const std::vector<eleInitBase>& infos, const std::type_index& type) {
+				for(int i = 0; i < infos.size(); i++) {
+					const auto& info = infos[i];
+					if(info.type == type)
 						return i;
-				
-				return -1;
-			}
-			int findElementMeta(const std::vector<std::pair<const elementMeta*, entity*>>& elements, const elementMeta* ele) {
-				for(unsigned int i = 0; i < elements.size(); ++i)
-					if(ele == elements[i].first)
-						return i;
-
+				}
+					
 				return -1;
 			}
 
-			//takes in a vector of type_indexes, and returns
-			//a corresponding vector of elementToCreate, in the order
-			//specified by _order and ignoring elements not in _order
-			//it allocates memory with ::operator new(size) so be sure to ::operator delete
-			//and it creates a new entity, be sure to delete that too
-			//O(_order.size() * types.size())
-			entity* newEntity(const std::vector<std::type_index>& types) {
-				std::vector<elementMeta> res;
-
-				for(const auto& oType : _order)
-					if(containsType(types, oType)) {
-						const auto& info = getInfo(oType);
-						res.emplace_back(info->size, oType, (element*)(::operator new(info->size)));
-					}
-
-				return new entity(res, _eng);
-			}
-
-			//reorders a vector of types into the same order as _order
-			//and eliminates elements that don't exist in _order
-			//O(_order.size() * types.size())
 			std::vector<std::type_index> reorder(const std::vector<std::type_index>& types) {
 				std::vector<std::type_index> res;
 
@@ -118,13 +133,35 @@ namespace citrus {
 
 				return res;
 			}
+			std::vector<eleInitBase> reorder(const std::vector<eleInitBase>& infos) {
+				std::vector<eleInitBase> res;
+
+				for(const auto& type : _order) {
+					int index = containsType(infos, type);
+					if(index != -1)
+						res.push_back(infos[index]);
+				}
+
+				return res;
+			}
+
+			entity* newEntity(std::string name, const std::vector<eleInitBase>& orderedData, uint64_t id) {
+				std::vector<elementMeta> types;
+				types.reserve(orderedData.size());
+				for(const auto& info : orderedData) {
+					const auto& traits = getInfo(info.type);
+					types.emplace_back(info.type, (element*)(::operator new(traits->size)));
+				}
+
+				return new entity(types, _eng, name, id);
+			}
 
 			public:
 			//lock this to prevent your underlying objects from being deleted
 			std::shared_mutex objectMut;
 
 			//makes an element type usable
-			template<class T> inline void registerType() {
+			template<class T> inline void registerType(std::string name) {
 				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
 				const auto& index = std::type_index(typeid(T));
 				auto it = _data.find(index);
@@ -134,6 +171,7 @@ namespace citrus {
 					info.dtor = std::function<void(element*)>([](element* loc) { ((T*)loc)->~T(); });
 					info.size = sizeof(T);
 					info.type = index;
+					info.name = name;
 				}
 			}
 			inline void setOrder(const std::vector<std::type_index>& order) {
@@ -170,20 +208,20 @@ namespace citrus {
 			//queue an object for creation
 			//this object is valid until destroy() is called for it flush() is called, at which point its memory is freed
 			//!!! hard locks toCreateMut !!!
-			inline entity* create(const std::vector<std::type_index>& types) {
+			inline entity* create(std::string name, const std::vector<eleInitBase>& data) {
 				std::shared_lock<std::shared_mutex> lock(toCreateMut);
-				return createUnsafe(types);
+				return createUnsafe(name, data);
 			}
 			//queue an object for creation
 			//this object is valid until destroy() is called for it flush() is called, at which point its memory is freed
 			//!!! must hard lock toCreateMut !!!
-			inline entity* createUnsafe(const std::vector<std::type_index>& types) {
-				for(auto& type : types)
-					checkType(type);
+			inline entity* createUnsafe(std::string name, const std::vector<eleInitBase>& data) {
+				auto orderedData = reorder(data);
 
-				auto ent = newEntity(types);
-				for(auto& ele : ent->_elements)
-					getInfo(ele._type)->toCreate.emplace_back(&ele, ent);
+				auto ent = newEntity(name, orderedData, util::nextID());
+				
+				for(int i = 0; i < ent->_elements.size(); ++i)
+					getInfo(ent->_elements[i].type)->toCreate.emplace_back(ent->_elements[i].ele, ent, orderedData[i].data);
 
 				_toCreate.push_back(ent);
 
@@ -206,12 +244,12 @@ namespace citrus {
 				if(entIndex != -1) {
 					//if ent is in _toCreate, also remove the elements from their lists
 					for(auto& meta : ent->_elements) {
-						auto& tc = getInfo(meta._type)->toCreate;
+						auto& info = *getInfo(meta.type);
 
-						int eleIndex = findElementMeta(tc, &meta);
+						int eleIndex = info.findInToCreate(meta.ele);
 						if(eleIndex != -1) {
-							::operator delete(meta._ele);
-							tc.erase(tc.begin() + eleIndex);
+							::operator delete(meta.ele);
+							info.toCreate.erase(info.toCreate.begin() + eleIndex);
 						} else {
 							throw std::exception("Couldn't find a certain element that should exist");
 						}
@@ -230,7 +268,7 @@ namespace citrus {
 				//otherwise add it and all of its elements to _toDestroy
 				_toDestroy.push_back(ent);
 				for(auto& meta : ent->_elements)
-					getInfo(meta._type)->toDestroy.emplace_back(&meta, ent);
+					getInfo(meta.type)->toDestroy.emplace_back(meta.ele, ent);
 			}
 
 			//creates all objects queued for creation and deletes all queued for destruction
@@ -260,13 +298,13 @@ namespace citrus {
 					auto& info = *getInfo(oType);
 
 					for(auto& meta : info.toCreate) {
-						info.ctor(meta.first->_ele, meta.second);
-						info.existingEntities.push_back(meta.second);
-						info.existing.push_back(meta.first->_ele);
+						info.ctor(std::get<0>(meta), std::get<1>(meta));
+						info.existing.push_back(std::get<0>(meta));
+						info.existingEntities.push_back(std::get<1>(meta));
 					}
 				}
 
-				//add newly created entities 
+				//add newly created entities
 				for(const auto& ent : _toCreate) {
 					_entities.push_back(ent);
 					ent->_initialized = true;
@@ -280,7 +318,7 @@ namespace citrus {
 					auto& info = *getInfo(oType);
 
 					for(auto& meta : info.toCreate) {
-						meta.first->_ele->onCreate();
+						std::get<0>(meta)->load(std::get<2>(meta));
 					}
 				}
 
@@ -302,15 +340,6 @@ namespace citrus {
 					}
 				}
 
-				//call onDestroy for all elements in order
-				for(const auto& oType : _order) {
-					auto& info = *getInfo(oType);
-
-					for(auto& meta : info.toDestroy) {
-						meta.first->_ele->onDestroy();
-					}
-				}
-
 				//call dtors on elements in order
 				for(const auto& oType : _order) {
 					auto& info = *getInfo(oType);
@@ -323,12 +352,12 @@ namespace citrus {
 
 						//remove from existing element list
 						for(unsigned int i = 0; i < info.existing.size(); ++i)
-							if(meta.first->_ele == info.existing[i])
+							if(std::get<0>(meta) == info.existing[i])
 								info.existing.erase(info.existing.begin() + i);
 
 
-						info.dtor(meta.first->_ele);
-						::operator delete(meta.first->_ele);
+						info.dtor(std::get<0>(meta));
+						::operator delete(std::get<0>(meta));
 					}
 				}
 

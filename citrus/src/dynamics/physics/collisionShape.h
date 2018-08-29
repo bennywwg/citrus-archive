@@ -13,7 +13,7 @@ namespace citrus {
 			shared_ptr<btCollisionShape> _shape;
 
 		public:
-		weak_ptr<btCollisionShape> ptr() const;
+			weak_ptr<btCollisionShape> ptr() const;
 
 			explicit collisionShape(vector<vec3> vertices);
 

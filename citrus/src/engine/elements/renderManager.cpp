@@ -39,6 +39,8 @@ namespace citrus {
 		}
 
 		void renderManager::resizeBuffer(unsigned int width, unsigned int height) {
+			if(width == 0 || height == 0) return;
+
 			standardFBO.reset();
 			standardFBO = std::make_unique<graphics::simpleFrameBuffer>(width, height);
 
@@ -74,7 +76,7 @@ namespace citrus {
 
 			textFBO->bind();
 			textFBO->clearAll();
-			font.streamText("Citrus\nAcage", cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
+			font.streamText("Citrus", cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
 			textFBO->unbind();
 
 			auto screen = graphics::frameBuffer(win);
@@ -87,11 +89,21 @@ namespace citrus {
 			composite->setSampler("topDepth", *(textFBO->getDepth()));
 			graphics::vertexArray::drawOne();
 			composite->unuse();
+
+			//vr::Texture_t t;
+			//t.eColorSpace = vr::ColorSpace_Gamma;
+			//t.eType = vr::TextureType_OpenGL;
+			//t.handle = (void*)standardFBO->getColors()[0].tex->ptr();
+			//vr::VRCompositor()->Submit(vr::EVREye::Eye_Left, &t);
+			//vr::VRCompositor()->Submit(vr::EVREye::Eye_Right, &t);
+			//glFlush();
+
+
 			auto val = glGetError();
 			if(val != 0) std::cout << val << "\n";
 		}
 		void renderManager::onDestroy() {
-			
+			//vr::VR_Shutdown();
 		}
 
 		renderManager::renderManager(entity* ent) :

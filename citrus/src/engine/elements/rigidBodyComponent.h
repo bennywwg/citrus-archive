@@ -3,27 +3,25 @@
 #ifndef RIGIDBODYCOMPONENT_H
 #define RIGIDBODYCOMPONENT_H
 
-#include "entityComponent.h"
-#include "entity.h"
-#include "transformComponent.h"
-
-#include "rigidBody.h"
+#include <engine/element.h>
+#include <dynamics/physics/rigidBody.h>
 
 namespace citrus {
 	namespace engine {
-		class rigidBodyComponent : public entityComponent {
+		class rigidBodyComponent : public element {
 			public:
-			std::weak_ptr<dynamics::rigidBody> body;
+			std::unique_ptr<dynamics::rigidBody> body;
 
-			void postPhysics() {
-				if(getOwner()->hasComponent<transformComponent>()) {
-					getOwner()->getComponent<transformComponent>().lock()->setTransform(body.lock()->getTransform());
-				}
+			void load(const nlohmann::json& parsed) {
+
+			}
+			void preRender() {
+				ent->trans = body->getTransform();
 			}
 
-			rigidBodyComponent(engine* engine, entity* owner) : entityComponent(engine, owner) { }
+			rigidBodyComponent(entity* owner) : element(owner) { }
 		};
 	}
 }
 
-#endif // ! RIGIDBODYCOMPONENT_H
+#endif

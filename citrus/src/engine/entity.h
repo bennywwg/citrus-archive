@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <typeindex>
+#include <memory>
 
 #include <dynamics/transform.h>
 
@@ -13,12 +14,11 @@ namespace citrus {
 		class element;
 		class engine;
 
-		struct elementMeta {
-			const int _size;
-			const std::type_index _type;
-			element* const _ele;
-			elementMeta(const int& size, const std::type_index& type, element* ele) :
-				_size(size), _type(type), _ele(ele) { }
+		class elementMeta {
+			public:
+			std::type_index type;
+			element* const ele;
+			elementMeta(const std::type_index type, element* ele) : type(type), ele(ele) { }
 		};
 
 		class entity {
@@ -28,7 +28,11 @@ namespace citrus {
 			const std::vector<elementMeta> _elements;
 
 			public:
+			const std::string name;
+			const uint64_t uuid;
 			engine* const eng;
+
+			entity* parent = nullptr;
 			transform trans;
 
 			bool initialized() const {
@@ -40,17 +44,18 @@ namespace citrus {
 				return (T*)getElement(std::type_info(typeid(T)));
 			}
 			inline element* getElement(const std::type_index& type) const {
-				if(!_initialized) throw std::exception("You can't get an entity component before it's initialized");
+				if(!_initialized) throw std::exception("You can't get an element before it's initialized");
 
 				for(auto& e : _elements)
-					if(e._type == type)
-						return e._ele;
+					if(e.type == type)
+						return e.ele;
 
 				return nullptr;
 			}
 
 			private:
-			entity(const std::vector<elementMeta>& toCreate, engine* eng) : _elements(toCreate), eng(eng) { }
+			entity(const std::vector<elementMeta>& toCreate, engine* eng, const std::string& name, const uint64_t uuid) :
+				_elements(toCreate), eng(eng), name(name), uuid(uuid) { }
 		};
 	}
 }
