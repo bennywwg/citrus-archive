@@ -48,6 +48,10 @@ namespace citrus {
 			textFBO = std::make_unique<graphics::simpleFrameBuffer>(width, height);
 		}
 
+		void renderManager::load(const nlohmann::json& parsed) {
+			text = parsed["text"].get<std::string>();
+		}
+
 		void renderManager::onCreate() {
 			//vr::EVRInitError er;
 			//vr::EVRApplicationType t = vr::EVRApplicationType::VRApplication_Scene;
@@ -76,7 +80,7 @@ namespace citrus {
 
 			textFBO->bind();
 			textFBO->clearAll();
-			font.streamText("Citrus", cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
+			font.streamText(text, cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
 			textFBO->unbind();
 
 			auto screen = graphics::frameBuffer(win);

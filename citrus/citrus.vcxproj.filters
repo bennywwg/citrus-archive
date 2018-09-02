@@ -170,5 +170,8 @@
     <ClInclude Include="src\dynamics\geometry\geom.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\engine\elements\worldManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

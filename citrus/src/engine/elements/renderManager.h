@@ -22,6 +22,8 @@ namespace citrus {
 			};
 			shared_ptr<shaderInfo> _invalid;
 
+			std::string text;
+
 			tilemapFont font;
 			std::unique_ptr<graphics::simpleFrameBuffer> standardFBO;
 			std::unique_ptr<graphics::simpleFrameBuffer> textFBO;
@@ -39,6 +41,7 @@ namespace citrus {
 
 			void resizeBuffer(unsigned int width, unsigned int height);
 
+			void load(const nlohmann::json& parsed);
 			void onCreate();
 			void render();
 			void onDestroy();

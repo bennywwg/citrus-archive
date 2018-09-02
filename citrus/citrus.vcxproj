@@ -197,6 +197,7 @@
     <ClInclude Include="src\engine\elements\freeCam.h" />
     <ClInclude Include="src\engine\elements\renderManager.h" />
     <ClInclude Include="src\engine\elements\rigidBodyComponent.h" />
+    <ClInclude Include="src\engine\elements\worldManager.h" />
     <ClInclude Include="src\engine\engine.h" />
     <ClInclude Include="src\engine\entity.h" />
     <ClInclude Include="src\engine\manager.h" />

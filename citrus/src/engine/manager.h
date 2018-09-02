@@ -22,12 +22,29 @@ namespace citrus {
 			const std::type_index type;
 			const nlohmann::json data;
 			public:
-			eleInitBase(std::type_index type, nlohmann::json data) : type(type), data(data) { }
+			inline eleInitBase(std::type_index type, nlohmann::json data) : type(type), data(data) { }
 		};
 		template<class T>
 		class eleInit : public eleInitBase {
 			public:
-			eleInit(nlohmann::json data) : eleInitBase(typeid(T), data) { }
+			inline eleInit(nlohmann::json data) : eleInitBase(typeid(T), data) { }
+		};
+
+		struct parameter {
+			static inline nlohmann::json packEntity(std::string name, entity* ent) {
+				return nlohmann::json{
+					{"Type", "Entity"},
+					{"uuid", ent->uuid}
+				};
+			}
+			template<class T>
+			static inline nlohmann::json packElement(std::string name, T* ent) {
+				return nlohmann::json{
+					{"Type", "Element"},
+					{"Name", typeid(T).name()}
+					{"uuid", ent->uuid}
+				};
+			}
 		};
 		
 		class manager {
@@ -44,28 +61,28 @@ namespace citrus {
 				std::string name;
 				std::type_index type;
 
-				int findInToCreate(element* ele) {
+				inline int findInToCreate(element* ele) {
 					for(int i = 0; i < toCreate.size(); ++i)
 						if(std::get<0>(toCreate[i]) == ele)
 							return i;
 
 					return -1;
 				}
-				int findInToDestroy(element* ele) {
+				inline int findInToDestroy(element* ele) {
 					for(int i = 0; i < toDestroy.size(); ++i)
 						if(toDestroy[i].first == ele)
 							return i;
 
 					return -1;
 				}
-				int findInExisting(element* ele) {
+				inline int findInExisting(element* ele) {
 					for(int i = 0; i < existing.size(); ++i)
 						if(existing[i] == ele)
 							return i;
 
 					return -1;
 				}
-				int findInExistingEntities(entity* ent) {
+				inline int findInExistingEntities(entity* ent) {
 					for(int i = 0; i < existingEntities.size(); ++i)
 						if(existingEntities[i] == ent)
 							return i;
@@ -73,14 +90,14 @@ namespace citrus {
 					return -1;
 				}
 
-				elementInfo() : type(typeid(void)) { }
+				inline elementInfo() : type(typeid(void)) { }
 			};
 			std::map<std::type_index, elementInfo> _data;
 
 			std::vector<std::type_index> _order;
 
 			private:
-			int findEntity(const std::vector<entity*>& entities, entity* ent) {
+			inline int findEntity(const std::vector<entity*>& entities, entity* ent) {
 				for(int i = 0; i < entities.size(); ++i)
 					if(entities[i] == ent)
 						return i;
@@ -99,7 +116,7 @@ namespace citrus {
 
 			private:
 			//gets the elementInfo for a type if it exists
-			elementInfo* getInfo(const std::type_index& index) {
+			inline elementInfo* getInfo(const std::type_index& index) {
 				auto it = _data.find(index);
 				if(it != _data.end()) {
 					return &(it->second);
@@ -108,13 +125,13 @@ namespace citrus {
 				}
 			}
 
-			bool containsType(const std::vector<std::type_index>& types, const std::type_index& type) {
+			inline bool containsType(const std::vector<std::type_index>& types, const std::type_index& type) {
 				for(const auto& t : types)
 					if(t == type)
 						return true;
 				return false;
 			}
-			int containsType(const std::vector<eleInitBase>& infos, const std::type_index& type) {
+			inline int containsType(const std::vector<eleInitBase>& infos, const std::type_index& type) {
 				for(int i = 0; i < infos.size(); i++) {
 					const auto& info = infos[i];
 					if(info.type == type)
@@ -124,7 +141,7 @@ namespace citrus {
 				return -1;
 			}
 
-			std::vector<std::type_index> reorder(const std::vector<std::type_index>& types) {
+			inline std::vector<std::type_index> reorder(const std::vector<std::type_index>& types) {
 				std::vector<std::type_index> res;
 
 				for(const auto& type : _order)
@@ -133,7 +150,7 @@ namespace citrus {
 
 				return res;
 			}
-			std::vector<eleInitBase> reorder(const std::vector<eleInitBase>& infos) {
+			inline std::vector<eleInitBase> reorder(const std::vector<eleInitBase>& infos) {
 				std::vector<eleInitBase> res;
 
 				for(const auto& type : _order) {
@@ -145,7 +162,7 @@ namespace citrus {
 				return res;
 			}
 
-			entity* newEntity(std::string name, const std::vector<eleInitBase>& orderedData, uint64_t id) {
+			inline entity* newEntity(std::string name, const std::vector<eleInitBase>& orderedData, uint64_t id) {
 				std::vector<elementMeta> types;
 				types.reserve(orderedData.size());
 				for(const auto& info : orderedData) {
