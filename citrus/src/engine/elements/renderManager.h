@@ -32,8 +32,8 @@ namespace citrus {
 
 			vector<shared_ptr<shaderInfo>> _shaders;
 			mutex _shadersMut;
+			freeCam* camRef;
 			public:
-			camera cam;
 
 			weak_ptr<shaderInfo> loadShader(string shaderName, string vertFile, string geomFile, string fragFile);
 			weak_ptr<shaderInfo> getShader(string name);
@@ -42,6 +42,7 @@ namespace citrus {
 			void resizeBuffer(unsigned int width, unsigned int height);
 
 			void load(const nlohmann::json& parsed);
+			nlohmann::json save() const;
 			void onCreate();
 			void render();
 			void onDestroy();

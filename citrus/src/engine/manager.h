@@ -7,6 +7,7 @@
 #include <functional>
 #include <shared_mutex>
 #include <atomic>
+#include <util/shared_recursive_mutex.h>
 
 #include <engine/element.h>
 #include <engine/entity.h>
@@ -30,23 +31,6 @@ namespace citrus {
 			inline eleInit(nlohmann::json data) : eleInitBase(typeid(T), data) { }
 		};
 
-		struct parameter {
-			static inline nlohmann::json packEntity(std::string name, entity* ent) {
-				return nlohmann::json{
-					{"Type", "Entity"},
-					{"uuid", ent->uuid}
-				};
-			}
-			template<class T>
-			static inline nlohmann::json packElement(std::string name, T* ent) {
-				return nlohmann::json{
-					{"Type", "Element"},
-					{"Name", typeid(T).name()}
-					{"uuid", ent->uuid}
-				};
-			}
-		};
-		
 		class manager {
 			engine* const _eng;
 
@@ -105,14 +89,59 @@ namespace citrus {
 				return -1;
 			}
 
+			public:
+			inline nlohmann::json entityReference(entity* ent) {
+				return nlohmann::json({
+					{"Type", "Entity Reference"},
+					{"uuid", ent->uuid}
+				});
+			}
+			template<class T>
+			inline nlohmann::json elementReference(entity* ent) {
+				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
+				return nlohmann::json({
+					{"Type", "Element Reference"},
+					{"Name", getInfo(typeid(T))->name},
+					{"uuid", ent->uuid}
+				});
+			}
+			inline entity* unpackEntity(const nlohmann::json& data) {
+				if(data["Type"] == "Entity") {
+					return findByUUID(data["uuid"].get<uint64_t>());
+				} else {
+					throw std::exception("Trying to unpack an entity but the json is not a packed entity");
+				}
+			}
+			template<class T>
+			inline T* unpackElement(const nlohmann::json& data) {
+				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
+				if(data["Type"] == "Element" && data["Name"] == getInfo(typeid(T))->name) {
+					auto ent = findByUUID(data["uuid"].get<uint64_t>());
+					return ent->getElement<T>();
+				} else {
+					throw std::exception("Trying to unpack an element but the json is not a packed element");
+				}
+			}
+
+			inline entity* findByUUIDUnsafe(uint64_t uuid) {
+				for(auto ent : _entities)
+					if(ent->uuid == uuid)
+						return ent;
+				return nullptr;
+			}
+			inline entity* findByUUID(uint64_t uuid) {
+				std::lock_guard<std::recursive_mutex> lock(entitiesMut);
+				return findByUUIDUnsafe(uuid);
+			}
+
 			private: std::vector<entity*> _toCreate;
-			public: std::shared_mutex toCreateMut;
+			public: std::recursive_mutex toCreateMut;
 
 			private: std::vector<entity*> _toDestroy;
-			public: std::shared_mutex toDestroyMut;
+			public: std::recursive_mutex toDestroyMut;
 
 			private: std::vector<entity*> _entities;
-			public: std::shared_mutex entitiesMut;
+			public: std::recursive_mutex entitiesMut;
 
 			private:
 			//gets the elementInfo for a type if it exists
@@ -123,6 +152,15 @@ namespace citrus {
 				} else {
 					return nullptr;
 				}
+			}
+			inline elementInfo* getInfoByName(const std::string& name) {
+				//TODO: Optimize this (with another map)
+				for(auto it : _data) {
+					if(it.second.name == name) {
+						return &it.second;
+					}
+				}
+				return nullptr;
 			}
 
 			inline bool containsType(const std::vector<std::type_index>& types, const std::type_index& type) {
@@ -162,7 +200,7 @@ namespace citrus {
 				return res;
 			}
 
-			inline entity* newEntity(std::string name, const std::vector<eleInitBase>& orderedData, uint64_t id) {
+			inline entity* newEntity(std::string name, const std::vector<eleInitBase>& orderedData, uint64_t uuid) {
 				std::vector<elementMeta> types;
 				types.reserve(orderedData.size());
 				for(const auto& info : orderedData) {
@@ -170,12 +208,12 @@ namespace citrus {
 					types.emplace_back(info.type, (element*)(::operator new(traits->size)));
 				}
 
-				return new entity(types, _eng, name, id);
+				return new entity(types, _eng, name, uuid);
 			}
 
 			public:
 			//lock this to prevent your underlying objects from being deleted
-			std::shared_mutex objectMut;
+			std::recursive_mutex objectMut;
 
 			//makes an element type usable
 			template<class T> inline void registerType(std::string name) {
@@ -226,7 +264,7 @@ namespace citrus {
 			//this object is valid until destroy() is called for it flush() is called, at which point its memory is freed
 			//!!! hard locks toCreateMut !!!
 			inline entity* create(std::string name, const std::vector<eleInitBase>& data) {
-				std::shared_lock<std::shared_mutex> lock(toCreateMut);
+				std::lock_guard<std::recursive_mutex> lock(toCreateMut);
 				return createUnsafe(name, data);
 			}
 			//queue an object for creation
@@ -245,11 +283,25 @@ namespace citrus {
 				return ent;
 			}
 
+			inline entity* createDynamicUnsafe(std::string name, const nlohmann::json& data) {
+				auto typeStr = data["Type"].get<std::string>();
+				auto parent = data["Parent"].get<uint64_t>();
+				auto uuid = data["uuid"].get<uint64_t>();
+
+				std::vector<eleInitBase> elements;
+				nlohmann::json elementsJson = data["Elements"];
+				for(int i = 0; i < elementsJson.size(); i++) {
+					elements.emplace_back(getInfoByName(name)->type, elementsJson[i]);
+				}
+
+				createUnsafe(name, elements);
+			}
+
 			//queue an object for deletion
 			//the object is still valid until flush() is called, at which point its memory is freed
 			//!!! hard locks toCreateMut and toDestroMut !!!
 			inline void destroy(entity* obj) {
-				std::unique_lock<std::shared_mutex> lock0(toCreateMut), lock1(toDestroyMut);
+				std::lock_guard<std::recursive_mutex> lock0(toCreateMut), lock1(toDestroyMut);
 				destroyUnsafe(obj);
 			}
 			//queue an object for deletion
@@ -291,7 +343,7 @@ namespace citrus {
 			//creates all objects queued for creation and deletes all queued for destruction
 			//!!! locks dataMut and objectMut !!!
 			inline void flush() {
-				std::unique_lock<std::shared_mutex> lock(toCreateMut), lock1(toDestroyMut), lock2(entitiesMut);
+				std::lock_guard<std::recursive_mutex> lock(toCreateMut), lock1(toDestroyMut), lock2(entitiesMut);
 				
 				flushToDestroyUnsafe();
 
@@ -393,10 +445,9 @@ namespace citrus {
 				//clear entity toDestroy list
 				_toDestroy.clear();
 			}
+
 			public:
-
 			inline manager(engine* eng) : _eng(eng) { }
-
 			inline ~manager() {
 				//throw std::exception("just a reminder you have to write this still");
 			}

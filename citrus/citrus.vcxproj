@@ -75,7 +75,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Development\bullet3-2.87\src;$(ProjectDir)include;$(SolutionDir)packages\openvr\headers;$(ProjectDir)src;$(IncludePath)</IncludePath>
+    <IncludePath>D:\Development\bullet3-2.87\src;$(ProjectDir)include;$(SolutionDir)packages\openvr\headers;$(ProjectDir)src;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir)lib\openvr;$(SolutionDir)packages\glew.1.9.0.1\build\native\lib\v110\x64\Debug\static;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -185,6 +185,7 @@
     <ClCompile Include="src\graphics\camera\camera.cpp" />
     <ClCompile Include="src\graphics\shader\shader.cpp" />
     <ClCompile Include="src\graphics\window\window.cpp" />
+    <ClCompile Include="src\util\shared_recursive_mutex.cpp" />
     <ClCompile Include="src\util\util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -222,6 +223,7 @@
     <ClInclude Include="src\highlevel\tilemapFont.h" />
     <ClInclude Include="src\util\glmUtil.h" />
     <ClInclude Include="src\util\graphics_h.h" />
+    <ClInclude Include="src\util\shared_recursive_mutex.h" />
     <ClInclude Include="src\util\stdUtil.h" />
     <ClInclude Include="src\util\typeEnums.h" />
     <ClInclude Include="src\util\util.h" />

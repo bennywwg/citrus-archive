@@ -50,6 +50,14 @@ namespace citrus {
 
 		void renderManager::load(const nlohmann::json& parsed) {
 			text = parsed["text"].get<std::string>();
+			camRef = e->man->unpackElement<freeCam>(parsed["cam"]);
+		}
+		nlohmann::json renderManager::save() const {
+			return nlohmann::json({
+				{"test", 5},
+				{"test2", e->man->entityReference(ent)},
+				{"test3", e->man->elementReference<renderManager>(ent) }
+			});
 		}
 
 		void renderManager::onCreate() {
@@ -70,7 +78,7 @@ namespace citrus {
 			standardFBO->bind();
 			standardFBO->clearAll();
 			_shaders[0]->sh->use();
-			glm::mat4 projectionViewMat = cam.getViewProjectionMatrix();
+			glm::mat4 projectionViewMat = camRef->cam.getViewProjectionMatrix();
 			for(entity* ent : e->man->allEntities()) {
 				_shaders[0]->sh->setUniform("modelViewProjectionMat", projectionViewMat * ent->trans.getMat());
 				graphics::vertexArray::drawOne();
@@ -80,7 +88,8 @@ namespace citrus {
 
 			textFBO->bind();
 			textFBO->clearAll();
-			font.streamText(text, cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
+			auto str = save().dump(2);
+			font.streamText(this->save().dump(2), camRef->cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
 			textFBO->unbind();
 
 			auto screen = graphics::frameBuffer(win);

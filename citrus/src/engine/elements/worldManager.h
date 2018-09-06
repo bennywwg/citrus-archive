@@ -17,7 +17,9 @@ namespace citrus {
 				//parsed[.get<int>()
 			}
 			void preRender() {
+				w.flushAddRemove();
 				w.step();
+				w.updateBodyInfo();
 			}
 
 			worldManager(entity* e) : element(e), w() {

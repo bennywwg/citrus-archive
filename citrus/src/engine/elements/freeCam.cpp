@@ -28,7 +28,7 @@ namespace citrus {
 			//transformComponent& trans = *getOwner()->getComponent<transformComponent>().lock();
 			//trans.setTransform(trans.getTransform().getTranslated(yPlaneMovement));
 
-			e->man->ofType<renderManager>()[0]->cam.trans = ent->trans;
+			cam.trans.setPosition(pos);
 		}
 		void freeCam::render() {
 

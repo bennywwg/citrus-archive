@@ -19,8 +19,8 @@ citrus::engine::transform rigidBody::getTransform() const {
 	return engine::transform(getPosition(), getOrientation());
 }
 
-rigidBody::rigidBody(const collisionShape& shape, world* _world) :
-	_body(new btRigidBody(1.0f, nullptr, shape.ptr().lock().get())) {
+rigidBody::rigidBody(collisionShape* shape, world* _world) :
+	_body(new btRigidBody(1.0f, nullptr, shape->ptr())) {
 	_world->addBody(this);
 }
 rigidBody::~rigidBody() {

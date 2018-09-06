@@ -41,7 +41,7 @@ namespace citrus {
 
 			template<typename T> inline T* getElement() const {
 				static_assert(std::is_base_of<element, T>::value, "can only get element if the type is derived from class element");
-				return (T*)getElement(std::type_info(typeid(T)));
+				return (T*)getElement(typeid(T));
 			}
 			inline element* getElement(const std::type_index& type) const {
 				if(!_initialized) throw std::exception("You can't get an element before it's initialized");

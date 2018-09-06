@@ -35,7 +35,7 @@ namespace citrus {
 			glm::quat getOrientation() const;
 			engine::transform getTransform() const;
 
-			rigidBody(const collisionShape& shape, world* _world);
+			rigidBody(collisionShape* shape, world* _world);
 			~rigidBody();
 		};
 	}
