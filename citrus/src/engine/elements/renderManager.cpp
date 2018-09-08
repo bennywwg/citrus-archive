@@ -50,13 +50,13 @@ namespace citrus {
 
 		void renderManager::load(const nlohmann::json& parsed) {
 			text = parsed["text"].get<std::string>();
-			camRef = e->man->unpackElement<freeCam>(parsed["cam"]);
+			camRef = e->man->dereferenceElement<freeCam>(parsed["cam"]);
 		}
 		nlohmann::json renderManager::save() const {
 			return nlohmann::json({
 				{"test", 5},
-				{"test2", e->man->entityReference(ent)},
-				{"test3", e->man->elementReference<renderManager>(ent) }
+				{"test2", e->man->referenceEntity(ent)},
+				{"test3", e->man->referenceElement<renderManager>(ent) }
 			});
 		}
 

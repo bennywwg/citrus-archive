@@ -179,5 +179,8 @@
     <ClInclude Include="src\util\shared_recursive_mutex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\util\json.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

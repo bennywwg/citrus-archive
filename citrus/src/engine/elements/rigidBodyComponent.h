@@ -16,7 +16,7 @@ namespace citrus {
 			std::unique_ptr<dynamics::rigidBody> body;
 
 			void load(const nlohmann::json& parsed) {
-				w = &e->man->unpackElement<worldManager>(parsed["world"])->w;
+				w = &e->man->dereferenceElement<worldManager>(parsed["world"])->w;
 				shape.reset(new dynamics::collisionShape(std::vector<glm::vec3>{
 					glm::vec3(-1.0f, -1.0f, -1.0f),
 						glm::vec3(1.0f, -1.0f, -1.0f),

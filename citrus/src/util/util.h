@@ -9,6 +9,7 @@
 #include <chrono>
 #include <functional>
 #include <mutex>
+#include <util/json.h>
 
 namespace citrus {
 	namespace util {
@@ -29,6 +30,18 @@ namespace citrus {
 			scopedProfiler(const std::string& name);
 			~scopedProfiler();
 		};
+
+		template<class UnaryFunction>
+		void recursive_iterate(json& j, UnaryFunction f) {
+			for(auto it = j.begin(); it != j.end(); ++it) {
+				if(it->is_structured()) {
+					f(it);
+					recursive_iterate(*it, f);
+				} else {
+					f(it);
+				}
+			}
+		}
 	}
 }
 

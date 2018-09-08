@@ -90,22 +90,22 @@ namespace citrus {
 			}
 
 			public:
-			inline nlohmann::json entityReference(entity* ent) {
+			inline nlohmann::json referenceEntity(entity* ent) {
 				return nlohmann::json({
 					{"Type", "Entity Reference"},
-					{"uuid", ent->uuid}
+					{"ID", ent->uuid}
 				});
 			}
 			template<class T>
-			inline nlohmann::json elementReference(entity* ent) {
+			inline nlohmann::json referenceElement(entity* ent) {
 				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
 				return nlohmann::json({
 					{"Type", "Element Reference"},
 					{"Name", getInfo(typeid(T))->name},
-					{"uuid", ent->uuid}
+					{"ID", ent->uuid}
 				});
 			}
-			inline entity* unpackEntity(const nlohmann::json& data) {
+			inline entity* dereferenceEntity(const nlohmann::json& data) {
 				if(data["Type"] == "Entity") {
 					return findByUUID(data["uuid"].get<uint64_t>());
 				} else {
@@ -113,7 +113,7 @@ namespace citrus {
 				}
 			}
 			template<class T>
-			inline T* unpackElement(const nlohmann::json& data) {
+			inline T* dereferenceElement(const nlohmann::json& data) {
 				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
 				if(data["Type"] == "Element" && data["Name"] == getInfo(typeid(T))->name) {
 					auto ent = findByUUID(data["uuid"].get<uint64_t>());
@@ -121,6 +121,22 @@ namespace citrus {
 				} else {
 					throw std::exception("Trying to unpack an element but the json is not a packed element");
 				}
+			}
+			inline bool isEntityReference(const nlohmann::json& data) {
+				auto foundType = data.find("Type");
+				if(foundType == data.end() || !foundType.value().is_string() || foundType.value().get<std::string>() != "Entity Reference") return false;
+				auto foundID = data.find("ID");
+				if(foundID == data.end() || !foundID.value().is_number_unsigned()) return false;
+				return true;
+			}
+			inline bool isElementReference(const nlohmann::json& data) {
+				auto foundType = data.find("Type");
+				if(foundType == data.end() || !foundType.value().is_string() || foundType.value().get<std::string>() != "Element Reference") return false;
+				auto foundName = data.find("Name");
+				if(foundName == data.end() || !foundName.value().is_string()) return false;
+				auto foundID = data.find("ID");
+				if(foundID == data.end() || !foundID.value().is_number_unsigned()) return false;
+				return true;
 			}
 
 			inline entity* findByUUIDUnsafe(uint64_t uuid) {
@@ -283,18 +299,48 @@ namespace citrus {
 				return ent;
 			}
 
-			inline entity* createDynamicUnsafe(std::string name, const nlohmann::json& data) {
-				auto typeStr = data["Type"].get<std::string>();
+			inline entity* createDynamicUnsafe(const nlohmann::json& data) {
+				auto name = data["Name"].get<std::string>();
 				auto parent = data["Parent"].get<uint64_t>();
-				auto uuid = data["uuid"].get<uint64_t>();
+				auto uuid = data["ID"].get<uint64_t>();
 
 				std::vector<eleInitBase> elements;
 				nlohmann::json elementsJson = data["Elements"];
-				for(int i = 0; i < elementsJson.size(); i++) {
-					elements.emplace_back(getInfoByName(name)->type, elementsJson[i]);
+				for(auto it = elementsJson.begin(); it != elementsJson.end(); ++it) {
+					elements.emplace_back(getInfoByName(it.key())->type, it.value());
 				}
 
 				createUnsafe(name, elements);
+			}
+
+			inline void createMultiple(const nlohmann::json& data) {
+				std::map<uint64_t, uint64_t> uuidMap;
+
+				auto dataEntities = data["Entities"];
+				for(int i = 0; i < dataEntities.size(); i++) {
+					
+				}
+			}
+
+
+			inline eleInitBase remapEleInitIDs(eleInitBase info) {
+				std::map<uint64_t, uint64_t> remapped;
+				json remappedData = info.data;
+				util::recursive_iterate(remappedData, [this, &remapped](json::iterator it) {
+					try {
+						if(this->isEntityReference(*it) || this->isElementReference(*it)) {
+							auto found = remapped.find((*it)["ID"].get<uint64_t>());
+							if(found == remapped.end()) {
+								uint64_t id = util::nextID();
+								remapped[(*it)["ID"].get<uint64_t>()] = id;
+								(*it)["ID"] = id;
+							} else {
+								(*it)["ID"] = remapped[(*it)["ID"].get<uint64_t>()];
+							}
+						}
+					} catch(...) { }
+				});
+				return eleInitBase(info.type, remappedData);
 			}
 
 			//queue an object for deletion
