@@ -34,7 +34,6 @@ namespace citrus {
 						fpsSampleStart = fpsSampleStart + std::chrono::seconds(1);
 						_framesPerSecond = fpsSample;
 						fpsSample = 0;
-						util::sout("FPS = " + std::to_string(_framesPerSecond));
 					}
 					
 					{

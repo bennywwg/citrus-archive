@@ -15,35 +15,47 @@
 
 namespace citrus {
 	namespace engine {
+		using std::vector;
+		using std::function;
+		using std::tuple;
+		using std::pair;
+		using std::string;
+		using std::type_info;
+		using std::type_index;
+
 		class manager;
 		class engine;
 
 		class eleInitBase {
 			public:
-			const std::type_index type;
-			const nlohmann::json data;
+			const type_index type;
+			const json data;
 			public:
-			inline eleInitBase(std::type_index type, nlohmann::json data) : type(type), data(data) { }
+			inline eleInitBase(type_index type, json data) : type(type), data(data) { }
 		};
 		template<class T>
 		class eleInit : public eleInitBase {
 			public:
-			inline eleInit(nlohmann::json data) : eleInitBase(typeid(T), data) { }
+			inline eleInit(json data) : eleInitBase(typeid(T), data) { }
 		};
 
+
 		class manager {
+			
+			friend class entity;
+
 			engine* const _eng;
 
 			struct elementInfo {
-				std::function<void(element*, entity*)> ctor;
-				std::function<void(element*)> dtor;
-				std::vector<std::tuple<element*, entity*, nlohmann::json>> toCreate;
-				std::vector<std::pair<element*, entity*>> toDestroy;
-				std::vector<element*> existing;
-				std::vector<entity*> existingEntities;
+				function<void(element*, entity*)> ctor;
+				function<void(element*)> dtor;
+				vector<tuple<element*, entity*, json>> toCreate;
+				vector<pair<element*, entity*>> toDestroy;
+				vector<element*> existing;
+				vector<entity*> existingEntities;
 				int size;
-				std::string name;
-				std::type_index type;
+				string name;
+				type_index type;
 
 				inline int findInToCreate(element* ele) {
 					for(int i = 0; i < toCreate.size(); ++i)
@@ -76,12 +88,21 @@ namespace citrus {
 
 				inline elementInfo() : type(typeid(void)) { }
 			};
-			std::map<std::type_index, elementInfo> _data;
+			std::map<type_index, elementInfo> _data;
 
-			std::vector<std::type_index> _order;
+			vector<type_index> _order;
+
+			private: vector<entity*> _toCreate;
+			public: std::recursive_mutex toCreateMut;
+
+			private: vector<entity*> _toDestroy;
+			public: std::recursive_mutex toDestroyMut;
+
+			private: vector<entity*> _entities;
+			public: std::recursive_mutex entitiesMut;
 
 			private:
-			inline int findEntity(const std::vector<entity*>& entities, entity* ent) {
+			inline int findEntity(const vector<entity*>& entities, entity* ent) {
 				for(int i = 0; i < entities.size(); ++i)
 					if(entities[i] == ent)
 						return i;
@@ -89,82 +110,13 @@ namespace citrus {
 				return -1;
 			}
 
+			//serialization functions
+			
 
-			public:
-			inline nlohmann::json referenceEntity(entity* ent) {
-				return nlohmann::json({
-					{"Type", "Entity Reference"},
-					{"ID", ent != nullptr ? ent->id : entity::nullID}
-				});
-			}
-			template<class T> inline nlohmann::json referenceElement(entity* ent) {
-				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
-				auto info = getInfo(typeid(T));
-				if(info == nullptr) throw std::exception("Trying to reference element type that isn't registered");
-				return nlohmann::json({
-					{"Type", "Element Reference"},
-					{"Name", info->name},
-					{"ID", ent != nullptr ? ent->id : entity::nullID}
-				});
-			}
-			inline entity* dereferenceEntity(const nlohmann::json& data) {
-				if(!isEntityReference(data)) throw std::exception(("Tried to derefence invalid entity reference\n" + data.dump(2)).c_str());
-				return findByID(data["ID"].get<uint64_t>());
-			}
-			template<class T> inline T* dereferenceElement(const nlohmann::json& data) {
-				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
-				if(!isElementReference(data)) throw std::exception(("Tried to derefence invalid element reference\n" + data.dump(2)).c_str());
-				auto info = getInfo(typeid(T));
-				if(data["Name"] != info->name) throw std::exception(("Tried to derefence element but the template type does not match the json\n" + data.dump(2)).c_str());
-				auto ent = findByID(data["ID"].get<uint64_t>());
-				if(ent == nullptr) throw std::exception("Tried to dereference element but its entity does not exist");
-				if(!ent->initialized()) throw std::exception("Tried to dereference element but its entity is not initialized");
-				return ent->getElement<T>();
-			}
-			inline bool isEntityReference(const nlohmann::json& data) {
-				auto foundType = data.find("Type");
-				if(foundType == data.end() || !foundType.value().is_string() || foundType.value().get<std::string>() != "Entity Reference") return false;
-				auto foundID = data.find("ID");
-				if(foundID == data.end() || foundID.value().is_null() || !foundID.value().is_number_unsigned()) return false;
-				return true;
-			}
-			inline bool isElementReference(const nlohmann::json& data) {
-				auto foundType = data.find("Type");
-				if(foundType == data.end() || !foundType.value().is_string() || foundType.value().get<std::string>() != "Element Reference") return false;
-				auto foundName = data.find("Name");
-				if(foundName == data.end() || !foundName.value().is_string() || getInfoByName(foundName.value().get<string>()) == nullptr) return false;
-				auto foundID = data.find("ID");
-				if(foundID == data.end() || foundID.value().is_null() || !foundID.value().is_number_unsigned()) return false;
-				return true;
-			}
-
-			inline entity* findByIDUnsafe(uint64_t uuid) {
-				if(uuid == entity::nullID) return nullptr;
-				for(auto ent : _entities)
-					if(ent->id == uuid)
-						return ent;
-				for(auto ent : _toCreate)
-					if(ent->id == uuid)
-						return ent;
-				return nullptr;
-			}
-			inline entity* findByID(uint64_t uuid) {
-				std::lock_guard<std::recursive_mutex> lock(toCreateMut), lock1(entitiesMut);
-				return findByIDUnsafe(uuid);
-			}
-
-			private: std::vector<entity*> _toCreate;
-			public: std::recursive_mutex toCreateMut;
-
-			private: std::vector<entity*> _toDestroy;
-			public: std::recursive_mutex toDestroyMut;
-
-			private: std::vector<entity*> _entities;
-			public: std::recursive_mutex entitiesMut;
-
+			#pragma region(type support functions)
 			private:
-			//gets the elementInfo for a type if it exists
-			inline elementInfo* getInfo(const std::type_index& index) {
+			//gets the elementInfo for a type if it exists, null if it doesn't exist
+			inline elementInfo* getInfo(const type_index& index) {
 				auto it = _data.find(index);
 				if(it != _data.end()) {
 					return &(it->second);
@@ -172,9 +124,10 @@ namespace citrus {
 					return nullptr;
 				}
 			}
-			inline elementInfo* getInfoByName(const std::string& name) {
+			//gets the elementInfo for a given type name, null if it doesn't exist
+			inline elementInfo* getInfoByName(const string& name) {
 				//TODO: Optimize this (with another map)
-				for(auto it : _data) {
+				for(auto& it : _data) {
 					if(it.second.name == name) {
 						return &it.second;
 					}
@@ -182,24 +135,25 @@ namespace citrus {
 				return nullptr;
 			}
 
-			inline bool containsType(const std::vector<std::type_index>& types, const std::type_index& type) {
+			//returns true if a vector of types 
+			static inline bool containsType(const vector<type_index>& types, const type_index& type) {
 				for(const auto& t : types)
 					if(t == type)
 						return true;
 				return false;
 			}
-			inline int containsType(const std::vector<eleInitBase>& infos, const std::type_index& type) {
+			static inline int containsType(const vector<eleInitBase>& infos, const type_index& type) {
 				for(int i = 0; i < infos.size(); i++) {
 					const auto& info = infos[i];
 					if(info.type == type)
 						return i;
 				}
-					
+
 				return -1;
 			}
 
-			inline std::vector<std::type_index> reorder(const std::vector<std::type_index>& types) {
-				std::vector<std::type_index> res;
+			inline vector<type_index> reorder(const vector<type_index>& types) {
+				vector<type_index> res;
 
 				for(const auto& type : _order)
 					if(containsType(types, type))
@@ -207,8 +161,8 @@ namespace citrus {
 
 				return res;
 			}
-			inline std::vector<eleInitBase> reorder(const std::vector<eleInitBase>& infos) {
-				std::vector<eleInitBase> res;
+			inline vector<eleInitBase> reorder(const vector<eleInitBase>& infos) {
+				vector<eleInitBase> res;
 
 				for(const auto& type : _order) {
 					int index = containsType(infos, type);
@@ -218,37 +172,29 @@ namespace citrus {
 
 				return res;
 			}
+			#pragma endregion
 
-			inline entity* newEntity(std::string name, const std::vector<eleInitBase>& orderedData, uint64_t uuid) {
-				std::vector<elementMeta> types;
-				types.reserve(orderedData.size());
-				for(const auto& info : orderedData) {
-					const auto& traits = getInfo(info.type);
-					types.emplace_back(info.type, (element*)(::operator new(traits->size)));
-				}
 
-				return new entity(types, _eng, name, uuid);
-			}
-
-			public:
-			//lock this to prevent your underlying objects from being deleted
-			std::recursive_mutex objectMut;
-
-			//makes an element type usable
-			template<class T> inline void registerType(std::string name) {
+			#pragma region(type registration functions)
+			//register a type so it is usable
+			public: template<class T> inline void registerType(string name) {
 				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
-				const auto& index = std::type_index(typeid(T));
+				const auto& index = type_index(typeid(T));
 				auto it = _data.find(index);
 				if(it == _data.end()) {
 					elementInfo& info = _data[index];
-					info.ctor = std::function<void(element*, entity*)>([](element* loc, entity* ent) { new(loc) T(ent); });
-					info.dtor = std::function<void(element*)>([](element* loc) { ((T*)loc)->~T(); });
+					info.ctor = function<void(element*, entity*)>([](element* loc, entity* ent) { new(loc) T(ent); });
+					info.dtor = function<void(element*)>([](element* loc) { ((T*)loc)->~T(); });
 					info.size = sizeof(T);
 					info.type = index;
 					info.name = name;
 				}
 			}
-			inline void setOrder(const std::vector<std::type_index>& order) {
+			//set the order in which scipts will be executed
+			//later types depend on previous types
+			//during initialization and runtime, this happens in the order specified
+			//during destruction, this happens in reverse order specified
+			public: inline void setOrder(const vector<type_index>& order) {
 				_order.clear();
 				_order.reserve(order.size());
 				for(unsigned int i = 0; i < order.size(); ++i) {
@@ -258,117 +204,47 @@ namespace citrus {
 					_order.push_back(order[i]);
 				}
 			}
+			#pragma endregion
+			
 
-			//returns a vector of all the objects with given type
-			//!!! soft locks dataMut !!!
-			template<class T> inline std::vector<T*> ofType() {
-				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
-				auto pre = ofType(std::type_index(typeid(T)));
-				std::vector<T*> res;
-				res.reserve(pre.size());
-				for(auto ptr : pre)
-					res.push_back((T*)ptr);
-				return res;
-			}
-			//returns a vector of all the objects with given type
-			//!!! soft locks dataMut !!!
-			inline std::vector<element*> ofType(const std::type_index& index) {
-				return getInfo(index)->existing;
-			}
-			inline std::vector<entity*> allEntities() {
-				return _entities;
-			}
+			#pragma region(creation deletion support functions)
+			private:
+			inline entity* newEntity(string name, const vector<eleInitBase>& orderedData, uint64_t uuid) {
+				vector<elementMeta> types;
+				types.reserve(orderedData.size());
+				for(const auto& info : orderedData) {
+					const auto& traits = getInfo(info.type);
+					types.emplace_back(info.type, (element*)(::operator new(traits->size)));
+				}
 
+				return new entity(types, _eng, name, uuid);
+			}
+			#pragma endregion
+
+
+			#pragma region(creation deletion functions)
+			public:
 			//queue an object for creation
 			//this object is valid until destroy() is called for it flush() is called, at which point its memory is freed
 			//!!! hard locks toCreateMut !!!
-			inline entity* create(std::string name, const std::vector<eleInitBase>& data, uint64_t id) {
+			inline entity* create(string name, const vector<eleInitBase>& data, uint64_t id) {
 				std::lock_guard<std::recursive_mutex> lock(toCreateMut);
 				return createUnsafe(name, data, id);
 			}
 			//queue an object for creation
 			//this object is valid until destroy() is called for it flush() is called, at which point its memory is freed
 			//!!! must hard lock toCreateMut !!!
-			inline entity* createUnsafe(std::string name, const std::vector<eleInitBase>& data, uint64_t id) {
+			inline entity* createUnsafe(string name, const vector<eleInitBase>& data, uint64_t id) {
 				auto orderedData = reorder(data);
 
 				auto ent = newEntity(name, orderedData, id);
-				
+
 				for(int i = 0; i < ent->_elements.size(); ++i)
 					getInfo(ent->_elements[i].type)->toCreate.emplace_back(ent->_elements[i].ele, ent, orderedData[i].data);
 
 				_toCreate.push_back(ent);
 
 				return ent;
-			}
-
-			inline void loadPrefabUnsafe(const nlohmann::json& data) {
-				std::map<uint64_t, uint64_t> remappedIDs;
-
-				json dataEntities = data["Entities"];
-				for(int i = 0; i < dataEntities.size(); i++)
-					remappedIDs[dataEntities[i]["ID"].get<uint64_t>()] = util::nextID();
-
-				std::vector<std::pair<entity*, uint64_t>> parentMap;
-				for(int i = 0; i < dataEntities.size(); i++) {
-					json entDesc = dataEntities[i];
-					std::string name = entDesc["Name"].get<std::string>();
-					uint64_t id = remappedIDs[entDesc["ID"].get<uint64_t>()];
-					uint64_t parent = entDesc["Parent"].is_null() ? entity::nullID : remappedIDs[entDesc["Parent"].get<uint64_t>()];
-					transform trans = util::loadTransform(entDesc["Transform"]);
-
-					std::vector<eleInitBase> elements;
-					json elementsJson = entDesc["Elements"];
-					for(auto it = elementsJson.begin(); it != elementsJson.end(); ++it) {
-						elements.push_back(remapEleInitIDs(eleInitBase(getInfoByName(it.key())->type, it.value()), remappedIDs));
-					}
-
-					auto ent = createUnsafe(name, elements, id);
-					ent->setLocalTransform(trans);
-					parentMap.emplace_back(ent, parent);
-				}
-
-				for(const auto& kvp : parentMap) {
-					kvp.first->_parent = findByIDUnsafe(kvp.second);
-				}
-			}
-
-			inline eleInitBase remapEleInitIDs(eleInitBase info, const std::map<uint64_t, uint64_t>& remappedIDs) {
-				json remappedData = info.data;
-				util::recursive_iterate(remappedData, [this, &remappedIDs](json::iterator it) {
-					if(this->isEntityReference(*it) || this->isElementReference(*it)) {
-						auto found = remappedIDs.find((*it)["ID"].get<uint64_t>());
-						if(found != remappedIDs.end()) {
-							(*it)["ID"] = (*found).second;
-						} else {
-							throw std::exception("did not find mapped ID");
-						}
-					}
-				});
-				return eleInitBase(info.type, remappedData);
-			}
-
-			inline json savePrefabUnsafe(entity* toSave) {
-				std::vector<entity*> connected = toSave->getAllConnected();
-				json res;
-				res["Entities"] = { };
-				for(entity* ent : connected) {
-					json entElements;
-					for(auto& ele : ent->_elements) {
-						entElements[getInfo(ele.type)->name] = ele.ele->save();
-					}
-
-					json entDescriptor({
-						{"Name", ent->name},
-						{"ID", ent->id},
-						{"Parent", ent->_parent == nullptr ? entity::nullID : ent->_parent->id},
-						{"Transform", util::save(ent->getLocalTransform())},
-						{"Elements", entElements}
-					});
-
-					res["Entities"].push_back(entDescriptor);
-				}
-				return res;
 			}
 
 			//queue an object for deletion
@@ -413,12 +289,201 @@ namespace citrus {
 				for(auto& meta : ent->_elements)
 					getInfo(meta.type)->toDestroy.emplace_back(meta.ele, ent);
 			}
+			#pragma endregion
 
+			
+			#pragma region(querying functions)
+
+			//
+			template<class T> inline vector<T*> ofType() {
+				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
+				auto pre = ofType(type_index(typeid(T)));
+				vector<T*> res;
+				res.reserve(pre.size());
+				for(auto ptr : pre)
+					res.push_back((T*)ptr);
+				return res;
+			}
+			
+			//
+			inline vector<element*> ofType(const type_index& index) {
+				return getInfo(index)->existing;
+			}
+
+			//
+			inline vector<entity*> allEntities() {
+				return _entities;
+			}
+
+			inline entity* findByIDUnsafe(uint64_t uuid) {
+				if(uuid == entity::nullID) return nullptr;
+				for(auto ent : _entities)
+					if(ent->id == uuid)
+						return ent;
+				for(auto ent : _toCreate)
+					if(ent->id == uuid)
+						return ent;
+				return nullptr;
+			}
+			inline entity* findByID(uint64_t uuid) {
+				std::lock_guard<std::recursive_mutex> lock(toCreateMut), lock1(entitiesMut);
+				return findByIDUnsafe(uuid);
+			}
+
+			#pragma endregion
+			
+
+			#pragma region(serialization support functions)
+
+			//scans through an eleInitBase and replaces all
+			//entity and element references, mapping the IDs
+			//using the given id map
+			private: inline eleInitBase remapEleInitIDs(eleInitBase info, const std::map<uint64_t, uint64_t>& remappedIDs) {
+				json remappedData = info.data;
+				util::recursive_iterate(remappedData, [this, &remappedIDs](json::iterator it) {
+					if(this->isEntityReference(*it) || this->isElementReference(*it)) {
+						auto found = remappedIDs.find((*it)["ID"].get<uint64_t>());
+						if(found != remappedIDs.end()) {
+							(*it)["ID"] = (*found).second;
+						} else {
+							throw std::exception("did not find mapped ID");
+						}
+					}
+				});
+				return eleInitBase(info.type, remappedData);
+			}
+			
+			public:
+			inline json referenceEntity(entity* ent) {
+				return json({
+					{"Type", "Entity Reference"},
+					{"ID", ent != nullptr ? ent->id : entity::nullID}
+					});
+			}
+			template<class T> inline json referenceElement(entity* ent) {
+				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
+				auto info = getInfo(typeid(T));
+				if(info == nullptr) throw std::exception("Trying to reference element type that isn't registered");
+				return json({
+					{"Type", "Element Reference"},
+					{"Name", info->name},
+					{"ID", ent != nullptr ? ent->id : entity::nullID}
+					});
+			}
+			inline entity* dereferenceEntity(const json& data) {
+				if(!isEntityReference(data)) throw std::exception(("Tried to derefence invalid entity reference\n" + data.dump(2)).c_str());
+				return findByID(data["ID"].get<uint64_t>());
+			}
+			template<class T> inline T* dereferenceElement(const json& data) {
+				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
+				if(!isElementReference(data)) throw std::exception(("Tried to derefence invalid element reference\n" + data.dump(2)).c_str());
+				auto info = getInfo(typeid(T));
+				if(data["Name"] != info->name) throw std::exception(("Tried to derefence element but the template type does not match the json\n" + data.dump(2)).c_str());
+				auto ent = findByID(data["ID"].get<uint64_t>());
+				if(ent == nullptr) throw std::exception("Tried to dereference element but its entity does not exist");
+				if(!ent->initialized()) throw std::exception("Tried to dereference element but its entity is not initialized");
+				return ent->getElement<T>();
+			}
+			inline bool isEntityReference(const json& data) {
+				auto foundType = data.find("Type");
+				if(foundType == data.end() || !foundType.value().is_string() || foundType.value().get<string>() != "Entity Reference") return false;
+				auto foundID = data.find("ID");
+				if(foundID == data.end() || foundID.value().is_null() || !foundID.value().is_number_unsigned()) return false;
+				return true;
+			}
+			inline bool isElementReference(const json& data) {
+				auto foundType = data.find("Type");
+				if(foundType == data.end() || !foundType.value().is_string() || foundType.value().get<string>() != "Element Reference") return false;
+				auto foundName = data.find("Name");
+				if(foundName == data.end() || !foundName.value().is_string() || getInfoByName(foundName.value().get<string>()) == nullptr) return false;
+				auto foundID = data.find("ID");
+				if(foundID == data.end() || foundID.value().is_null() || !foundID.value().is_number_unsigned()) return false;
+				return true;
+			}
+
+			#pragma endregion
+
+
+			#pragma region(serialization functions)
+
+			public:
+			//creates all the entities described in a prefab
+			//you must lock toCreateMut and entitiesMut or risk UB
+			inline void loadPrefabUnsafe(const json& data) {
+				std::map<uint64_t, uint64_t> remappedIDs;
+
+				json dataEntities = data["Entities"];
+				for(int i = 0; i < dataEntities.size(); i++)
+					remappedIDs[dataEntities[i]["ID"].get<uint64_t>()] = util::nextID();
+
+				vector<pair<entity*, uint64_t>> parentMap;
+				for(int i = 0; i < dataEntities.size(); i++) {
+					json entDesc = dataEntities[i];
+					string name = entDesc["Name"].get<string>();
+					uint64_t id = remappedIDs[entDesc["ID"].get<uint64_t>()];
+					uint64_t parent = entDesc["Parent"].is_null() ? entity::nullID : remappedIDs[entDesc["Parent"].get<uint64_t>()];
+					transform trans = util::loadTransform(entDesc["Transform"]);
+
+					vector<eleInitBase> elements;
+					json elementsJson = entDesc["Elements"];
+					for(auto it = elementsJson.begin(); it != elementsJson.end(); ++it) {
+						elements.push_back(remapEleInitIDs(eleInitBase(getInfoByName(it.key())->type, it.value()), remappedIDs));
+					}
+
+					auto ent = createUnsafe(name, elements, id);
+					ent->setLocalTransform(trans);
+					parentMap.emplace_back(ent, parent);
+				}
+
+				for(const auto& kvp : parentMap) {
+					kvp.first->_parent = findByIDUnsafe(kvp.second);
+				}
+			}
+			inline void loadPrefab(const json& data) {
+				std::lock_guard<std::recursive_mutex> lock0(toCreateMut), lock1(entitiesMut);
+				loadPrefabUnsafe(data);
+			}
+			//saves all the entities in the hierarchy of toSave
+			//you must lock entitiesMut or risk UB
+			inline json savePrefabUnsafe(entity* toSave) {
+				if(toSave == nullptr || !toSave->initialized()) throw std::exception("Cannot save null or uninitialized entity");
+				vector<entity*> connected = toSave->getAllConnected();
+				json res;
+				res["Entities"] = { };
+				for(entity* ent : connected) {
+					json entElements;
+					for(auto& ele : ent->_elements) {
+						entElements[getInfo(ele.type)->name] = ele.ele->save();
+					}
+
+					json entDescriptor({
+						{"Name", ent->name},
+						{"ID", ent->id},
+						{"Parent", ent->_parent == nullptr ? entity::nullID : ent->_parent->id},
+						{"Transform", util::save(ent->getLocalTransform())},
+						{"Elements", entElements}
+						});
+
+					res["Entities"].push_back(entDescriptor);
+				}
+				return res;
+			}
+			inline json savePrefab(entity* toSave) {
+				std::lock_guard<std::recursive_mutex> lock(entitiesMut);
+				return savePrefabUnsafe(toSave);
+			}
+
+			#pragma endregion
+
+
+			#pragma region(runtime execution functions)
+
+			public:
 			//creates all objects queued for creation and deletes all queued for destruction
 			//!!! locks dataMut and objectMut !!!
 			inline void flush() {
 				std::lock_guard<std::recursive_mutex> lock(toCreateMut), lock1(toDestroyMut), lock2(entitiesMut);
-				
+
 				flushToDestroyUnsafe();
 
 				flushToCreateUnsafe();
@@ -429,11 +494,13 @@ namespace citrus {
 					for(auto& ele : getInfo(oType)->existing)
 						ele->render();
 			}
+
 			inline void preRender() {
 				for(const auto& oType : _order)
 					for(auto& ele : getInfo(oType)->existing)
 						ele->preRender();
 			}
+
 			private:
 			inline void flushToCreateUnsafe() {
 				//initialize all elements in order
@@ -472,6 +539,7 @@ namespace citrus {
 					info.toCreate.clear();
 				}
 			}
+
 			inline void flushToDestroyUnsafe() {
 				//remove entities from scene
 				for(const auto& ent : _toDestroy) {
@@ -483,7 +551,7 @@ namespace citrus {
 					}
 				}
 
-				//call dtors on elements in order
+				//call dtors on elements in order	
 				for(const auto& oType : _order) {
 					auto& info = *getInfo(oType);
 
@@ -519,6 +587,9 @@ namespace citrus {
 				//clear entity toDestroy list
 				_toDestroy.clear();
 			}
+
+			#pragma endregion
+			
 
 			public:
 			inline manager(engine* eng) : _eng(eng) { }
