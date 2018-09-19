@@ -22,7 +22,10 @@ namespace citrus {
 
 			mat4 getMat() const;
 
+			transform operator*(const transform& rhs) const;
+
 			transform();
+			transform(mat4 mat);
 			transform(vec3 position, quat orientation);
 		};
 	}

@@ -20,9 +20,9 @@ namespace citrus {
 			if(e->getKey(windowInput::escape))
 				e->stop();
 
-			glm::vec3 pos = ent->trans.getPosition() + yPlaneMovement;
+			glm::vec3 pos = ent->getGlobalTransform().getPosition() + yPlaneMovement;
 
-			ent->trans.setPosition(pos);
+			ent->setLocalPosition(pos);
 			// util::sout(std::to_string(pos.x) + ", " + std::to_string(pos.y) + ", " + std::to_string(pos.z));
 
 			//transformComponent& trans = *getOwner()->getComponent<transformComponent>().lock();

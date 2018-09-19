@@ -31,7 +31,7 @@ namespace citrus {
 				body.reset(new dynamics::rigidBody(shape.get(), w));
 			}
 			void preRender() {
-				ent->trans = body->getTransform();
+				ent->getGlobalTransform() = body->getTransform();
 			}
 
 			rigidBodyComponent(entity* owner) : element(owner) { }

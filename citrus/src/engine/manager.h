@@ -89,65 +89,68 @@ namespace citrus {
 				return -1;
 			}
 
+
 			public:
 			inline nlohmann::json referenceEntity(entity* ent) {
 				return nlohmann::json({
 					{"Type", "Entity Reference"},
-					{"ID", ent->uuid}
+					{"ID", ent != nullptr ? ent->id : entity::nullID}
 				});
 			}
-			template<class T>
-			inline nlohmann::json referenceElement(entity* ent) {
+			template<class T> inline nlohmann::json referenceElement(entity* ent) {
 				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
+				auto info = getInfo(typeid(T));
+				if(info == nullptr) throw std::exception("Trying to reference element type that isn't registered");
 				return nlohmann::json({
 					{"Type", "Element Reference"},
-					{"Name", getInfo(typeid(T))->name},
-					{"ID", ent->uuid}
+					{"Name", info->name},
+					{"ID", ent != nullptr ? ent->id : entity::nullID}
 				});
 			}
 			inline entity* dereferenceEntity(const nlohmann::json& data) {
-				if(data["Type"] == "Entity") {
-					return findByUUID(data["uuid"].get<uint64_t>());
-				} else {
-					throw std::exception("Trying to unpack an entity but the json is not a packed entity");
-				}
+				if(!isEntityReference(data)) throw std::exception(("Tried to derefence invalid entity reference\n" + data.dump(2)).c_str());
+				return findByID(data["ID"].get<uint64_t>());
 			}
-			template<class T>
-			inline T* dereferenceElement(const nlohmann::json& data) {
+			template<class T> inline T* dereferenceElement(const nlohmann::json& data) {
 				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
-				if(data["Type"] == "Element" && data["Name"] == getInfo(typeid(T))->name) {
-					auto ent = findByUUID(data["uuid"].get<uint64_t>());
-					return ent->getElement<T>();
-				} else {
-					throw std::exception("Trying to unpack an element but the json is not a packed element");
-				}
+				if(!isElementReference(data)) throw std::exception(("Tried to derefence invalid element reference\n" + data.dump(2)).c_str());
+				auto info = getInfo(typeid(T));
+				if(data["Name"] != info->name) throw std::exception(("Tried to derefence element but the template type does not match the json\n" + data.dump(2)).c_str());
+				auto ent = findByID(data["ID"].get<uint64_t>());
+				if(ent == nullptr) throw std::exception("Tried to dereference element but its entity does not exist");
+				if(!ent->initialized()) throw std::exception("Tried to dereference element but its entity is not initialized");
+				return ent->getElement<T>();
 			}
 			inline bool isEntityReference(const nlohmann::json& data) {
 				auto foundType = data.find("Type");
 				if(foundType == data.end() || !foundType.value().is_string() || foundType.value().get<std::string>() != "Entity Reference") return false;
 				auto foundID = data.find("ID");
-				if(foundID == data.end() || !foundID.value().is_number_unsigned()) return false;
+				if(foundID == data.end() || foundID.value().is_null() || !foundID.value().is_number_unsigned()) return false;
 				return true;
 			}
 			inline bool isElementReference(const nlohmann::json& data) {
 				auto foundType = data.find("Type");
 				if(foundType == data.end() || !foundType.value().is_string() || foundType.value().get<std::string>() != "Element Reference") return false;
 				auto foundName = data.find("Name");
-				if(foundName == data.end() || !foundName.value().is_string()) return false;
+				if(foundName == data.end() || !foundName.value().is_string() || getInfoByName(foundName.value().get<string>()) == nullptr) return false;
 				auto foundID = data.find("ID");
-				if(foundID == data.end() || !foundID.value().is_number_unsigned()) return false;
+				if(foundID == data.end() || foundID.value().is_null() || !foundID.value().is_number_unsigned()) return false;
 				return true;
 			}
 
-			inline entity* findByUUIDUnsafe(uint64_t uuid) {
+			inline entity* findByIDUnsafe(uint64_t uuid) {
+				if(uuid == entity::nullID) return nullptr;
 				for(auto ent : _entities)
-					if(ent->uuid == uuid)
+					if(ent->id == uuid)
+						return ent;
+				for(auto ent : _toCreate)
+					if(ent->id == uuid)
 						return ent;
 				return nullptr;
 			}
-			inline entity* findByUUID(uint64_t uuid) {
-				std::lock_guard<std::recursive_mutex> lock(entitiesMut);
-				return findByUUIDUnsafe(uuid);
+			inline entity* findByID(uint64_t uuid) {
+				std::lock_guard<std::recursive_mutex> lock(toCreateMut), lock1(entitiesMut);
+				return findByIDUnsafe(uuid);
 			}
 
 			private: std::vector<entity*> _toCreate;
@@ -279,17 +282,17 @@ namespace citrus {
 			//queue an object for creation
 			//this object is valid until destroy() is called for it flush() is called, at which point its memory is freed
 			//!!! hard locks toCreateMut !!!
-			inline entity* create(std::string name, const std::vector<eleInitBase>& data) {
+			inline entity* create(std::string name, const std::vector<eleInitBase>& data, uint64_t id) {
 				std::lock_guard<std::recursive_mutex> lock(toCreateMut);
-				return createUnsafe(name, data);
+				return createUnsafe(name, data, id);
 			}
 			//queue an object for creation
 			//this object is valid until destroy() is called for it flush() is called, at which point its memory is freed
 			//!!! must hard lock toCreateMut !!!
-			inline entity* createUnsafe(std::string name, const std::vector<eleInitBase>& data) {
+			inline entity* createUnsafe(std::string name, const std::vector<eleInitBase>& data, uint64_t id) {
 				auto orderedData = reorder(data);
 
-				auto ent = newEntity(name, orderedData, util::nextID());
+				auto ent = newEntity(name, orderedData, id);
 				
 				for(int i = 0; i < ent->_elements.size(); ++i)
 					getInfo(ent->_elements[i].type)->toCreate.emplace_back(ent->_elements[i].ele, ent, orderedData[i].data);
@@ -299,48 +302,73 @@ namespace citrus {
 				return ent;
 			}
 
-			inline entity* createDynamicUnsafe(const nlohmann::json& data) {
-				auto name = data["Name"].get<std::string>();
-				auto parent = data["Parent"].get<uint64_t>();
-				auto uuid = data["ID"].get<uint64_t>();
+			inline void loadPrefabUnsafe(const nlohmann::json& data) {
+				std::map<uint64_t, uint64_t> remappedIDs;
 
-				std::vector<eleInitBase> elements;
-				nlohmann::json elementsJson = data["Elements"];
-				for(auto it = elementsJson.begin(); it != elementsJson.end(); ++it) {
-					elements.emplace_back(getInfoByName(it.key())->type, it.value());
-				}
+				json dataEntities = data["Entities"];
+				for(int i = 0; i < dataEntities.size(); i++)
+					remappedIDs[dataEntities[i]["ID"].get<uint64_t>()] = util::nextID();
 
-				createUnsafe(name, elements);
-			}
-
-			inline void createMultiple(const nlohmann::json& data) {
-				std::map<uint64_t, uint64_t> uuidMap;
-
-				auto dataEntities = data["Entities"];
+				std::vector<std::pair<entity*, uint64_t>> parentMap;
 				for(int i = 0; i < dataEntities.size(); i++) {
-					
+					json entDesc = dataEntities[i];
+					std::string name = entDesc["Name"].get<std::string>();
+					uint64_t id = remappedIDs[entDesc["ID"].get<uint64_t>()];
+					uint64_t parent = entDesc["Parent"].is_null() ? entity::nullID : remappedIDs[entDesc["Parent"].get<uint64_t>()];
+					transform trans = util::loadTransform(entDesc["Transform"]);
+
+					std::vector<eleInitBase> elements;
+					json elementsJson = entDesc["Elements"];
+					for(auto it = elementsJson.begin(); it != elementsJson.end(); ++it) {
+						elements.push_back(remapEleInitIDs(eleInitBase(getInfoByName(it.key())->type, it.value()), remappedIDs));
+					}
+
+					auto ent = createUnsafe(name, elements, id);
+					ent->setLocalTransform(trans);
+					parentMap.emplace_back(ent, parent);
+				}
+
+				for(const auto& kvp : parentMap) {
+					kvp.first->_parent = findByIDUnsafe(kvp.second);
 				}
 			}
 
-
-			inline eleInitBase remapEleInitIDs(eleInitBase info) {
-				std::map<uint64_t, uint64_t> remapped;
+			inline eleInitBase remapEleInitIDs(eleInitBase info, const std::map<uint64_t, uint64_t>& remappedIDs) {
 				json remappedData = info.data;
-				util::recursive_iterate(remappedData, [this, &remapped](json::iterator it) {
-					try {
-						if(this->isEntityReference(*it) || this->isElementReference(*it)) {
-							auto found = remapped.find((*it)["ID"].get<uint64_t>());
-							if(found == remapped.end()) {
-								uint64_t id = util::nextID();
-								remapped[(*it)["ID"].get<uint64_t>()] = id;
-								(*it)["ID"] = id;
-							} else {
-								(*it)["ID"] = remapped[(*it)["ID"].get<uint64_t>()];
-							}
+				util::recursive_iterate(remappedData, [this, &remappedIDs](json::iterator it) {
+					if(this->isEntityReference(*it) || this->isElementReference(*it)) {
+						auto found = remappedIDs.find((*it)["ID"].get<uint64_t>());
+						if(found != remappedIDs.end()) {
+							(*it)["ID"] = (*found).second;
+						} else {
+							throw std::exception("did not find mapped ID");
 						}
-					} catch(...) { }
+					}
 				});
 				return eleInitBase(info.type, remappedData);
+			}
+
+			inline json savePrefabUnsafe(entity* toSave) {
+				std::vector<entity*> connected = toSave->getAllConnected();
+				json res;
+				res["Entities"] = { };
+				for(entity* ent : connected) {
+					json entElements;
+					for(auto& ele : ent->_elements) {
+						entElements[getInfo(ele.type)->name] = ele.ele->save();
+					}
+
+					json entDescriptor({
+						{"Name", ent->name},
+						{"ID", ent->id},
+						{"Parent", ent->_parent == nullptr ? entity::nullID : ent->_parent->id},
+						{"Transform", util::save(ent->getLocalTransform())},
+						{"Elements", entElements}
+					});
+
+					res["Entities"].push_back(entDescriptor);
+				}
+				return res;
 			}
 
 			//queue an object for deletion

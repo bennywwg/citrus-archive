@@ -58,7 +58,7 @@ namespace citrus {
 				}
 			} catch(std::exception ex) {
 				util::sout("Unrecoverable Error in Render Thread: " + std::string(ex.what()));
-				} catch(...) {
+			} catch(...) {
 				util::sout("Unrecoverable Error in Render Thread");
 			}
 

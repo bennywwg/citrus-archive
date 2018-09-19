@@ -22,7 +22,11 @@ namespace citrus {
 		mat4 transform::getMat() const {
 			return translate(_position) * toMat4(_orientation);
 		}
+		transform transform::operator*(const transform & rhs) const {
+			return getMat() * rhs.getMat();
+		}
 		transform::transform() { }
+		transform::transform(mat4 mat) : _position(glm::vec3(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f) * mat)), _orientation(glm::toQuat(mat)) { }
 		transform::transform(vec3 position, quat orientation) : _position(position), _orientation(orientation) { }
 	}
 }
