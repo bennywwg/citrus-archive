@@ -103,6 +103,9 @@ namespace citrus {
 			_buttonCallbackTable.erase(_win);
 			_cursorCallbackTable.erase(_win);
 		}
+		string window::getAdapter() {
+			return _adapter;
+		}
 		window::window(unsigned int width, unsigned int height, std::string title) {
 			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -124,7 +127,7 @@ namespace citrus {
 
 			glfwSwapInterval(0);
 
-			util::sout("Using GPU: " + std::string((char*)glGetString(GL_RENDERER)));
+			_adapter = std::string((char*)glGetString(GL_RENDERER));
 		}
 		window::window() {
 			glfwDestroyWindow(_win);

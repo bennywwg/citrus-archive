@@ -32,7 +32,7 @@ namespace citrus {
 					else
 						info->sh = new graphics::shader(info->vertFile, info->geomFile, info->fragFile);
 					if(!info->sh->good()) {
-						util::sout(info->sh->log());
+						e->Log(info->sh->log());
 					}
 				}
 			}
@@ -110,10 +110,6 @@ namespace citrus {
 			//vr::VRCompositor()->Submit(vr::EVREye::Eye_Left, &t);
 			//vr::VRCompositor()->Submit(vr::EVREye::Eye_Right, &t);
 			//glFlush();
-
-
-			auto val = glGetError();
-			if(val != 0) std::cout << val << "\n";
 		}
 		void renderManager::onDestroy() {
 			//vr::VR_Shutdown();

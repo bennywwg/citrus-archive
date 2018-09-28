@@ -55,7 +55,7 @@ namespace citrus {
 
 		void sout(string text) {
 			std::lock_guard<mutex> lock(_soutMut);
-			std::cout << text << "\n";
+			std::cout << text;
 		}
 
 		void spin_until(std::function<bool()> func, std::chrono::microseconds wait) {
@@ -119,7 +119,7 @@ namespace citrus {
 		scopedProfiler::scopedProfiler(const std::string& name) : name(name), start(std::chrono::high_resolution_clock::now()) { }
 		scopedProfiler::~scopedProfiler() {
 			auto elapsed = std::chrono::high_resolution_clock::now() - start;
-			util::sout(name + (name.size() < 32 ? std::string(32 - name.size(), ' ') : " ") + " took " + std::to_string(elapsed.count()) + "ns");
+			//util::sout(name + (name.size() < 32 ? std::string(32 - name.size(), ' ') : " ") + " took " + std::to_string(elapsed.count()) + "ns");
 		}
 	}
 }

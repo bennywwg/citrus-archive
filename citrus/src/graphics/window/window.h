@@ -14,6 +14,8 @@ namespace citrus {
 	namespace graphics {
 		class window;
 
+		using std::string;
+
 		extern std::map<GLFWwindow*, std::function<void(int, int, int, int)>> _buttonCallbackTable;
 		extern std::map<GLFWwindow*, std::function<void(double, double)>> _cursorCallbackTable;
 		extern std::map<GLFWwindow*, window*> _windowTable;
@@ -96,6 +98,7 @@ namespace citrus {
 			
 			private:
 			GLFWwindow* _win;
+			string _adapter;
 
 			glm::dvec2 _cursorPos;
 			int _buttonStates[_numButtonEnums];
@@ -115,6 +118,8 @@ namespace citrus {
 			void setButtonCallback(std::function<void(int, int, int, int)> func);
 			void setCursorCallback(std::function<void(double, double)> func);
 			void removeCallbacks();
+
+			string getAdapter();
 
 			window(unsigned int width, unsigned int height, std::string title);
 			window();

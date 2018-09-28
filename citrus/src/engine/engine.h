@@ -28,7 +28,20 @@ namespace citrus {
 	namespace engine {
 		class manager;
 
+		using std::vector;
+		using std::string;
+		using std::pair;
+		using std::tuple;
+		using clock = std::chrono::high_resolution_clock;
+
 		class engine {
+			private:
+			clock::time_point _engineStart;
+			std::mutex _logMut;
+			vector<pair<double, string>> _log;
+			public:
+			void Log(string str);
+			vector<pair<double, string>> flushLog();
 			private:
 			graphics::window* _win;
 
@@ -54,6 +67,8 @@ namespace citrus {
 
 			public:
 			renderState getRenderState();
+
+			double time();
 
 			graphics::window* getWindow();
 
