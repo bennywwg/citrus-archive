@@ -24,44 +24,46 @@ namespace citrus {
 		//this class is extremely tightly coupled to manager, modify with caution
 		class entity {
 			friend class manager;
+			friend class entityRef;
 
 			bool _initialized = false;
+			bool _destroyed = false;
 			const std::vector<elementMeta> _elements;
 			entity* _parent = nullptr;
 			std::vector<entity*> _children;
 			transform _trans;
+			std::weak_ptr<entity> _this;
 
 			public:
 			const std::string name;
 			const uint64_t id;
 			engine* const eng;
 
-			void setLocalTransform(const transform &trans) {
+			inline void setLocalTransform(const transform &trans) {
 				_trans = trans;
 			}
-			void setLocalPosition(const glm::vec3& pos) {
+			inline void setLocalPosition(const glm::vec3& pos) {
 				_trans.setPosition(pos);
 			}
-			void setLocalOrientation(const glm::quat& ori) {
+			inline void setLocalOrientation(const glm::quat& ori) {
 				_trans.setOrientation(ori);
 			}
-			transform getLocalTransform() const {
+			inline transform getLocalTransform() const {
 				return _trans;
 			}
-			glm::vec3 getLocalPosition() const {
+			inline glm::vec3 getLocalPosition() const {
 				return _trans.getPosition();
 			}
-			glm::quat getLocalOrientation() const {
+			inline glm::quat getLocalOrientation() const {
 				return _trans.getOrientation();
 			}
-			transform getGlobalTransform() const {
+			inline transform getGlobalTransform() const {
 				if(_parent != nullptr) {
 					return _trans * _parent->getGlobalTransform();
 				} else {
 					return _trans;
 				}
 			}
-
 
 			inline void setParent(entity* parent) {
 				if(_parent != parent) {
@@ -118,6 +120,12 @@ namespace citrus {
 			inline bool initialized() const {
 				return _initialized;
 			}
+			inline bool destroyed() const {
+				return _destroyed;
+			}
+			inline bool valid() const {
+				return _initialized && !_destroyed;
+			}
 
 			template<typename T> inline T* getElement() const {
 				static_assert(std::is_base_of<element, T>::value, "can only get element if the type is derived from class element");
@@ -139,6 +147,135 @@ namespace citrus {
 			private:
 			entity(const std::vector<elementMeta>& toCreate, engine* eng, const std::string& name, const uint64_t id) :
 				_elements(toCreate), eng(eng), name(name), id(id) { }
+		};
+
+		class entityRef {
+			friend class manager;
+
+			entity* _ptr;
+			std::shared_ptr<entity> _ref;
+
+			public:
+
+			uint64_t id() const {
+				if(!valid()) throw std::exception("Invalid Entity");
+				return _ptr->id;
+			}
+			std::string name() const {
+				if(!valid()) throw std::exception("Invalid Entity");
+				return _ptr->name;
+			}
+			engine* eng() const {
+				return _ptr->eng;
+			}
+
+			inline void setLocalTransform(const transform &trans) {
+				if(!valid()) throw std::exception("Invalid Entity");
+				_ptr->setLocalTransform(trans);
+			}
+			inline void setLocalPosition(const glm::vec3& pos) {
+				if(!valid()) throw std::exception("Invalid Entity");
+				_ptr->setLocalPosition(pos);
+			}
+			inline void setLocalOrientation(const glm::quat& ori) {
+				if(!valid()) throw std::exception("Invalid Entity");
+				_ptr->setLocalOrientation(ori);
+			}
+			inline transform getLocalTransform() const {
+				if(!valid()) throw std::exception("Invalid Entity");
+				return _ptr->getLocalTransform();
+			}
+			inline glm::vec3 getLocalPosition() const {
+				if(!valid()) throw std::exception("Invalid Entity");
+				return _ptr->getLocalPosition();
+			}
+			inline glm::quat getLocalOrientation() const {
+				if(!valid()) throw std::exception("Invalid Entity");
+				return _ptr->getLocalOrientation();
+			}
+			inline transform getGlobalTransform() const {
+				if(!valid()) throw std::exception("Invalid Entity");
+				return _ptr->getGlobalTransform();
+			}
+
+			inline void setParent(entityRef parent) {
+				if(!valid()) throw std::exception("Invalid Entity");
+				_ptr->setParent(parent._ptr);
+			}
+			inline entityRef getRoot() {
+				if(!valid()) throw std::exception("Invalid Entity");
+				return entityRef(_ptr->getRoot()->_this.lock());
+			}
+			inline entityRef getParent() {
+				if(!valid()) throw std::exception("Invalid Entity");
+				return entityRef(_ptr->getParent()->_this.lock());
+			}
+			inline std::vector<entityRef> getChildren() {
+				if(!valid()) throw std::exception("Invalid Entity");
+				auto rawChildren = _ptr->getChildren();
+				std::vector<entityRef> res; res.reserve(rawChildren.size());
+				for(auto& child : rawChildren) res.push_back(child->_this.lock());
+				return res;
+			}
+			inline std::vector<entityRef> getAllConnected() {
+				if(!valid()) throw std::exception("Invalid Entity");
+				auto rawChildren = _ptr->getAllConnected();
+				std::vector<entityRef> res; res.reserve(rawChildren.size());
+				for(auto& child : rawChildren) res.push_back(child->_this.lock());
+				return res;
+			}
+
+			inline bool initialized() const {
+				if(!valid()) throw std::exception("Invalid Entity");
+				return _ptr->initialized();
+			}
+			inline bool destroyed() const {
+				if(!valid()) throw std::exception("Invalid Entity");
+				return _ptr->destroyed();
+			}
+			inline bool valid() const {
+				return _ptr && _ptr->valid();
+			}
+
+			template<typename T> inline T* getElement() const {
+				static_assert(std::is_base_of<element, T>::value, "can only get element if the type is derived from class element");
+				if(!valid()) throw std::exception("Invalid Entity");
+				return (T*)_ptr->getElement(typeid(T));
+			}
+			inline element* getElement(const std::type_index& type) const {
+				if(!valid()) throw std::exception("Invalid Entity");
+				return _ptr->getElement(type);
+			}
+
+			/*inline entityRef(const entityRef& other) : entityRef(other._ref) { }
+			inline entityRef(entityRef&& other) : _ptr(other._ptr), _ref(std::move(other._ref)) { }
+			inline entityRef& operator=(const entityRef& other) {
+				_ptr = other._ptr;
+				_ref = other._ref;
+			}*/
+
+			inline static entityRef null() {
+				return entityRef(std::shared_ptr<entity>(nullptr));
+			}
+
+			inline bool operator==(const entityRef& other) const {
+				return _ptr == other._ptr;
+			}
+			inline bool operator==(entity* other) const {
+				return _ptr == other;
+			}
+			inline bool operator!=(const entityRef& other) const {
+				return !(*this == other);
+			}
+			inline bool operator!=(entity* other) const {
+				return !(*this == other);
+			}
+
+			constexpr static uint64_t nullID = std::numeric_limits<uint64_t>::max();
+
+			private:
+
+			entityRef(std::shared_ptr<entity> ref) : _ref(ref), _ptr(ref.get()) { }
 		};
 	}
 }

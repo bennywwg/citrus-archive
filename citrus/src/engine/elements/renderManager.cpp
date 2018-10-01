@@ -79,8 +79,8 @@ namespace citrus {
 			standardFBO->clearAll();
 			_shaders[0]->sh->use();
 			glm::mat4 projectionViewMat = camRef->cam.getViewProjectionMatrix();
-			for(entity* ent : e->man->allEntities()) {
-				_shaders[0]->sh->setUniform("modelViewProjectionMat", projectionViewMat * ent->getGlobalTransform().getMat());
+			for(auto ent : e->man->allEntities()) {
+				_shaders[0]->sh->setUniform("modelViewProjectionMat", projectionViewMat * ent.getGlobalTransform().getMat());
 				graphics::vertexArray::drawOne();
 			}
 			standardFBO->unbind();

@@ -13,7 +13,7 @@ namespace citrus {
 
 		class element {
 			public:
-			entity* const ent;
+			entityRef const ent;
 			engine* const e;
 
 			inline virtual void load(const nlohmann::json& parsed) { }
@@ -21,7 +21,7 @@ namespace citrus {
 			inline virtual void render() { }
 			inline virtual nlohmann::json save() { return nlohmann::json::object(); }
 
-			inline element(entity* ent) : ent(ent), e(ent->eng) { }
+			inline element(entityRef ent) : ent(ent), e(ent.g) { }
 		};
 	}
 }
