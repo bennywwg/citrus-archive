@@ -1,0 +1,1 @@
+g++ -c citrus/citrus/src/graphics/window/window.cpp -Icitrus/citrus/src -Icpppkg/packages/glm -Icpppkg/packages/glfw/include -Icpppkg/packages/glew/include -Lcpppkg/packages/glew/build -Lcpppkg/packages/glfw/src -lglew -lGL -lglfw3 -lpthread -lX11 -ldl
