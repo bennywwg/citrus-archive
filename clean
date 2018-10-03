@@ -1,0 +1,4 @@
+rm -r tmp
+rm -r bin
+mkdir tmp
+mkdir bin

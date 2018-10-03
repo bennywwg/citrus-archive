@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ ! -d "packages" ]; then
+	mkdir packages
+fi
+
+
+for line in $(cat $1); do
+	dir=$(echo $line | sed 's/^.*\/\(.*\)$/\1/' | sed 's/\.git//')
+	if [ ! -d "packages/$dir" ]; then
+		git -C "packages" clone $line
+	else
+		fetchurl=$(git -C "packages/$dir" remote show origin | sed -e 's/^\s*Fetch URL\: \(.*\)$/\1/;t;d')
+
+		if [[ "$fetchurl" == "$line" ]]; then
+			git -C "packages/$dir" pull
+		else
+			rm -rf "packages/$dir"
+			git -C "packages" clone $line
+		fi
+	fi
+done

@@ -3,7 +3,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <util/util.h>
+#include <glm/ext.hpp>
 #include <dynamics/transform.h>
 #include <dynamics/geometry/geom.h>
 
@@ -20,11 +20,11 @@ namespace citrus {
 
 			void setGimbalAngles(float angleX, float angleY);
 
-			geom::line getRayFromScreenSpace(vec2 ss = vec2(0, 0));
+			geom::line getRayFromScreenSpace(glm::vec2 ss = glm::vec2(0, 0));
 
-			mat4 getViewMatrix();
-			mat4 getProjectionMatrix();
-			mat4 getViewProjectionMatrix();
+			glm::mat4 getViewMatrix();
+			glm::mat4 getProjectionMatrix();
+			glm::mat4 getViewProjectionMatrix();
 		};
 	}
 }

@@ -1,6 +1,6 @@
-#include "window.h"
+#include <graphics/window/window.h>
+#include <util/graphics_h.h>
 
-#include "util/graphics_h.h"
 #include <glm/ext.hpp>
 #include <GLFW/glfw3.h>
 #include <map>

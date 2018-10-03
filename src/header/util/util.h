@@ -4,7 +4,7 @@
 #define UTIL_H
 
 #include <btBulletDynamicsCommon.h>
-#include <glm\ext.hpp>
+#include <glm/ext.hpp>
 #include <vector>
 #include <chrono>
 #include <functional>
