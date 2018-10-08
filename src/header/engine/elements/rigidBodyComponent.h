@@ -34,7 +34,7 @@ namespace citrus {
 				ent->getGlobalTransform() = body->getTransform();
 			}
 
-			rigidBodyComponent(entity* owner) : element(owner) { }
+			rigidBodyComponent(entityRef owner) : element(owner) { }
 		};
 	}
 }

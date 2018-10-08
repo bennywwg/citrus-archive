@@ -21,7 +21,7 @@ namespace citrus {
 			inline virtual void render() { }
 			inline virtual nlohmann::json save() { return nlohmann::json::object(); }
 
-			inline element(entityRef ent) : ent(ent), e(ent.g) { }
+			inline element(entityRef ent) : ent(ent), e(ent.eng()) { }
 		};
 	}
 }

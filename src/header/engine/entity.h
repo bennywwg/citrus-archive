@@ -132,7 +132,7 @@ namespace citrus {
 				return (T*)getElement(typeid(T));
 			}
 			inline element* getElement(const std::type_index& type) const {
-				if(!_initialized) throw std::exception("You can't get an element before initialization");
+				if(!_initialized) throw std::runtime_error("You can't get an element before initialization");
 
 				for(auto& e : _elements)
 					if(e.type == type)
@@ -158,11 +158,11 @@ namespace citrus {
 			public:
 
 			uint64_t id() const {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return _ptr->id;
 			}
 			std::string name() const {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return _ptr->name;
 			}
 			engine* eng() const {
@@ -170,55 +170,55 @@ namespace citrus {
 			}
 
 			inline void setLocalTransform(const transform &trans) {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				_ptr->setLocalTransform(trans);
 			}
 			inline void setLocalPosition(const glm::vec3& pos) {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				_ptr->setLocalPosition(pos);
 			}
 			inline void setLocalOrientation(const glm::quat& ori) {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				_ptr->setLocalOrientation(ori);
 			}
 			inline transform getLocalTransform() const {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return _ptr->getLocalTransform();
 			}
 			inline glm::vec3 getLocalPosition() const {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return _ptr->getLocalPosition();
 			}
 			inline glm::quat getLocalOrientation() const {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return _ptr->getLocalOrientation();
 			}
 			inline transform getGlobalTransform() const {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return _ptr->getGlobalTransform();
 			}
 
 			inline void setParent(entityRef parent) {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				_ptr->setParent(parent._ptr);
 			}
 			inline entityRef getRoot() {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return entityRef(_ptr->getRoot()->_this.lock());
 			}
 			inline entityRef getParent() {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return entityRef(_ptr->getParent()->_this.lock());
 			}
 			inline std::vector<entityRef> getChildren() {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				auto rawChildren = _ptr->getChildren();
 				std::vector<entityRef> res; res.reserve(rawChildren.size());
 				for(auto& child : rawChildren) res.push_back(child->_this.lock());
 				return res;
 			}
 			inline std::vector<entityRef> getAllConnected() {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				auto rawChildren = _ptr->getAllConnected();
 				std::vector<entityRef> res; res.reserve(rawChildren.size());
 				for(auto& child : rawChildren) res.push_back(child->_this.lock());
@@ -226,11 +226,11 @@ namespace citrus {
 			}
 
 			inline bool initialized() const {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return _ptr->initialized();
 			}
 			inline bool destroyed() const {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return _ptr->destroyed();
 			}
 			inline bool valid() const {
@@ -239,11 +239,11 @@ namespace citrus {
 
 			template<typename T> inline T* getElement() const {
 				static_assert(std::is_base_of<element, T>::value, "can only get element if the type is derived from class element");
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return (T*)_ptr->getElement(typeid(T));
 			}
 			inline element* getElement(const std::type_index& type) const {
-				if(!valid()) throw std::exception("Invalid Entity");
+				if(!valid()) throw std::runtime_error("Invalid Entity");
 				return _ptr->getElement(type);
 			}
 

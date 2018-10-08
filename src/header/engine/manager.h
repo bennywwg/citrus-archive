@@ -200,7 +200,7 @@ namespace citrus {
 				for(unsigned int i = 0; i < order.size(); ++i) {
 					for(unsigned int u = 0; u < _order.size(); ++u)
 						if(_order[u] == order[i])
-							throw std::exception("manager can only have one of each type in order");
+							throw std::runtime_error("manager can only have one of each type in order");
 					_order.push_back(order[i]);
 				}
 			}
@@ -270,7 +270,7 @@ namespace citrus {
 							::operator delete(meta.ele);
 							info.toCreate.erase(info.toCreate.begin() + eleIndex);
 						} else {
-							throw std::exception("Couldn't find a certain element that should exist");
+							throw std::runtime_error("Couldn't find a certain element that should exist");
 						}
 					}
 
@@ -349,7 +349,7 @@ namespace citrus {
 						if(found != remappedIDs.end()) {
 							(*it)["ID"] = (*found).second;
 						} else {
-							throw std::exception("did not find mapped ID");
+							throw std::runtime_error("did not find mapped ID");
 						}
 					}
 				});
@@ -366,7 +366,7 @@ namespace citrus {
 			template<class T> inline json referenceElement(entityRef ent) {
 				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
 				auto info = getInfo(typeid(T));
-				if(info == nullptr) throw std::exception("Trying to reference element type that isn't registered");
+				if(info == nullptr) throw std::runtime_error("Trying to reference element type that isn't registered");
 				return json({
 					{"Type", "Element Reference"},
 					{"Name", info->name},
@@ -374,17 +374,17 @@ namespace citrus {
 					});
 			}
 			inline entityRef dereferenceEntity(const json& data) {
-				if(!isEntityReference(data)) throw std::exception(("Tried to derefence invalid entity reference\n" + data.dump(2)).c_str());
+				if(!isEntityReference(data)) throw std::runtime_error(("Tried to derefence invalid entity reference\n" + data.dump(2)).c_str());
 				return findByID(data["ID"].get<uint64_t>());
 			}
 			template<class T> inline T* dereferenceElement(const json& data) {
 				static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
-				if(!isElementReference(data)) throw std::exception(("Tried to derefence invalid element reference\n" + data.dump(2)).c_str());
+				if(!isElementReference(data)) throw std::runtime_error(("Tried to derefence invalid element reference\n" + data.dump(2)).c_str());
 				auto info = getInfo(typeid(T));
-				if(data["Name"] != info->name) throw std::exception(("Tried to derefence element but the template type does not match the json\n" + data.dump(2)).c_str());
+				if(data["Name"] != info->name) throw std::runtime_error(("Tried to derefence element but the template type does not match the json\n" + data.dump(2)).c_str());
 				auto ent = findByID(data["ID"].get<uint64_t>());
-				if(ent == nullptr) throw std::exception("Tried to dereference element but its entity does not exist");
-				if(!ent.initialized()) throw std::exception("Tried to dereference element but its entity is not initialized");
+				if(ent == nullptr) throw std::runtime_error("Tried to dereference element but its entity does not exist");
+				if(!ent.initialized()) throw std::runtime_error("Tried to dereference element but its entity is not initialized");
 				return ent.getElement<T>();
 			}
 			inline bool isEntityReference(const json& data) {
@@ -419,7 +419,7 @@ namespace citrus {
 				for(int i = 0; i < dataEntities.size(); i++)
 					remappedIDs[dataEntities[i]["ID"].get<uint64_t>()] = util::nextID();
 
-				vector<pair<entity*, uint64_t>> parentMap;
+				vector<pair<entityRef, uint64_t>> parentMap;
 				for(int i = 0; i < dataEntities.size(); i++) {
 					json entDesc = dataEntities[i];
 					string name = entDesc["Name"].get<string>();
@@ -449,7 +449,7 @@ namespace citrus {
 			//saves all the entities in the hierarchy of toSave
 			//you must lock entitiesMut or risk UB
 			inline json savePrefabUnsafe(entityRef toSave) {
-				if(toSave == nullptr || !toSave._ref->initialized()) throw std::exception("Cannot save null or uninitialized entity");
+				if(toSave == nullptr || !toSave._ref->initialized()) throw std::runtime_error("Cannot save null or uninitialized entity");
 				vector<entity*> connected = toSave._ref->getAllConnected();
 				json res;
 				res["Entities"] = { };
@@ -550,7 +550,7 @@ namespace citrus {
 					if(entIndex != -1) {
 						_entities.erase(_entities.begin() + entIndex);
 					} else {
-						throw std::exception("failed to find entity in _entities to destroy");
+						throw std::runtime_error("failed to find entity in _entities to destroy");
 					}
 				}
 

@@ -40,9 +40,9 @@ namespace citrus {
 
 			texture(GLint internalFormat, GLint inputFormat, GLint inputType, unsigned int width, unsigned int height, const void* data = nullptr)
 			: _width(width), _height(height), _internalFormat(internalFormat) {
-				if (!isInternalFormat(internalFormat)) throw std::exception("Not an internal format"); 
-				if (!isInputFormat(inputFormat)) throw std::exception("Not an input format");
-				if (!isInputType(inputType)) throw std::exception("Not an input type");
+				if (!isInternalFormat(internalFormat)) throw std::runtime_error("Not an internal format"); 
+				if (!isInputFormat(inputFormat)) throw std::runtime_error("Not an input format");
+				if (!isInputType(inputType)) throw std::runtime_error("Not an input type");
 				glGenTextures(1, &_ptr);
 				glBindTexture(GL_TEXTURE_2D, _ptr);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

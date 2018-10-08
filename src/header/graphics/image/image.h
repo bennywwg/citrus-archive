@@ -6,7 +6,7 @@
 #include <vector>
 #include <string>
 
-#include <glm\ext.hpp>
+#include <glm/ext.hpp>
 
 #include <lodepng/lodepng.h>
 
@@ -48,7 +48,7 @@ namespace citrus {
 			std::vector<P> _data;
 
 			void exceptIfOutOfBounds(unsigned int x, unsigned int y) const {
-				if (x >= _width || y >= _height) throw std::string("Image access out of bounds");
+				if (x >= _width || y >= _height) throw std::runtime_error("Image access out of bounds");
 			}
 
 		public:
@@ -97,7 +97,7 @@ namespace citrus {
 
 			//black image
 			imageT(unsigned int width, unsigned int height) : _width(width), _height(height) {
-				if (width == 0 || height == 0) throw std::string("Width and Height of image must be nonzero");
+				if (width == 0 || height == 0) throw std::runtime_error("Width and Height of image must be nonzero");
 
 				_data.resize(width * height);
 				memset(_data.data(), 0, _data.size() * sizeof(P)); //zero the data
@@ -107,10 +107,10 @@ namespace citrus {
 			imageT(std::string filepath) {
 				std::vector<unsigned char> fileData;
 				lodepng::load_file(fileData, filepath);
-				if (fileData.size() == 0) throw std::exception(("Image file \"" + filepath + "\" is not available or is empty").c_str());
+				if (fileData.size() == 0) throw std::runtime_error(("Image file \"" + filepath + "\" is not available or is empty").c_str());
 
 				std::vector<unsigned char> decodedData;
-				if (lodepng::decode(decodedData, _width, _height, fileData)) throw std::exception(("PNG \"" + filepath + "\" couldn't be decoded").c_str()); 
+				if (lodepng::decode(decodedData, _width, _height, fileData)) throw std::runtime_error(("PNG \"" + filepath + "\" couldn't be decoded").c_str()); 
 
 				//process the decoded data
 				_data.resize(_width * _height);

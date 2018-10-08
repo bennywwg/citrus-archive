@@ -3,9 +3,9 @@
 #ifndef TYPEENUMS_H
 #define TYPEENUMS_H
 
-#include <glm\ext.hpp>
+#include <glm/ext.hpp>
 
-#include "GL\glew.h"
+#include "GL/glew.h"
 
 namespace citrus {
 	namespace graphics {

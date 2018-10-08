@@ -6,6 +6,8 @@
 #include <memory>
 #include <vector>
 
+
+#include <util/graphics_h.h>
 #include <graphics/buffer/indexView.h>
 #include <graphics/buffer/vertexView.h>
 #include <util/glmUtil.h>
@@ -111,7 +113,7 @@ namespace citrus {
 
 			}
 			vertexArray(std::vector<vertexAttribute> attributes, const indexView& indices) : vertexArray(attributes) {
-				if (attributes.size() == 0) throw std::exception("Must have at least one vertex attribute buffer");
+				if (attributes.size() == 0) throw std::runtime_error("Must have at least one vertex attribute buffer");
 
 				_indexbuffer = std::make_unique<indexView>(indices);
 			}

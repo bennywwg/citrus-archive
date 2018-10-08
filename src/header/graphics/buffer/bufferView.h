@@ -51,14 +51,14 @@ namespace citrus {
 			}
 			template<typename T>
 			std::vector<T> unsafe_readbackSubData(size_t localStart, size_t size) const {
-				if (size % sizeof(T) != 0) throw std::exception("rawBufferView unsafe readback failed, incompatible element and request size");
+				if (size % sizeof(T) != 0) throw std::runtime_error("rawBufferView unsafe readback failed, incompatible element and request size");
 				std::vector<T> res;
 				res.resize(size / sizeof(T));
 				readbackSubData(localStart, size, res.data());
 			}
 
 			rawBufferView(buffer* buf, size_t _start, size_t _size) : _buf(buf), _start(_start), _size(_size) {
-				if (end() > _buf->size()) throw std::exception("rawBufferView range is larger than referenced buffer");
+				if (end() > _buf->size()) throw std::runtime_error("rawBufferView range is larger than referenced buffer");
 			}
 			rawBufferView(buffer* buf, size_t _start, size_t _size, const void* _data) : rawBufferView(buf, _start, _size) {
 				bufferSubData(0, size(), _data);

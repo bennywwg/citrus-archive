@@ -1,11 +1,14 @@
 CC = g++
-CCPARAM = -Isrc/header -Iext/header -Iext/bullet -Lext/linux -lglew -lGL -lglfw3 -lpthread -lX11 -ldl -std=c++17
+CCPARAM = -Isrc/header -Iext/header -Iext/bullet -Lext/linux64 -lglew -lGL -lglfw3 -lpthread -lX11 -ldl -std=c++17 -lstdc++fs
 
-all: tmp/window.o tmp/camera.o
+SRC_DIR = src/source
+TMP_DIR = tmp
 
-tmp/window.o:
-	$(CC) -c src/source/graphics/window/window.cpp -o tmp/window.o  $(CCPARAM)
+CPP_FILES = $(wildcard $(SRC_DIR)/*.cpp)
+OBJ_FILES = $(patsubst $(SRC_DIR)/%.cpp,$(TMP_DIR)/%.o,$(CPP_FILES))
 
-tmp/camera.o:
-	$(CC) -c src/source/graphics/camera/camera.cpp -o tmp/camera.o $(CCPARAM)
-	
+bin/citrus: $(OBJ_FILES)
+	$(CC) -o bin/citrus $(CPP_FILES)
+
+$(TMP_DIR)/%.o: $(CPP_FILES)
+	$(CC) -o $@ $< $(CCPARAM)

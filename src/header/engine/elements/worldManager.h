@@ -22,7 +22,7 @@ namespace citrus {
 				w.updateBodyInfo();
 			}
 
-			worldManager(entity* e) : element(e), w() {
+			worldManager(entityRef e) : element(e), w() {
 				
 			}
 		};

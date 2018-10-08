@@ -7,7 +7,7 @@
 #include <btBulletCollisionCommon.h>
 #include <btBulletDynamicsCommon.h>
 
-#include <glm\ext.hpp>
+#include <glm/ext.hpp>
 
 #include <util/util.h>
 #include <dynamics/transform.h>

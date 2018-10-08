@@ -1,7 +1,7 @@
 #ifndef BUFFER_H
 #define BUFFER_H
 
-#include <glm\ext.hpp>
+#include <glm/ext.hpp>
 
 #include <util/graphics_h.h>
 
