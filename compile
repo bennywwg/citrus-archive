@@ -1,9 +1,0 @@
-set -o xtrace
-
-g++\
-	-c src/source/graphics/window/window.cpp\
-	-o tmp/window.o\
-	-Isrc/header\
-	-Iext/header\
-	-Lext/linux\
-	-lglew -lGL -lglfw3 -lpthread -lX11 -ldl

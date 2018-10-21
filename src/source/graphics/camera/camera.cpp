@@ -5,7 +5,6 @@
 
 namespace citrus {
 	namespace engine {
-
 		void camera::setGimbalAngles(float angleX, float angleY) {
 			trans.setOrientation(glm::toQuat(
 				glm::rotate(angleY, glm::vec3(0.0f, 1.0f, 0.0f)) *
