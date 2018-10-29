@@ -1,5 +1,5 @@
 CC = g++
-CCPARAM = -Isrc/header -Iext/header -Iext/bullet -Lext/linux64 -lglew -lGL -lglfw3 -lpthread -lX11 -ldl -std=c++17 -lstdc++fs
+CCPARAM = -Isrc/header -Iext/header -I/usr/include/bullet -I/usr/include/libpng -lglew -lGL -lglfw3 -lpthread -lX11 -ldl -std=c++17 -lstdc++fs
 
 SRC_DIR = src/source
 TMP_DIR = tmp

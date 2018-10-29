@@ -102,7 +102,7 @@ namespace citrus {
 			return nullptr;
 		}
 
-		entity::entity(const std::vector<elementMeta>& toCreate, engine* eng, const std::string& name, const uint64_t id) : _elements(toCreate), name(name), id(id), eng(eng) { }
+		entity::entity(const std::vector<element*>& toCreate, engine* eng, const std::string& name, const uint64_t id) : _elements(toCreate), name(name), id(id), eng(eng) { }
 
 		uint64_t entityRef::id() const {
 			if(!valid()) throw std::runtime_error("Invalid Entity");

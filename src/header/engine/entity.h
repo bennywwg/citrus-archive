@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef ENTITY_H
-#define ENTIYT_H
+#define ENTITY_H
 
 #include <vector>
 #include <typeindex>
@@ -14,13 +14,6 @@ namespace citrus {
 		class element;
 		class engine;
 
-		class elementMeta {
-			public:
-			std::type_index type;
-			element* const ele;
-			inline elementMeta(const std::type_index type, element* ele) : type(type), ele(ele) { }
-		};
-
 		//this class is extremely tightly coupled to manager, modify with caution
 		class entity {
 			friend class manager;
@@ -28,7 +21,7 @@ namespace citrus {
 
 			bool _initialized = false;
 			bool _destroyed = false;
-			const std::vector<elementMeta> _elements;
+			const std::vector<element*> _elements;
 			entity* _parent = nullptr;
 			std::vector<entity*> _children;
 			transform _trans;
@@ -71,7 +64,7 @@ namespace citrus {
 			constexpr static uint64_t nullID = std::numeric_limits<uint64_t>::max();
 
 			private:
-			entity(const std::vector<elementMeta>& toCreate, engine* eng, const std::string& name, const uint64_t id);
+			entity(const std::vector<element*>& toCreate, engine* eng, const std::string& name, const uint64_t id);
 
 		};
 

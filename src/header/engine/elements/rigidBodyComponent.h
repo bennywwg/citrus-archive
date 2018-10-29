@@ -31,10 +31,10 @@ namespace citrus {
 				body.reset(new dynamics::rigidBody(shape.get(), w));
 			}
 			void preRender() {
-				ent->getGlobalTransform() = body->getTransform();
+				ent.setLocalTransform(body->getTransform());
 			}
 
-			rigidBodyComponent(entityRef owner) : element(owner) { }
+			rigidBodyComponent(entityRef owner) : element(owner, typeid(rigidBodyComponent)) { }
 		};
 	}
 }

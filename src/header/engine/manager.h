@@ -86,23 +86,24 @@ namespace citrus {
 					return -1;
 				}
 
-				inline elementInfo() : type(typeid(void)) { }
+				inline elementInfo() : type(typeid(void)) {
+				}
 			};
 			std::map<type_index, elementInfo> _data;
 
 			vector<type_index> _order;
 
-			private: vector<entityRef> _toCreate;
+			private: vector<shared_ptr<entity>> _toCreate;
 			public: std::recursive_mutex toCreateMut;
 
-			private: vector<entityRef> _toDestroy;
+			private: vector<shared_ptr<entity>> _toDestroy;
 			public: std::recursive_mutex toDestroyMut;
 
-			private: vector<entityRef> _entities;
+			private: vector<shared_ptr<entity>> _entities;
 			public: std::recursive_mutex entitiesMut;
 
 			private:
-			inline int findEntity(const vector<entityRef>& entities, const entityRef& ent) {
+			inline int findEntity(const vector<shared_ptr<entity>>& entities, const shared_ptr<entity>& ent) {
 				for(int i = 0; i < entities.size(); ++i)
 					if(entities[i] == ent)
 						return i;
@@ -111,8 +112,6 @@ namespace citrus {
 			}
 
 			//serialization functions
-			
-
 			#pragma region(type support functions)
 			private:
 			//gets the elementInfo for a type if it exists, null if it doesn't exist
@@ -209,12 +208,14 @@ namespace citrus {
 
 			#pragma region(creation deletion functions)
 			private:
+			//expects ele order to be correct and uuid to be unused
 			inline entity* newEntity(string name, const vector<eleInitBase>& orderedData, uint64_t uuid) {
-				vector<elementMeta> types;
+				vector<element*> types;
 				types.reserve(orderedData.size());
 				for(const auto& info : orderedData) {
 					const auto& traits = getInfo(info.type);
-					types.emplace_back(info.type, (element*)(::operator new(traits->size)));
+					//TODO: allocate all next to each other in memory
+					types.emplace_back((element*)(::operator new(traits->size)));
 				}
 
 				return new entity(types, _eng, name, uuid);
@@ -236,13 +237,13 @@ namespace citrus {
 				auto ent = newEntity(name, orderedData, id);
 
 				for(int i = 0; i < ent->_elements.size(); ++i)
-					getInfo(ent->_elements[i].type)->toCreate.emplace_back(ent->_elements[i].ele, ent, orderedData[i].data);
+					getInfo(ent->_elements[i]->_type)->toCreate.emplace_back(ent->_elements[i]->_type, ent->_elements[i], ent, orderedData[i].data);
 
 				std::shared_ptr<entity> sp(ent);
 
 				_toCreate.push_back(sp);
 
-				return sp;
+				return entityRef(sp);
 			}
 
 			//queue an object for deletion
@@ -259,15 +260,15 @@ namespace citrus {
 				entity* rent = ent._ptr;
 
 				//try and remove ent from the _toCreate list if its in it
-				int entIndex = findEntity(_toCreate, ent._ref);
+				int entIndex = findEntity(_toCreate, ent._ref.lock());
 				if(entIndex != -1) {
 					//if ent is in _toCreate, also remove the elements from their lists
-					for(auto& meta : rent->_elements) {
-						auto& info = *getInfo(meta.type);
+					for(element* ele : rent->_elements) {
+						auto& info = *getInfo(ele->_type);
 
-						int eleIndex = info.findInToCreate(meta.ele);
+						int eleIndex = info.findInToCreate(ele);
 						if(eleIndex != -1) {
-							::operator delete(meta.ele);
+							::operator delete(ele);
 							info.toCreate.erase(info.toCreate.begin() + eleIndex);
 						} else {
 							throw std::runtime_error("Couldn't find a certain element that should exist");
@@ -276,18 +277,16 @@ namespace citrus {
 
 					_toCreate.erase(_toCreate.begin() + entIndex);
 
-					delete rent;
-
 					return;
 				}
 
 				//if it's already in _toDestroy, just do nothing
-				if(findEntity(_toDestroy, ent._ref) != -1) return;
+				if(findEntity(_toDestroy, ent._ref.lock()) != -1) return;
 
 				//otherwise add it and all of its elements to _toDestroy
-				_toDestroy.push_back(ent._ref);
-				for(auto& meta : rent->_elements)
-					getInfo(meta.type)->toDestroy.emplace_back(meta.ele, ent);
+				_toDestroy.push_back(ent._ref.lock());
+				for(element* ele : rent->_elements)
+					getInfo(ele->_type)->toDestroy.emplace_back(ele, ent);
 			}
 			#pragma endregion
 
@@ -314,18 +313,18 @@ namespace citrus {
 			inline vector<entityRef> allEntities() {
 				std::lock_guard<std::recursive_mutex> lock(entitiesMut);
 				vector<entityRef> res; res.reserve(_entities.size());
-				for(auto& sp : _entities) res.push_back(sp);
+				for(auto& sp : _entities) res.emplace_back(sp);
 				return res;
 			}
 
 			inline entityRef findByIDUnsafe(uint64_t uuid) {
 				if(uuid == entity::nullID) return entityRef::null();
-				for(auto ent : _entities)
-					if(ent._ptr->id == uuid)
-						return ent;
-				for(auto ent : _toCreate)
-					if(ent._ptr->id == uuid)
-						return ent;
+				for(shared_ptr<entity>& ent : _entities)
+					if(ent->id == uuid)
+						return entityRef(ent);
+				for(shared_ptr<entity>& ent : _toCreate)
+					if(ent->id == uuid)
+						return entityRef(ent);
 				return entityRef::null();
 			}
 			inline entityRef findByID(uint64_t uuid) {
@@ -419,7 +418,7 @@ namespace citrus {
 				for(int i = 0; i < dataEntities.size(); i++)
 					remappedIDs[dataEntities[i]["ID"].get<uint64_t>()] = util::nextID();
 
-				vector<pair<entityRef, uint64_t>> parentMap;
+				vector<pair<shared_ptr<entity>, uint64_t>> parentMap;
 				for(int i = 0; i < dataEntities.size(); i++) {
 					json entDesc = dataEntities[i];
 					string name = entDesc["Name"].get<string>();
@@ -449,21 +448,21 @@ namespace citrus {
 			//saves all the entities in the hierarchy of toSave
 			//you must lock entitiesMut or risk UB
 			inline json savePrefabUnsafe(entityRef toSave) {
-				if(toSave == nullptr || !toSave._ref->initialized()) throw std::runtime_error("Cannot save null or uninitialized entity");
-				vector<entity*> connected = toSave._ref->getAllConnected();
+				if(toSave == nullptr || !toSave.initialized()) throw std::runtime_error("Cannot save null or uninitialized entity");
+				vector<entityRef> connected = toSave.getAllConnected();
 				json res;
 				res["Entities"] = { };
-				for(entity* ent : connected) {
+				for(entityRef ent : connected) {
 					json entElements;
-					for(auto& ele : ent->_elements) {
-						entElements[getInfo(ele.type)->name] = ele.ele->save();
+					for(element* ele : ent._ptr->_elements) {
+						entElements[getInfo(ele->_type)->name] = ele->save();
 					}
 
 					json entDescriptor({
-						{"Name", ent->name},
-						{"ID", ent->id},
-						{"Parent", ent->_parent == nullptr ? entity::nullID : ent->_parent->id},
-						{"Transform", util::save(ent->getLocalTransform())},
+						{"Name", ent.name()},
+						{"ID", ent.id()},
+						{"Parent", ent.getParent() == nullptr ? entity::nullID : ent.getParent().id()},
+						{"Transform", util::save(ent.getLocalTransform())},
 						{"Elements", entElements}
 						});
 
@@ -518,9 +517,9 @@ namespace citrus {
 				}
 
 				//add newly created entities
-				for(const auto& ent : _toCreate) {
+				for(shared_ptr<entity>& ent : _toCreate) {
 					_entities.push_back(ent);
-					ent._ref->_initialized = true;
+					ent->_initialized = true;
 				}
 
 				//clear entity toCreate list
@@ -582,11 +581,7 @@ namespace citrus {
 					info.toDestroy.clear();
 				}
 
-				//deallocate memory for all entities
-				for(const auto& ent : _toDestroy) {
-					delete ent._ptr;
-				}
-
+				//deallocate memory for all entities and ...
 				//clear entity toDestroy list
 				_toDestroy.clear();
 			}
@@ -597,7 +592,7 @@ namespace citrus {
 			public:
 			inline manager(engine* eng) : _eng(eng) { }
 			inline ~manager() {
-				
+				throw std::runtime_error("You need to implement this");	
 			}
 
 			private:

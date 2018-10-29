@@ -8,7 +8,7 @@
 
 #include <glm/ext.hpp>
 
-#include <lodepng/lodepng.h>
+#include <graphics/image/pngutil.h>
 
 #include <util/typeEnums.h>
 #include <util/util.h>
@@ -105,12 +105,13 @@ namespace citrus {
 
 			//image loaded from png
 			imageT(std::string filepath) {
-				std::vector<unsigned char> fileData;
-				lodepng::load_file(fileData, filepath);
-				if (fileData.size() == 0) throw std::runtime_error(("Image file \"" + filepath + "\" is not available or is empty").c_str());
-
 				std::vector<unsigned char> decodedData;
-				if (lodepng::decode(decodedData, _width, _height, fileData)) throw std::runtime_error(("PNG \"" + filepath + "\" couldn't be decoded").c_str()); 
+
+				int width = 0, height = 0;
+				bool hasAlpha = false;
+				if(!loadPngImage(filepath.c_str(), width, height, hasAlpha, decodedData)) {
+					throw std::runtime_error(("Image file \"" + filepath + "\" is not available or is empty").c_str());
+				}
 
 				//process the decoded data
 				_data.resize(_width * _height);

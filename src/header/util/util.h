@@ -3,7 +3,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <btBulletDynamicsCommon.h>
+#include <bullet/btBulletDynamicsCommon.h>
 #include <glm/ext.hpp>
 #include <vector>
 #include <chrono>
