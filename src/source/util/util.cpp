@@ -1,11 +1,11 @@
 #include <GLFW/glfw3.h>
 
-#include "util.h"
-#include "glmUtil.h"
-#include "stdUtil.h"
+#include <util/util.h>
+#include <util/glmUtil.h>
+#include <util/stdUtil.h>
 
 namespace citrus {
-	namespace util { 
+	namespace util {
 		mutex _soutMut;
 		mutex _idMut;
 		int _currentID = 0;
@@ -16,7 +16,7 @@ namespace citrus {
 			return _currentID;
 		}
 
-		vec3 btToGlm(btVector3 vec) {
+		/*vec3 btToGlm(btVector3 vec) {
 			return vec3(vec.x(), vec.y(), vec.z());
 		}
 		btVector3 glmToBt(vec3 vec) {
@@ -37,7 +37,7 @@ namespace citrus {
 				btVerts[i] = btVector3(verts[i].x, verts[i].y, verts[i].z);
 			}
 			return btVerts;
-		}
+		}*/
 
 		bool isPowerOfTwo(unsigned int val) {
 			return (val != 0) && ((val & (val - 1)) == 0);
@@ -45,9 +45,9 @@ namespace citrus {
 
 		string loadEntireFile(string path) {
 			std::ifstream f(path);
-			string res;
+			string res;	
 			f.seekg(0, std::ios::end);
-			res.reserve(f.tellg());
+			res.reserve(size_t(f.tellg()));
 			f.seekg(0, std::ios::beg);
 			res.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
 			return res;

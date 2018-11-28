@@ -1,4 +1,4 @@
-#include "transform.h"
+#include <dynamics/transform.h>
 
 namespace citrus {
 	namespace engine {
@@ -25,7 +25,7 @@ namespace citrus {
 		transform transform::operator*(const transform & rhs) const {
 			return getMat() * rhs.getMat();
 		}
-		transform::transform() { }
+		transform::transform() : _position(0.0f, 0.0f, 0.0f), _orientation() { }
 		transform::transform(mat4 mat) : _position(glm::vec3(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f) * mat)), _orientation(glm::toQuat(mat)) { }
 		transform::transform(vec3 position, quat orientation) : _position(position), _orientation(orientation) { }
 	}

@@ -5,7 +5,7 @@ namespace citrus {
 	namespace graphics {
 		//clears the provided vector and fills it with image data if
 		//the loading operation is successful
-		bool loadPngImage(const char *name, int &outWidth, int &outHeight, bool &outHasAlpha, std::vector<unsigned char>& res) {
+		inline bool loadPngImage(const char *name, int &outWidth, int &outHeight, bool &outHasAlpha, std::vector<unsigned char>& res) {
 			res.clear();
 			png_structp png_ptr;
 			png_infop info_ptr;
@@ -95,8 +95,8 @@ namespace citrus {
 			int bit_depth;
 			png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type,
 				         &interlace_type, NULL, NULL);
-			outWidth = width;
-			outHeight = height;
+			outWidth = int(width);
+			outHeight = int(height);
 		 
 			unsigned int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 			res.resize(outHeight * outWidth * 3);

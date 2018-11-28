@@ -1,7 +1,7 @@
 #include <engine/engine.h>
 #include <engine/elements/renderManager.h>
 
-#include <openvr/openvr.h>
+//#include <openvr/openvr.h>
 
 namespace citrus {
 	namespace engine {
@@ -16,7 +16,7 @@ namespace citrus {
 			return info;
 		}
 		weak_ptr<renderManager::shaderInfo> renderManager::getShader(string name) {
-			for(int i = 0; i < _shaders.size(); i++) {
+			for(int i = 0; i < (int)_shaders.size(); i++) {
 				if(_shaders[i]->name == name) return _shaders[i];
 			}
 			return _invalid;
@@ -24,7 +24,7 @@ namespace citrus {
 		
 		void renderManager::flushShaders() {
 			std::lock_guard<mutex> lock(_shadersMut);
-			for(int i = 0; i < _shaders.size(); i++) {
+			for(int i = 0; i < (int)_shaders.size(); i++) {
 				shared_ptr<shaderInfo> info = _shaders[i];
 				if(info->sh == nullptr) {
 					if(info->geomFile == "")
@@ -53,11 +53,7 @@ namespace citrus {
 			camRef = e->man->dereferenceElement<freeCam>(parsed["cam"]);
 		}
 		nlohmann::json renderManager::save() const {
-			return nlohmann::json({
-				{"test", 5},
-				{"test2", e->man->referenceEntity(ent)},
-				{"test3", e->man->referenceElement<renderManager>(ent) }
-			});
+			return nlohmann::json();
 		}
 
 		void renderManager::onCreate() {
@@ -78,7 +74,7 @@ namespace citrus {
 			standardFBO->bind();
 			standardFBO->clearAll();
 			_shaders[0]->sh->use();
-			glm::mat4 projectionViewMat = camRef->cam.getViewProjectionMatrix();
+			glm::mat4 projectionViewMat = (*camRef).cam.getViewProjectionMatrix();
 			for(auto ent : e->man->allEntities()) {
 				_shaders[0]->sh->setUniform("modelViewProjectionMat", projectionViewMat * ent.getGlobalTransform().getMat());
 				graphics::vertexArray::drawOne();
@@ -89,10 +85,10 @@ namespace citrus {
 			textFBO->bind();
 			textFBO->clearAll();
 			auto str = save().dump(2);
-			font.streamText(this->save().dump(2), camRef->cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
+			font.streamText(this->save().dump(2), (*camRef).cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
 			textFBO->unbind();
 
-			auto screen = graphics::frameBuffer(win);
+			graphics::frameBuffer screen(win);
 			screen.bind();
 			screen.clearAll();
 			composite->use();
@@ -115,8 +111,9 @@ namespace citrus {
 			//vr::VR_Shutdown();
 		}
 
-		renderManager::renderManager(entity* ent) :
-			font("resources\\textures\\consolas1024x1024.png", 16, 16), element(ent) {
+		renderManager::renderManager(entityRef ent) :
+			font("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\consolas1024x1024.png", 16, 16),
+			element(ent, std::type_index(typeid(renderManager))) {
 
 			auto win = e->getWindow();
 			auto size = win->framebufferSize();

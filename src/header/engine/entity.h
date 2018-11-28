@@ -8,13 +8,12 @@
 #include <memory>
 
 #include <dynamics/transform.h>
+#include <engine/element.h>
 
 namespace citrus {
 	namespace engine {
-		class element;
 		class engine;
 
-		//this class is extremely tightly coupled to manager, modify with caution
 		class entity {
 			friend class manager;
 			friend class entityRef;
@@ -80,31 +79,29 @@ namespace citrus {
 			std::string name() const;
 			engine* eng() const;
 
-			void setLocalTransform(const transform &trans);
-			void setLocalPosition(const glm::vec3& pos);
-			void setLocalOrientation(const glm::quat& ori);
+			void setLocalTransform(const transform &trans) const;
+			void setLocalPosition(const glm::vec3& pos) const;
+			void setLocalOrientation(const glm::quat& ori) const;
 			transform getLocalTransform() const;
 			glm::vec3 getLocalPosition() const;
 			glm::quat getLocalOrientation() const;
 			transform getGlobalTransform() const;
 
-			void setParent(entityRef parent);
-			entityRef getRoot();
-			entityRef getParent();
-			std::vector<entityRef> getChildren();
-			std::vector<entityRef> getAllConnected();
+			void setParent(entityRef parent) const;
+			entityRef getRoot() const;
+			entityRef getParent() const;
+			std::vector<entityRef> getChildren() const;
+			std::vector<entityRef> getAllConnected() const;
 
 			bool initialized() const;
 			bool destroyed() const;
 			bool valid() const;
 
-			template<typename T>
-			inline T* getElement() const {
+			template<class T>
+			inline eleRef<T> getElement() {
 				static_assert(std::is_base_of<element, T>::value, "can only get element if the type is derived from class element");
-				if(!valid()) throw std::runtime_error("Invalid Entity");
-				return (T*)_ptr->getElement(typeid(T));
+				return eleRef<T>(*this);
 			}
-			element* getElement(const std::type_index& type) const;
 
 			/*entityRef(const entityRef& other) : entityRef(other._ref) { }
 			entityRef(entityRef&& other) : _ptr(other._ptr), _ref(std::move(other._ref)) { }

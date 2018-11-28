@@ -22,6 +22,8 @@ namespace citrus {
 			};
 			shared_ptr<shaderInfo> _invalid;
 
+		public:
+
 			std::string text;
 
 			tilemapFont font;
@@ -32,7 +34,7 @@ namespace citrus {
 
 			vector<shared_ptr<shaderInfo>> _shaders;
 			mutex _shadersMut;
-			freeCam* camRef;
+			eleRef<freeCam> camRef;
 			public:
 
 			weak_ptr<shaderInfo> loadShader(string shaderName, string vertFile, string geomFile, string fragFile);
@@ -47,7 +49,7 @@ namespace citrus {
 			void render();
 			void onDestroy();
 
-			renderManager(entity* ent);
+			renderManager(entityRef ent);
 		};
 	}
 }

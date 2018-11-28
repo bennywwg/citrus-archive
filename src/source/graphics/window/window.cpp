@@ -129,9 +129,11 @@ namespace citrus {
 
 			glfwSwapInterval(0);
 
+			memset(_buttonStates, 0, sizeof(_buttonStates));
+
 			_adapter = std::string((char*)glGetString(GL_RENDERER));
 		}
-		window::window() {
+		window::~window() {
 			glfwDestroyWindow(_win);
 		}
 	}

@@ -1,4 +1,5 @@
 #include <engine/entity.h>
+#include <engine/element.h>
 
 namespace citrus {
 	namespace engine {
@@ -95,18 +96,19 @@ namespace citrus {
 		element* entity::getElement(const std::type_index& type) const {
 			if(!_initialized) throw std::runtime_error("You can't get an element before initialization");
 
-			for(auto& e : _elements)
-				if(e.type == type)
-					return e.ele;
+			for(element* e : _elements)
+				if(e->_type == type)
+					return e;
 
 			return nullptr;
 		}
 
-		entity::entity(const std::vector<element*>& toCreate, engine* eng, const std::string& name, const uint64_t id) : _elements(toCreate), name(name), id(id), eng(eng) { }
+		entity::entity(const std::vector<element*>& toCreate, engine* eng, const std::string& name, const uint64_t id) : _elements(toCreate), name(name), id(id), eng(eng) {
+			this->_trans = transform();
+		}
 
 		uint64_t entityRef::id() const {
-			if(!valid()) throw std::runtime_error("Invalid Entity");
-			return _ptr->id;
+			return (!_ref.expired()) ? _ptr->id : nullID;
 		}
 		std::string entityRef::name() const {
 			if(!valid()) throw std::runtime_error("Invalid Entity");
@@ -116,15 +118,15 @@ namespace citrus {
 			return _ptr->eng;
 		}
 
-		void entityRef::setLocalTransform(const transform &trans) {
+		void entityRef::setLocalTransform(const transform &trans) const {
 			if(!valid()) throw std::runtime_error("Invalid Entity");
 			_ptr->setLocalTransform(trans);
 		}
-		void entityRef::setLocalPosition(const glm::vec3& pos) {
+		void entityRef::setLocalPosition(const glm::vec3& pos) const {
 			if(!valid()) throw std::runtime_error("Invalid Entity");
 			_ptr->setLocalPosition(pos);
 		}
-		void entityRef::setLocalOrientation(const glm::quat& ori) {
+		void entityRef::setLocalOrientation(const glm::quat& ori) const {
 			if(!valid()) throw std::runtime_error("Invalid Entity");
 			_ptr->setLocalOrientation(ori);
 		}
@@ -145,26 +147,26 @@ namespace citrus {
 			return _ptr->getGlobalTransform();
 		}
 
-		void entityRef::setParent(entityRef parent) {
+		void entityRef::setParent(entityRef parent) const {
 			if(!valid()) throw std::runtime_error("Invalid Entity");
 			_ptr->setParent(parent._ptr);
 		}
-		entityRef entityRef::getRoot() {
+		entityRef entityRef::getRoot() const {
 			if(!valid()) throw std::runtime_error("Invalid Entity");
 			return entityRef(_ptr->getRoot()->_this.lock());
 		}
-		entityRef entityRef::getParent() {
+		entityRef entityRef::getParent() const {
 			if(!valid()) throw std::runtime_error("Invalid Entity");
 			return entityRef(_ptr->getParent()->_this.lock());
 		}
-		std::vector<entityRef> entityRef::getChildren() {
+		std::vector<entityRef> entityRef::getChildren() const {
 			if(!valid()) throw std::runtime_error("Invalid Entity");
 			vector<entity*> rawChildren = _ptr->getChildren();
 			vector<entityRef> res; res.reserve(rawChildren.size());
 			for(entity* child : rawChildren) res.push_back(entityRef(child->_this));
 			return res;
 		}
-		std::vector<entityRef> entityRef::getAllConnected() {
+		std::vector<entityRef> entityRef::getAllConnected() const {
 			if(!valid()) throw std::runtime_error("Invalid Entity");
 			vector<entity*> rawChildren = _ptr->getAllConnected();
 			vector<entityRef> res; res.reserve(rawChildren.size());
@@ -182,11 +184,6 @@ namespace citrus {
 		}
 		bool entityRef::valid() const {
 			return !_ref.expired() && _ptr->valid();
-		}
-
-		element* entityRef::getElement(const std::type_index& type) const {
-			if(!valid()) throw std::runtime_error("Invalid Entity");
-			return _ptr->getElement(type);
 		}
 
 		entityRef entityRef::null() {

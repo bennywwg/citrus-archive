@@ -26,7 +26,7 @@ namespace citrus {
 				tiles.reserve(text.size());
 				int column = 0;
 				int row = 0;
-				for(int i = 0; i < text.size(); i++) {
+				for(uint32_t i = 0; i < text.size(); i++) {
 					if(text[i] == '\n') {
 						row++;
 						column = 0;
@@ -34,7 +34,7 @@ namespace citrus {
 					}
 					positions.push_back(glm::vec2(column, -row));
 
-					tiles.push_back(glm::vec2((((unsigned char)text[i]) % 16 + 0.5f) / 16.0f, (((unsigned char)text[i]) / 16 + 0.5f) / 16.0f));
+					tiles.push_back(glm::vec2((((unsigned char)text[i]) % 16 + 0.5f) / 16.0f, - (((unsigned char)text[i]) / 16 + 0.5f) / 16.0f));
 					column++;
 				}
 
@@ -91,24 +91,24 @@ namespace citrus {
 					"out vec2 fTile;\n"
 					""
 					"void main() {\n"
-					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(0.5, 0.5), 0.0, 1.0);\n"
+					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(0.5, -0.5), 0.0, 1.0);\n"
 					"  fTile = gTile[0] + vec2(tileX, -tileY);\n"
 					"  EmitVertex();\n"
-					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(-0.5, 0.5), 0.0, 1.0);\n"
+					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(-0.5, -0.5), 0.0, 1.0);\n"
 					"  fTile = gTile[0] + vec2(-tileX, -tileY);\n"
 					"  EmitVertex();\n"
-					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(0.5, -0.5), 0.0, 1.0);\n"
+					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(0.5, 0.5), 0.0, 1.0);\n"
 					"  fTile = gTile[0] + vec2(tileX, tileY);\n"
 					"  EmitVertex();\n"
 					"  EndPrimitive();\n"
 					""
-					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(-0.5, 0.5), 0.0, 1.0);\n"
+					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(-0.5, -0.5), 0.0, 1.0);\n"
 					"  fTile = gTile[0] + vec2(-tileX, -tileY);\n"
 					"  EmitVertex();\n"
-					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(-0.5, -0.5), 0.0, 1.0);\n"
+					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(-0.5, 0.5), 0.0, 1.0);\n"
 					"  fTile = gTile[0] + vec2(-tileX, tileY);\n"
 					"  EmitVertex();\n"
-					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(0.5, -0.5), 0.0, 1.0);\n"
+					"  gl_Position = modelViewProjectionMat * vec4(gPos[0] + vec2(0.5, 0.5), 0.0, 1.0);\n"
 					"  fTile = gTile[0] + vec2(tileX, tileY);\n"
 					"  EmitVertex();\n"
 					"  EndPrimitive();\n"

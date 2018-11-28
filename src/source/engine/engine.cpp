@@ -67,6 +67,8 @@ namespace citrus {
 						_win->swapBuffers();
 					}
 					fpsSample++;
+
+					std::this_thread::sleep_for(std::chrono::milliseconds(10));
 				}
 			} catch(std::exception ex) {
 				Log("Unrecoverable Error in Render Thread: " + std::string(ex.what()));

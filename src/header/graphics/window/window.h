@@ -7,6 +7,7 @@
 #include <functional>
 
 #include <glm/ext.hpp>
+#include <iostream>
 
 struct GLFWwindow;
 
@@ -122,7 +123,7 @@ namespace citrus {
 			string getAdapter();
 
 			window(unsigned int width, unsigned int height, std::string title);
-			window();
+			~window();
 
 			private:
 			window(const window&) = delete;

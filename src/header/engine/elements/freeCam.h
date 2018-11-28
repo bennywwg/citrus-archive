@@ -16,7 +16,7 @@ namespace citrus {
 			void preRender();
 			void render();
 
-			freeCam(entity* ent);
+			freeCam(entityRef ent);
 		};
 	}
 }

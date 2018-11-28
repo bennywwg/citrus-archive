@@ -44,7 +44,7 @@ namespace citrus {
 			using T = decltype(((P*)nullptr)->r);
 
 		private:
-			unsigned int _width, _height;
+			int _width, _height;
 			std::vector<P> _data;
 
 			void exceptIfOutOfBounds(unsigned int x, unsigned int y) const {
@@ -107,9 +107,8 @@ namespace citrus {
 			imageT(std::string filepath) {
 				std::vector<unsigned char> decodedData;
 
-				int width = 0, height = 0;
 				bool hasAlpha = false;
-				if(!loadPngImage(filepath.c_str(), width, height, hasAlpha, decodedData)) {
+				if(!loadPngImage(filepath.c_str(), _width, _height, hasAlpha, decodedData)) {
 					throw std::runtime_error(("Image file \"" + filepath + "\" is not available or is empty").c_str());
 				}
 
@@ -120,21 +119,21 @@ namespace citrus {
 					memcpy(_data.data(), decodedData.data(), decodedData.size()); //if both are the same component size just copy
 				} else {
 					if (std::is_integral<T>::value) { //copy value
-						for (int i = 0; i < _data.size(); i++) {
+						for (uint32_t i = 0; i < _data.size(); i++) {
 							for (int u = 0; u < sizeof(P) && u < 4; u++) {
 								((T*)&_data[i])[u] = decodedData[i * 4 + u];
 							}
 						}
 					} else if (std::is_floating_point<T>::value) { //normalize to range [0,1]
-						for (int i = 0; i < _data.size(); i++) {
-							for (int u = 0; u < sizeof(P) && u < 4; u++) {
+						for (uint32_t i = 0; i < _data.size(); i++) {
+							for (uint32_t u = 0; u < sizeof(P) && u < 4; u++) {
 								unsigned char decodedVal = decodedData[i * 4 + u];
 								((T*)&_data[i])[u] = T(decodedVal) / T(255);
 							}
 						}
 					} else {
-						for (int i = 0; i < _data.size(); i++) { //use constructor taking unsigned char
-							for (int u = 0; u < sizeof(P) && u < 4; u++) {
+						for (int i = 0; i < (int) _data.size(); i++) { //use constructor taking unsigned char
+							for (uint32_t u = 0; u < sizeof(P) && u < 4; u++) {
 								unsigned char decodedVal = decodedData[i * 4 + u];
 								((T*)&_data[i])[u] = T(decodedVal);
 							}

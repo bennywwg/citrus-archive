@@ -3,7 +3,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <bullet/btBulletDynamicsCommon.h>
+//#include <bullet/btBulletDynamicsCommon.h>
 #include <glm/ext.hpp>
 #include <vector>
 #include <chrono>
@@ -11,6 +11,8 @@
 #include <mutex>
 #include <util/json.h>
 #include <dynamics/transform.h>
+#include <iomanip>
+#include <sstream>
 
 namespace citrus {
 	namespace util {
@@ -19,7 +21,7 @@ namespace citrus {
 
 		int nextID();
 
-		std::vector<btVector3> glmToBtVector(const std::vector<glm::vec3>& verts);
+		//std::vector<btVector3> glmToBtVector(const std::vector<glm::vec3>& verts);
 
 		void spin_until(std::function<bool()> func, std::chrono::microseconds wait = std::chrono::microseconds(50));
 
@@ -97,6 +99,12 @@ namespace citrus {
 					f(it);
 				}
 			}
+		}
+
+		inline std::string toString(glm::vec3 vec, int precision = 3) {
+			std::stringstream ss;
+			ss << std::fixed << std::setfill('0') << std::setw(8) << std::setprecision(3) << "<" << vec.x << ", " << vec.y << ", " << vec.z << ">";
+			return ss.str();
 		}
 	}
 }

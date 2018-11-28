@@ -9,6 +9,8 @@ namespace citrus {
 	namespace engine {
 		using namespace graphics;
 
+
+
 		void freeCam::preRender() {
 			vec3 yPlaneMovement(
 				(e->getKey(windowInput::a) ? -1.0f : 0.0f) + (e->getKey(windowInput::d) ? 1.0f : 0.0f),
@@ -20,9 +22,9 @@ namespace citrus {
 			if(e->getKey(windowInput::escape))
 				e->stop();
 
-			glm::vec3 pos = ent->getGlobalTransform().getPosition() + yPlaneMovement;
+			glm::vec3 pos = ent.getGlobalTransform().getPosition() + yPlaneMovement;
 
-			ent->setLocalPosition(pos);
+			ent.setLocalPosition(pos);
 			// util::sout(std::to_string(pos.x) + ", " + std::to_string(pos.y) + ", " + std::to_string(pos.z));
 
 			//transformComponent& trans = *getOwner()->getComponent<transformComponent>().lock();
@@ -33,6 +35,6 @@ namespace citrus {
 		void freeCam::render() {
 
 		}
-		freeCam::freeCam(entity* ent) : element(ent) { }
+		freeCam::freeCam(entityRef ent) : element(ent, typeid(freeCam)) { }
 	}
 }

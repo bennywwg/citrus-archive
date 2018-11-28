@@ -10,6 +10,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <sstream>
+
 using namespace citrus;
 
 void initializeGLFW() {
@@ -20,14 +22,7 @@ void terminateGLFW() {
 }
 
 int main(int argc, char **argv) {
-
-	std::ifstream t("resources\\testLoad.json");
-	std::string str((std::istreambuf_iterator<char>(t)),
-		std::istreambuf_iterator<char>());
-	json test = json::parse(str);
-
-
-	util::sout("Citrus 0.0.0\n");
+	util::sout("Citrus 0.0.0 - PRIVATE DEVELOPMENT BUILD - DO NOT DISTRIBUTE\n");
 
 	initializeGLFW();
 	
@@ -37,34 +32,38 @@ int main(int argc, char **argv) {
 		
 
 
-		e.man->registerType<engine::worldManager>("World Manager");
-		e.man->registerType<engine::rigidBodyComponent>("Rigid Body");
+		//e.man->registerType<engine::worldManager>("World Manager");
+		//e.man->registerType<engine::rigidBodyComponent>("Rigid Body");
 		e.man->registerType<engine::renderManager>("Render Manager");
 		e.man->registerType<engine::freeCam>("Free Cam");
 		e.man->setOrder({
-			typeid(engine::worldManager),
-			typeid(engine::rigidBodyComponent),
+			//typeid(engine::worldManager),
+			//typeid(engine::rigidBodyComponent),
 			typeid(engine::freeCam),
 			typeid(engine::renderManager)
 		});
-		auto cam = e.man->create("Test", {
-			engine::eleInit<engine::freeCam>({})
+		auto cam2 = e.man->create("Test 2", {
+			engine::eleInit<engine::freeCam>::run(
+				[](engine::freeCam& c) {
+					c.cam.aspectRatio = 16.0f / 9.0f;
+					c.cam.zFar = 1500.0f;
+				}
+			)
 		}, util::nextID());
-
 		e.man->create("Renderer", {
-			engine::eleInit<engine::renderManager>(nlohmann::json({
-				{"text", "test"},
-				{"cam", e.man->referenceElement<engine::freeCam>(cam)}
-			}))
+			engine::eleInit<engine::renderManager>::run(
+				[=](engine::renderManager& man) {
+					man.camRef = cam2.getElement<engine::freeCam>();
+					man.text = "this is a test of the text";
+				}
+			)
 		}, util::nextID());
-		auto world = e.man->create("World", {engine::eleInit<engine::worldManager>({})}, util::nextID());
+		/*auto world = e.man->create("World", {engine::eleInit<engine::worldManager>({})}, util::nextID());
 		e.man->create("Object", {
 			engine::eleInit<engine::rigidBodyComponent>(nlohmann::json({
 				{"world", e.man->referenceElement<engine::worldManager>(world)}
 			}))
-		}, util::nextID());
-
-		e.man->loadPrefab(test);
+		}, util::nextID());*/
 
 		e.start();
 
@@ -76,20 +75,25 @@ int main(int argc, char **argv) {
 
 		//e.man->loadPrefabUnsafe(savedJS);
 
-		
 		while(!e.stopped()) {
 			std::string line;
-			std::cout << ">";
+			std::cout << "citrus $ ";
 			std::getline(std::cin, line);
 
 			if(line == "save") {
-				json savedJS = e.man->savePrefab(world);
-				std::string saved = savedJS.dump(2);
+				//json savedJS = e.man->savePrefab(world);
+				//std::string saved = savedJS.dump(2);
 			} else if(line == "log") {
 				for(auto l : e.flushLog()) {
 					std::stringstream ss;
 					ss << std::fixed << std::setfill('0') << std::setw(8) << std::setprecision(3) << l.first;
 					util::sout(ss.str() + ": " + l.second + "\n");
+				}
+			} else if(line == "obj") {
+				for(auto ent : e.man->allEntities()) {
+					glm::vec3 pos = ent.getGlobalTransform().getPosition();
+					util::sout(ent.name() + util::toString(pos) + "\n");
+					
 				}
 			} else if(line == "exit" || line == "stop") {
 				e.stop();
@@ -106,7 +110,6 @@ int main(int argc, char **argv) {
 
 	util::sout("Done\n");
 
-	//std::cin.get();
 	return 0;
 
 
