@@ -8,6 +8,11 @@
 #include <engine/elements/worldManager.h>
 #include <engine/elements/rigidBodyComponent.h>
 
+#include <engine/entityRef.inl>
+#include <engine/elementRef.inl>
+#include <engine/manager.inl>
+using citrus::engine::entityRef;
+
 #include <GLFW/glfw3.h>
 
 #include <sstream>
@@ -30,8 +35,6 @@ int main(int argc, char **argv) {
 		util::scopedProfiler* prof = new util::scopedProfiler("Initializing Engine");
 		engine::engine e(1.0 / 100.0);
 		
-
-
 		//e.man->registerType<engine::worldManager>("World Manager");
 		//e.man->registerType<engine::rigidBodyComponent>("Rigid Body");
 		e.man->registerType<engine::renderManager>("Render Manager");
@@ -42,7 +45,9 @@ int main(int argc, char **argv) {
 			typeid(engine::freeCam),
 			typeid(engine::renderManager)
 		});
-		auto cam2 = e.man->create("Test 2", {
+
+
+		entityRef cam2 = e.man->create("Test 2", {
 			engine::eleInit<engine::freeCam>::run(
 				[](engine::freeCam& c) {
 					c.cam.aspectRatio = 16.0f / 9.0f;
@@ -50,14 +55,18 @@ int main(int argc, char **argv) {
 				}
 			)
 		}, util::nextID());
+
+
 		e.man->create("Renderer", {
 			engine::eleInit<engine::renderManager>::run(
-				[=](engine::renderManager& man) {
+				[&cam2](engine::renderManager& man) {
 					man.camRef = cam2.getElement<engine::freeCam>();
 					man.text = "this is a test of the text";
 				}
 			)
 		}, util::nextID());
+
+
 		/*auto world = e.man->create("World", {engine::eleInit<engine::worldManager>({})}, util::nextID());
 		e.man->create("Object", {
 			engine::eleInit<engine::rigidBodyComponent>(nlohmann::json({

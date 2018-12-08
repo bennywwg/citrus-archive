@@ -1,5 +1,6 @@
 #include <engine/element.h>
 #include <engine/entity.h>
+#include <engine/entityRef.h>
 
 namespace citrus {
 	namespace engine {

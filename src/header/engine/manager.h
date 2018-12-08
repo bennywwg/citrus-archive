@@ -7,17 +7,12 @@
 #include <functional>
 #include <shared_mutex>
 #include <atomic>
-#include <util/shared_recursive_mutex.h>
 
 #include <engine/element.h>
 #include <engine/entity.h>
 #include <util/util.h>
-
-#define StaticRegisterManager(type) \
-template void manager::registerType<type>(std::string); \
-template eleRef<type> manager::dereferenceElement<type>(const json&); \
-template json manager::referenceElement<type>(entityRef); \
-template vector<eleRef<type>> manager::ofType<type>();
+#include <engine/elementRef.h>
+#include <engine/entityRef.h>
 
 namespace citrus {
 	namespace engine {

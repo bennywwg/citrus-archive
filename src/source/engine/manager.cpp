@@ -1,6 +1,7 @@
 #include <engine/manager.h>
 #include <engine/elements/renderManager.h>
 #include <engine/elements/freeCam.h>
+#include <engine/elementRef.inl>
 
 namespace citrus {
 	namespace engine {
@@ -147,14 +148,14 @@ namespace citrus {
 
 		entityRef manager::findByID(uint64_t uuid) {
 			std::lock_guard<std::recursive_mutex> lock0(entitiesMut), lock1(toCreateMut);
-			if(uuid == entity::nullID) return entityRef::null();
+			if(uuid == entity::nullID) return entityRef();
 			for(shared_ptr<entity>& ent : _entities)
 				if(ent->id == uuid)
 					return entityRef(ent);
 			for(shared_ptr<entity>& ent : _toCreate)
 				if(ent->id == uuid)
 					return entityRef(ent);
-			return entityRef::null();
+			return entityRef();
 		}
 
 		eleInitBase manager::remapEleInitIDs(eleInitBase info, const std::map<uint64_t, uint64_t>& remappedIDs) {
@@ -184,34 +185,12 @@ namespace citrus {
 			return findByID(data["ID"].get<uint64_t>());
 		}
 
-		template<class T> json manager::referenceElement(entityRef ent) {
-			static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
-			auto info = getInfo(typeid(T));
-			if(info == nullptr) throw std::runtime_error("Trying to reference element type that isn't registered");
-			return json({
-				{"Type", "Element Reference"},
-				{"Name", info->name},
-				{"ID", ent != nullptr ? ent.id() : entity::nullID}
-			});
-		}
-
 		bool manager::isEntityReference(const json & data) {
 			auto foundType = data.find("Type");
 			if(foundType == data.end() || !foundType.value().is_string() || foundType.value().get<string>() != "Entity Reference") return false;
 			auto foundID = data.find("ID");
 			if(foundID == data.end() || foundID.value().is_null() || !foundID.value().is_number_unsigned()) return false;
 			return true;
-		}
-
-		template<class T> eleRef<T> manager::dereferenceElement(const json& data) {
-			static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
-			if(!isElementReference(data)) throw std::runtime_error(("Tried to derefence invalid element reference\n" + data.dump(2)).c_str());
-			auto info = getInfo(typeid(T));
-			if(data["Name"] != info->name) throw std::runtime_error(("Tried to derefence element but the template type does not match the json\n" + data.dump(2)).c_str());
-			auto ent = findByID(data["ID"].get<uint64_t>());
-			if(ent == nullptr) throw std::runtime_error("Tried to dereference element but its entity does not exist");
-			if(!ent.initialized()) throw std::runtime_error("Tried to dereference element but its entity is not initialized");
-			return ent.getElement<T>();
 		}
 
 		bool manager::isElementReference(const json & data) {
@@ -409,37 +388,10 @@ namespace citrus {
 			return false;
 		}
 
-		template<class T> void manager::registerType(string name) {
-			static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
-			const auto& index = type_index(typeid(T));
-			auto it = _data.find(index);
-			if(it == _data.end()) {
-				elementInfo& info = _data[index];
-				info.ctor = function<void(element*, entityRef)>([](element* loc, entityRef ent) { new(loc) T(ent); });
-				info.dtor = function<void(element*)>([](element* loc) { ((T*)loc)->~T(); });
-				info.size = sizeof(T);
-				info.type = index;
-				info.name = name;
-			}
-		}
-
-		template<class T> vector<eleRef<T>> manager::ofType() {
-			static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
-			auto pre = ofType(type_index(typeid(T)));
-			vector<eleRef<T>> res;
-			res.reserve(pre.size());
-			for(auto ptr : pre)
-				res.emplace_back(ptr->ent);
-			return res;
-		}
-
 		manager::manager(engine * eng) : _eng(eng) {
 		}
 		manager::~manager() {
 			//throw std::runtime_error("You need to implement this");
 		}
-
-		StaticRegisterManager(renderManager);
-		StaticRegisterManager(freeCam);
 	}
 }

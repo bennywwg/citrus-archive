@@ -66,63 +66,6 @@ namespace citrus {
 			entity(const std::vector<element*>& toCreate, engine* eng, const std::string& name, const uint64_t id);
 
 		};
-
-		class entityRef {
-			friend class manager;
-
-			entity* _ptr;
-			std::weak_ptr<entity> _ref;
-
-			public:
-
-			uint64_t id() const;
-			std::string name() const;
-			engine* eng() const;
-
-			void setLocalTransform(const transform &trans) const;
-			void setLocalPosition(const glm::vec3& pos) const;
-			void setLocalOrientation(const glm::quat& ori) const;
-			transform getLocalTransform() const;
-			glm::vec3 getLocalPosition() const;
-			glm::quat getLocalOrientation() const;
-			transform getGlobalTransform() const;
-
-			void setParent(entityRef parent) const;
-			entityRef getRoot() const;
-			entityRef getParent() const;
-			std::vector<entityRef> getChildren() const;
-			std::vector<entityRef> getAllConnected() const;
-
-			bool initialized() const;
-			bool destroyed() const;
-			bool valid() const;
-
-			template<class T>
-			inline eleRef<T> getElement() {
-				static_assert(std::is_base_of<element, T>::value, "can only get element if the type is derived from class element");
-				return eleRef<T>(*this);
-			}
-
-			/*entityRef(const entityRef& other) : entityRef(other._ref) { }
-			entityRef(entityRef&& other) : _ptr(other._ptr), _ref(std::move(other._ref)) { }
-			entityRef& operator=(const entityRef& other) {
-				_ptr = other._ptr;
-				_ref = other._ref;
-			}*/
-
-			static entityRef null();
-
-			bool operator==(const entityRef& other) const;
-			bool operator==(entity* other) const;
-			bool operator!=(const entityRef& other) const;
-			bool operator!=(entity* other) const;
-
-			constexpr static uint64_t nullID = std::numeric_limits<uint64_t>::max();
-
-			private:
-
-			entityRef(std::weak_ptr<entity> ref);
-		};
 	}
 }
 

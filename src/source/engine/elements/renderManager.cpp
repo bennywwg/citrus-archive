@@ -1,5 +1,7 @@
 #include <engine/engine.h>
 #include <engine/elements/renderManager.h>
+#include <engine/elementRef.inl>
+#include <engine/manager.inl>
 
 //#include <openvr/openvr.h>
 
