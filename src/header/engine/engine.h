@@ -77,6 +77,8 @@ namespace citrus {
 				return man->ofType<T>();
 			}
 
+			float controllerValue(graphics::windowInput::analog a);
+			bool controllerButton(graphics::windowInput::button b);
 			bool getKey(graphics::windowInput::button but);
 
 			void setOrder(std::vector<std::type_index> order);

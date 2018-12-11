@@ -94,6 +94,12 @@ namespace citrus {
 			return (clock::now() - _engineStart).count() * 0.000000001;
 		}
 
+		float engine::controllerValue(graphics::windowInput::analog a) {
+			return _win->controlleValue(a);
+		}
+		bool engine::controllerButton(graphics::windowInput::button b) {
+			return _win->controllerButton(b);
+		}
 		bool engine::getKey(graphics::windowInput::button but) {
 			return _win->getKey(but);
 		}

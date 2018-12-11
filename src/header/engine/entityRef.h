@@ -22,7 +22,6 @@ namespace citrus::engine {
 		friend class manager;
 		friend class engine;
 
-		std::recursive_mutex* _lock;
 		engine* _eng;
 		std::weak_ptr<entity> _ref;
 
@@ -56,7 +55,9 @@ namespace citrus::engine {
 		eleRef<T> getElement();
 
 		bool operator==(const entityRef& other) const;
+		bool operator==(const std::nullptr_t& null) const;
 		bool operator!=(const entityRef& other) const;
+		bool operator!=(const std::nullptr_t& null) const;
 
 		constexpr static uint64_t nullID = std::numeric_limits<uint64_t>::max();
 

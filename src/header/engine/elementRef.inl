@@ -8,7 +8,7 @@ namespace citrus::engine {
 	template<class T>
 	bool eleRef<T>::null() const {
 		return _ptr == nullptr || (!_owner.valid() && !_owner.null());
-	}	
+	}
 
 	template<class T>
 	bool eleRef<T>::valid() const {
@@ -62,5 +62,5 @@ namespace citrus::engine {
 	template<class T>
 	eleRef<T>::eleRef() : _owner(), _ptr(nullptr) { }
 	template<class T>
-	eleRef<T>::eleRef(T* ele) : _owner(ele->ent), _ptr(ele) { }
+	eleRef<T>::eleRef(T* ele) : _owner(ele ? ele->ent : entityRef()), _ptr(ele) { }
 }

@@ -14,9 +14,14 @@ namespace citrus::engine {
 			(e->getKey(windowInput::q) ? -1.0f : 0.0f) + (e->getKey(windowInput::e) ? 1.0f : 0.0f),
 			(e->getKey(windowInput::w) ? -1.0f : 0.0f) + (e->getKey(windowInput::s) ? 1.0f : 0.0f)
 		);
+		yPlaneMovement += vec3(
+			e->controllerValue(windowInput::analog::ctr_lstick_x),
+			e->controllerValue(windowInput::analog::ctr_lstick_y),
+			0.0f
+		);
 		yPlaneMovement *= 0.005f;
 
-		if(e->getKey(windowInput::escape))
+		if(e->getKey(windowInput::escape) || e->controllerButton(windowInput::ctr_start))
 			e->stop();
 
 		glm::vec3 pos = ent.getGlobalTransform().getPosition() + yPlaneMovement;

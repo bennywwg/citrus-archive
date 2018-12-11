@@ -7,7 +7,9 @@ namespace citrus::engine {
 		auto it = _data.find(index);
 		if(it == _data.end()) {
 			elementInfo& info = _data[index];
-			info.ctor = function<void(element*, entityRef)>([](element* loc, entityRef ent) { new(loc) T(ent); });
+			info.ctor = function<void(element*, entityRef)>([](element* loc, entityRef ent) {
+				new(loc) T(ent);
+			});
 			info.dtor = function<void(element*)>([](element* loc) { ((T*)loc)->~T(); });
 			info.size = sizeof(T);
 			info.type = index;

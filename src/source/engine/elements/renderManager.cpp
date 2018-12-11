@@ -51,8 +51,10 @@ namespace citrus {
 		}
 
 		void renderManager::load(const nlohmann::json& parsed) {
-			text = parsed["text"].get<std::string>();
-			camRef = e->man->dereferenceElement<freeCam>(parsed["cam"]);
+			if(!parsed.empty()) {
+				text = parsed["text"].get<std::string>();
+				camRef = e->man->dereferenceElement<freeCam>(parsed["cam"]);
+			}
 		}
 		nlohmann::json renderManager::save() const {
 			return nlohmann::json();
@@ -86,8 +88,7 @@ namespace citrus {
 
 			textFBO->bind();
 			textFBO->clearAll();
-			auto str = save().dump(2);
-			font.streamText(this->save().dump(2), (*camRef).cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
+			font.streamText(text, (*camRef).cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
 			textFBO->unbind();
 
 			graphics::frameBuffer screen(win);

@@ -102,7 +102,7 @@ namespace citrus {
 
 		// GOOD !
 		void manager::destroyUnsafe(entityRef ent) {
-			entity* rent = ent._ptr;
+			entity* rent = ent._ref.lock().get();
 
 			//try and remove ent from the _toCreate list if its in it
 			int entIndex = findEntity(_toCreate, ent._ref.lock());
@@ -246,7 +246,7 @@ namespace citrus {
 			res["Entities"] = { };
 			for(entityRef ent : connected) {
 				json entElements;
-				for(element* ele : ent._ptr->_elements) {
+				for(element* ele : ent._ref.lock().get()->_elements) {
 					entElements[getInfo(ele->_type)->name] = ele->save();
 				}
 

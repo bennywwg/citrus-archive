@@ -92,8 +92,6 @@ namespace citrus::engine {
 	}
 
 	element* entity::getElement(const std::type_index& type) const {
-		if(!_initialized) throw std::runtime_error("You can't get an element before initialization");
-
 		for(element* e : _elements)
 			if(e->_type == type)
 				return e;

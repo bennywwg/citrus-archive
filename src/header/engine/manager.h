@@ -62,6 +62,7 @@ namespace citrus {
 				int size;
 				string name;
 				type_index type;
+				std::shared_mutex mut;
 
 				int findInToCreate(element* ele) {
 					for(uint32_t i = 0; i < toCreate.size(); ++i)

@@ -61,7 +61,7 @@ namespace citrus::engine {
 
 	void entityRef::setParent(entityRef parent) const {
 		if(null()) throw entDereferenceException("setParent(): null entity");
-		_ref.lock()->setParent(parent._ref.lock());
+		_ref.lock()->setParent(parent._ref.lock().get());
 	}
 	entityRef entityRef::getRoot() const {
 		if(null()) throw entDereferenceException("getRoot(): null entity");
@@ -87,11 +87,19 @@ namespace citrus::engine {
 	}
 
 	bool entityRef::operator==(const entityRef& other) const {
-		return (_ref == other._ref);
+		if(null() && other.null()) return true;
+		if(null() || other.null()) return false;
+		return (_ref.lock() == other._ref.lock());
 	}
 	bool entityRef::operator!=(const entityRef& other) const {
 		return !(*this == other);
 	}
+	bool entityRef::operator==(const std::nullptr_t& other) const {
+		return null();
+	}
+	bool entityRef::operator!=(const std::nullptr_t& other) const {
+		return !(*this == other);
+	}
 	entityRef::entityRef() : entityRef(std::weak_ptr<entity>()) { }
-	entityRef::entityRef(std::weak_ptr<entity> ref) : _ptr(ref.lock().get()), _ref(ref) { }
+	entityRef::entityRef(std::weak_ptr<entity> ref) : _ref(ref), _eng(!ref.expired() ? ref.lock()->eng : nullptr) { }
 }

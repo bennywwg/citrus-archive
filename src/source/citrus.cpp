@@ -27,6 +27,7 @@ void terminateGLFW() {
 }
 
 int main(int argc, char **argv) {
+
 	util::sout("Citrus 0.0.0 - PRIVATE DEVELOPMENT BUILD - DO NOT DISTRIBUTE\n");
 
 	initializeGLFW();
@@ -84,7 +85,9 @@ int main(int argc, char **argv) {
 
 		//e.man->loadPrefabUnsafe(savedJS);
 
-		while(!e.stopped()) {
+		bool exited = false;
+
+		while(!e.stopped() || (!exited)) {
 			std::string line;
 			std::cout << "citrus $ ";
 			std::getline(std::cin, line);
@@ -105,7 +108,10 @@ int main(int argc, char **argv) {
 					
 				}
 			} else if(line == "exit" || line == "stop") {
+				util::sout("Halting...\n");
 				e.stop();
+				exited = true;
+				std::this_thread::sleep_for(std::chrono::milliseconds(250));
 			} else {
 				std::cout << line << "\n";
 			}

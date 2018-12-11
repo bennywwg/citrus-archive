@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <string>
 
 namespace citrus::engine {
 	class entityRef;
@@ -19,13 +20,11 @@ namespace citrus::engine {
 		friend class entityRef;
 		friend class manager;
 		
-		std::recursive_mutex* _lock;
 		entityRef _owner;
 		T* _ptr;
 
 		public:
 		bool null() const;
-		bool destroyed() const;
 		bool valid() const;
 
 		T& get() const;

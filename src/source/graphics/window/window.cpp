@@ -64,7 +64,7 @@ namespace citrus {
 			} else if(key == GLFW_KEY_ESCAPE) {
 				but = escape;
 			}
-			if(key != none) {
+			if(but != none) {
 				_windowTable[win]->_buttonStates[but] = action != GLFW_RELEASE;
 			}
 			
@@ -78,6 +78,77 @@ namespace citrus {
 		bool window::shouldClose() {
 			return glfwWindowShouldClose(_win);
 		}
+		bool window::controllerButton(windowInput::button b) {
+			if(!glfwJoystickPresent(GLFW_JOYSTICK_1)) {
+				return false;
+			}
+
+			int count = 0;
+			const unsigned char* states = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
+
+			switch(b) {
+				case windowInput::ctr_invalid:
+					return false;
+				case windowInput::button::ctr_east:
+					return count >= 1 && states[1];
+				case windowInput::button::ctr_north:
+					return count >= 3 && states[3];
+				case windowInput::button::ctr_west:
+					return count >= 2 && states[2];
+				case windowInput::button::ctr_south:
+					return count >= 0 && states[0];
+				case windowInput::button::ctr_ltrigger:
+					return count >= 4 && states[4];
+				case windowInput::button::ctr_rtrigger:
+					return count >= 5 && states[5];
+				case windowInput::button::ctr_select:
+					return count >= 6 && states[6];
+				case windowInput::button::ctr_start:
+					return count >= 7 && states[7];
+				case windowInput::button::ctr_lbump:
+					return count >= 8 && states[8];
+				case windowInput::button::ctr_rbump:
+					return count >= 9 && states[9];
+				case windowInput::button::ctr_dpad_east:
+					return count >= 12 && states[12];
+				case windowInput::button::ctr_dpad_north:
+					return count >= 13 && states[13];
+				case windowInput::button::ctr_dpad_west:
+					return count >= 11 && states[11];
+				case windowInput::button::ctr_dpad_south:
+					return count >= 10 && states[10];
+				default:
+					return false;
+			}
+		}
+		float window::controlleValue(windowInput::analog a) {
+			if(!glfwJoystickPresent(GLFW_JOYSTICK_1)) {
+				return 0.0f;
+			}
+
+			int count = 0;
+			const float* axes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
+
+			switch(a) {
+				case citrus::graphics::windowInput::ctr_invalid:
+					return 0.0f;
+				case citrus::graphics::windowInput::ctr_l:
+					return count >= 4 ? axes[4] : 0.0f;
+				case citrus::graphics::windowInput::ctr_r:
+					return count >= 5 ? axes[4] : 0.0f;
+				case citrus::graphics::windowInput::ctr_lstick_x:
+					return count >= 0 ? axes[0] : 0.0f;
+				case citrus::graphics::windowInput::ctr_lstick_y:
+					return count >= 1 ? axes[1] : 0.0f;
+				case citrus::graphics::windowInput::ctr_rstick_x:
+					return count >= 2 ? axes[2] : 0.0f;
+				case citrus::graphics::windowInput::ctr_rstick_y:
+					return count >= 3 ? axes[3] : 0.0f;
+				default:
+					return 0.0f;
+			}
+		}
+
 		bool window::getKey(windowInput::button but) {
 			return _buttonStates[but];
 		}

@@ -84,7 +84,31 @@ namespace citrus {
 				back = 57,
 				semicolon = 58,
 				apostrophe = 59,
-				escape = 60
+				escape = 60,
+
+				ctr_lbump = 102,
+				ctr_rbump = 103,
+				ctr_ltrigger = 104,
+				ctr_rtrigger = 105,
+				ctr_east = 106,
+				ctr_north = 107,
+				ctr_west = 108,
+				ctr_south = 109,
+				ctr_select = 110,
+				ctr_start = 111,
+				ctr_dpad_east = 112,
+				ctr_dpad_north = 113,
+				ctr_dpad_west = 114,
+				ctr_dpad_south = 115,
+			};
+			enum analog {
+				ctr_invalid = 0,
+				ctr_l = 1,
+				ctr_r = 2,
+				ctr_lstick_x = 3,
+				ctr_lstick_y = 4,
+				ctr_rstick_x = 5,
+				ctr_rstick_y = 6
 			};
 		}
 
@@ -109,6 +133,9 @@ namespace citrus {
 
 			bool getKey(windowInput::button but);
 			glm::dvec2 getCursorPos();
+
+			float controlleValue(windowInput::analog a);
+			bool  controllerButton(windowInput::button b);
 
 			glm::ivec2 framebufferSize();
 
