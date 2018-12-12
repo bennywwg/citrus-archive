@@ -16,10 +16,10 @@ namespace citrus::engine {
 		);
 		yPlaneMovement += vec3(
 			e->controllerValue(windowInput::analog::ctr_lstick_x),
-			e->controllerValue(windowInput::analog::ctr_lstick_y),
-			0.0f
+			0.0f,
+			-e->controllerValue(windowInput::analog::ctr_lstick_y)
 		);
-		yPlaneMovement *= 0.005f;
+		yPlaneMovement *= 0.015f;
 
 		if(e->getKey(windowInput::escape) || e->controllerButton(windowInput::ctr_start))
 			e->stop();

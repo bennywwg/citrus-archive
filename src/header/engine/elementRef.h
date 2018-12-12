@@ -29,6 +29,7 @@ namespace citrus::engine {
 
 		T& get() const;
 		T& operator*() const;
+		T* operator->() const;
 
 		bool operator==(const eleRef& other) const;
 		bool operator==(std::nullptr_t other) const;
@@ -39,7 +40,7 @@ namespace citrus::engine {
 
 		eleRef();
 
-		private:
+	private:
 		eleRef(T* ele);
 	};
 }

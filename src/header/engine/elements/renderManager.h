@@ -31,6 +31,7 @@ namespace citrus {
 			std::unique_ptr<graphics::simpleFrameBuffer> textFBO;
 			std::unique_ptr<graphics::shader> passthrough;
 			std::unique_ptr<graphics::shader> composite;
+			std::unique_ptr<graphics::shader> bones;
 
 			vector<shared_ptr<shaderInfo>> _shaders;
 			mutex _shadersMut;

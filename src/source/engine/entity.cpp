@@ -81,16 +81,6 @@ namespace citrus::engine {
 		return accum;
 	}
 
-	bool entity::initialized() const {
-		return _initialized;
-	}
-	bool entity::destroyed() const {
-		return _destroyed;
-	}
-	bool entity::valid() const {
-		return _initialized && !_destroyed;
-	}
-
 	element* entity::getElement(const std::type_index& type) const {
 		for(element* e : _elements)
 			if(e->_type == type)

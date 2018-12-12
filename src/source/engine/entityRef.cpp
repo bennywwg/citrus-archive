@@ -6,17 +6,7 @@ namespace citrus::engine {
 	using std::vector;
 
 	bool entityRef::null() const {
-		return _ref.expired() || _ref.lock()->destroyed();
-	}
-
-	bool entityRef::valid() const {
-		return !null() & _ref.lock()->initialized();
-	}
-	bool entityRef::initialized() const {
-		return !_ref.expired() && _ref.lock()->initialized();
-	}
-	bool entityRef::destroyed() const {
-		return !_ref.expired() && _ref.lock()->destroyed();
+		return _ref.expired();
 	}
 
 	uint64_t entityRef::id() const {

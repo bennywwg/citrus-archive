@@ -11,14 +11,14 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include "vertexView.h"
-#include "indexView.h"
-#include "buffer.h"
-#include "bufferView.h"
-#include "vertexarray.h"
+#include <graphics/buffer/vertexView.h>
+#include <graphics/buffer/indexView.h>
+#include <graphics/buffer/buffer.h>
+#include <graphics/buffer/bufferView.h>
+#include <graphics/geometry/vertexarray.h>
 
-#include "util.h"
-#include "stdUtil.h"
+#include <util/util.h>
+#include <util/stdUtil.h>
 
 namespace citrus {
 	namespace geom {
@@ -200,7 +200,7 @@ namespace citrus {
 				vao->drawAll();
 			}
 
-			simpleModel(const simpleMesh& mesh, std::shared_ptr<graphics::buffer> buf) : mesh(mesh) {
+			simpleModel(const simpleMesh& mesh, graphics::buffer* buf) : mesh(mesh) {
 				size_t start = 0;
 				vertices = new graphics::vertexView3f(buf, start, mesh.pos.size(), mesh.pos.data());
 				start += mesh.pos.size() * sizeof(glm::vec3);
@@ -242,6 +242,18 @@ namespace citrus {
 			boneContainer bones;
 			boneNode boneBase;
 
+			uint32_t requiredMemory() {
+				return 0
+					+ pos.size() * sizeof(glm::vec3)
+					+ normal.size() * sizeof(glm::vec3)
+					+ uv.size() * sizeof(glm::vec2)
+					+ index.size() * sizeof(unsigned int)
+					+ bone0.size() * sizeof(unsigned int)
+					+ bone1.size() * sizeof(unsigned int)
+					+ weight0.size() * sizeof(float)
+					+ weight1.size() * sizeof(float);
+			}
+
 			conventionalmesh(std::string location) {
 				Assimp::Importer imp;
 
@@ -253,8 +265,7 @@ namespace citrus {
 
 				imp.SetExtraVerbose(true);
 
-				std::cout << imp.GetErrorString();
-
+				util::sout(imp.GetErrorString());
 
 				boneBase = boneNode(scene->mRootNode);
 
@@ -321,7 +332,7 @@ namespace citrus {
 			graphics::vertexView1f* weights1 = nullptr;
 			graphics::indexViewui* indices = nullptr;
 
-			riggedModel(const conventionalmesh& mesh, std::shared_ptr<graphics::buffer> buf) {
+			riggedModel(const conventionalmesh& mesh, graphics::buffer* buf) {
 				size_t start = 0;
 				vertices = new graphics::vertexView3f(buf, start, mesh.pos.size(), mesh.pos.data());
 				start += mesh.pos.size() * sizeof(glm::vec3);

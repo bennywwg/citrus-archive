@@ -6,6 +6,10 @@
 #include "engine/elements/freeCam.h"
 #include "engine/elements/renderManager.h"
 #include <engine/elements/worldManager.h>
+#include <engine/elements/meshManager.h>
+#include <engine/elements/shaderManager.h>
+#include <engine/elements/textureManager.h>
+#include <engine/elements/meshFilter.h>
 #include <engine/elements/rigidBodyComponent.h>
 
 #include <engine/entityRef.inl>
@@ -40,11 +44,19 @@ int main(int argc, char **argv) {
 		//e.man->registerType<engine::rigidBodyComponent>("Rigid Body");
 		e.man->registerType<engine::renderManager>("Render Manager");
 		e.man->registerType<engine::freeCam>("Free Cam");
+		e.man->registerType<engine::meshManager>("Mesh Manager");
+		e.man->registerType<engine::shaderManager>("Shader Manager");
+		e.man->registerType<engine::textureManager>("Texture Manager");
+		e.man->registerType<engine::meshFilter>("Mesh Filter");
 		e.man->setOrder({
 			//typeid(engine::worldManager),
 			//typeid(engine::rigidBodyComponent),
+			typeid(engine::shaderManager),
+			typeid(engine::meshManager),
+			typeid(engine::textureManager),
 			typeid(engine::freeCam),
-			typeid(engine::renderManager)
+			typeid(engine::renderManager),
+			typeid(engine::meshFilter)
 		});
 
 
@@ -67,6 +79,40 @@ int main(int argc, char **argv) {
 			)
 		}, util::nextID());
 
+		e.man->create("MeshTable", {
+			engine::eleInit<engine::meshManager>::run(
+				[](engine::meshManager& man) {
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\natsuki.dae", "Natsuki");
+				}
+			)
+		}, util::nextID());
+		e.man->create("ShaderTable", {
+			engine::eleInit<engine::shaderManager>::run(
+				[](engine::shaderManager& man) {
+					man.loadSimpleShader(
+						"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.vert",
+						"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.frag", "Natsuki");
+				}
+			)
+		}, util::nextID());
+		e.man->create("TextureTable", {
+			engine::eleInit<engine::textureManager>::run(
+				[](engine::textureManager& man) {
+					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\Natsuki_COLOR.png", "Natsuki");
+				}
+			)
+			}, util::nextID());
+
+		e.man->create("An Object", {
+			engine::eleInit<engine::meshFilter>::run(
+				[](engine::meshFilter& filt) {
+					filt.setMeshByName("Natsuki");
+					filt.setShaderByName("Natsuki");
+					filt.setTextureByName("Natsuki");
+				}
+			)
+		}, util::nextID());
+
 
 		/*auto world = e.man->create("World", {engine::eleInit<engine::worldManager>({})}, util::nextID());
 		e.man->create("Object", {
@@ -85,7 +131,7 @@ int main(int argc, char **argv) {
 
 		//e.man->loadPrefabUnsafe(savedJS);
 
-		bool exited = false;
+		bool exited = true;
 
 		while(!e.stopped() || (!exited)) {
 			std::string line;
@@ -101,6 +147,8 @@ int main(int argc, char **argv) {
 					ss << std::fixed << std::setfill('0') << std::setw(8) << std::setprecision(3) << l.first;
 					util::sout(ss.str() + ": " + l.second + "\n");
 				}
+			} else if(line == "fps") {
+				util::sout(std::to_string(e.fps()) + "\n");
 			} else if(line == "obj") {
 				for(auto ent : e.man->allEntities()) {
 					glm::vec3 pos = ent.getGlobalTransform().getPosition();
@@ -110,7 +158,7 @@ int main(int argc, char **argv) {
 			} else if(line == "exit" || line == "stop") {
 				util::sout("Halting...\n");
 				e.stop();
-				exited = true;
+				exited = false;
 				std::this_thread::sleep_for(std::chrono::milliseconds(250));
 			} else {
 				std::cout << line << "\n";

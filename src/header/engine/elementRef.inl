@@ -7,12 +7,12 @@ namespace citrus::engine {
 
 	template<class T>
 	bool eleRef<T>::null() const {
-		return _ptr == nullptr || (!_owner.valid() && !_owner.null());
+		return _ptr == nullptr && !_owner.null();
 	}
 
 	template<class T>
 	bool eleRef<T>::valid() const {
-		return !null() && _owner.valid();
+		return !null() && _ptr->initialized();
 	}
 
 	template<class T>
@@ -20,10 +20,10 @@ namespace citrus::engine {
 		if(!valid()) {
 			if(_ptr == nullptr) {
 				throw eleDereferenceException("eleRef is null");
-			} else if(!_owner.null()) {
+			} else if(_owner.null()) {
 				throw eleDereferenceException("eleRef owner no longer exists");
-			} else if(!_owner.initialized()) {
-				throw eleDereferenceException("eleRef owner is not initialized");
+			} else if(!_ptr->initialized()) {
+				throw eleDereferenceException("eleRef is not initialized");
 			}
 		}
 		return *_ptr;
@@ -31,6 +31,10 @@ namespace citrus::engine {
 	template<class T>
 	T& eleRef<T>::operator*() const {
 		return get();
+	}
+	template<class T>
+	T* eleRef<T>::operator->() const {
+		return &get();
 	}
 	
 	template<class T>

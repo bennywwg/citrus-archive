@@ -45,6 +45,7 @@ namespace citrus {
 
 		string loadEntireFile(string path) {
 			std::ifstream f(path);
+			if(!f.is_open()) throw std::runtime_error("Couldn't open file: " + path);
 			string res;	
 			f.seekg(0, std::ios::end);
 			res.reserve(size_t(f.tellg()));

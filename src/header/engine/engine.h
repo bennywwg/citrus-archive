@@ -66,6 +66,7 @@ namespace citrus {
 			private: void _runRender();
 
 			public:
+			int fps();
 			renderState getRenderState();
 
 			double time();
@@ -73,7 +74,7 @@ namespace citrus {
 			graphics::window* getWindow();
 
 			template<typename T>
-			inline element* getAllOfType() {
+			inline std::vector<eleRef<T>> getAllOfType() {
 				return man->ofType<T>();
 			}
 

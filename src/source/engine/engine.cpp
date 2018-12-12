@@ -70,10 +70,14 @@ namespace citrus {
 
 					std::this_thread::sleep_for(std::chrono::milliseconds(10));
 				}
-			} catch(std::exception ex) {
+			} catch(std::runtime_error ex) {
 				Log("Unrecoverable Error in Render Thread: " + std::string(ex.what()));
+			} catch(eleDereferenceException ex) {
+				Log("Unrecoverable Error in Render Thread: " + std::string(ex.er));
+			} catch(entDereferenceException ex) {
+				Log("Unrecoverable Error in Render Thread: " + std::string(ex.er));
 			} catch(...) {
-				Log("Unrecoverable Error in Render Thread");
+				Log("Unrecoverable Error in Render Thread (Whack error.)");
 			}
 
 			if(_win) delete _win;
@@ -86,6 +90,10 @@ namespace citrus {
 			return _win;
 		}
 		
+		int engine::fps() {
+			return _framesPerSecond;
+		}
+
 		engine::renderState engine::getRenderState() {
 			return _renderState.load();
 		}

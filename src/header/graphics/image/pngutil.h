@@ -98,7 +98,7 @@ namespace citrus {
 			outWidth = int(width);
 			outHeight = int(height);
 		 
-			unsigned int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+			//unsigned int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 			res.resize(outHeight * outWidth * 3);
 			unsigned char* outData = res.data();
 		 
@@ -109,7 +109,7 @@ namespace citrus {
 				// note that png is ordered top to
 				// bottom, but OpenGL expect it bottom to top
 				// so the order or swapped
-				memcpy(outData+(row_bytes * (outHeight-1-i)), row_pointers[i], row_bytes);
+				memcpy(outData+((outWidth * 3) * (outHeight-1-i)), row_pointers[i], (outWidth * 3));
 			}
 			
 		 

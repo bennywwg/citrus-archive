@@ -240,7 +240,7 @@ namespace citrus {
 		}
 
 		json manager::savePrefabUnsafe(entityRef toSave) {
-			if(toSave == nullptr || !toSave.initialized()) throw std::runtime_error("Cannot save null or uninitialized entity");
+			if(toSave == nullptr) throw std::runtime_error("Cannot save null or uninitialized entity");
 			vector<entityRef> connected = toSave.getAllConnected();
 			json res;
 			res["Entities"] = { };
@@ -298,13 +298,13 @@ namespace citrus {
 					info.existing.push_back(std::get<0>(meta));
 					info.existingEntities.push_back(std::get<1>(meta));
 					if(std::get<3>(meta)) std::get<3>(meta)(std::get<0>(meta));
+					std::get<0>(meta)->_initialized = true;
 				}
 			}
 
 			//add newly created entities
 			for(shared_ptr<entity>& ent : _toCreate) {
 				_entities.push_back(ent);
-				ent->_initialized = true;
 			}
 
 			//clear entity toCreate list

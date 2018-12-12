@@ -23,7 +23,7 @@ namespace citrus::engine {
 		vector<eleRef<T>> res;
 		res.reserve(pre.size());
 		for(element* ptr : pre) {
-			res.emplace_back(dynamic_cast<T*>(ptr));
+			res.push_back(eleRef<T>(dynamic_cast<T*>(ptr)));
 		}
 		return res;
 	}
@@ -35,7 +35,7 @@ namespace citrus::engine {
 		if(data["Name"] != info->name) throw std::runtime_error(("Tried to derefence element but the template type does not match the json\n" + data.dump(2)).c_str());
 		auto ent = findByID(data["ID"].get<uint64_t>());
 		if(ent == nullptr) throw std::runtime_error("Tried to dereference element but its entity does not exist");
-		if(!ent.initialized()) throw std::runtime_error("Tried to dereference element but its entity is not initialized");
+		//if(!ent.initialized()) throw std::runtime_error("Tried to dereference element but its entity is not initialized");
 		return ent.getElement<T>();
 	}
 

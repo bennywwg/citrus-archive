@@ -78,7 +78,7 @@ namespace citrus {
 			standardFBO->bind();
 			standardFBO->clearAll();
 			_shaders[0]->sh->use();
-			glm::mat4 projectionViewMat = (*camRef).cam.getViewProjectionMatrix();
+			glm::mat4 projectionViewMat = camRef->cam.getViewProjectionMatrix();
 			for(auto ent : e->man->allEntities()) {
 				_shaders[0]->sh->setUniform("modelViewProjectionMat", projectionViewMat * ent.getGlobalTransform().getMat());
 				graphics::vertexArray::drawOne();
@@ -88,7 +88,7 @@ namespace citrus {
 
 			textFBO->bind();
 			textFBO->clearAll();
-			font.streamText(text, (*camRef).cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
+			font.streamText(text, camRef->cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
 			textFBO->unbind();
 
 			graphics::frameBuffer screen(win);
@@ -124,6 +124,11 @@ namespace citrus {
 			textFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y);
 
 			_invalid = std::make_shared<shaderInfo>();
+
+			std::string bonesVert = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.vert");
+			std::string bonesFrag = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.frag");
+			bones = std::make_unique<graphics::shader>(bonesVert, bonesFrag);
+
 			composite = std::make_unique<graphics::shader>(
 				"#version 450\n"
 				""

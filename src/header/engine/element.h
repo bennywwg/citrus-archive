@@ -19,11 +19,15 @@ namespace citrus::engine {
 		friend class entity;
 		friend class entityRef;
 		
+	
 		std::type_index _type;
+		bool _initialized = false;
 
 	public:
 		entityRef const ent;
 		engine* const e;
+
+		bool initialized() const;
 
 		virtual void load(const nlohmann::json& parsed);
 		virtual void preRender();

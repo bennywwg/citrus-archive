@@ -18,8 +18,6 @@ namespace citrus {
 			friend class manager;
 			friend class entityRef;
 
-			bool _initialized = false;
-			bool _destroyed = false;
 			const std::vector<element*> _elements;
 			entity* _parent = nullptr;
 			std::vector<entity*> _children;
@@ -47,10 +45,6 @@ namespace citrus {
 			void _accumulateAllChildren(std::vector<entity*>& accum);
 			public:
 			std::vector<entity*> getAllConnected();
-
-			bool initialized() const;
-			bool destroyed() const;
-			bool valid() const;
 
 			template<class T>
 			inline T* getElement() const {

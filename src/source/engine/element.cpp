@@ -4,6 +4,10 @@
 
 namespace citrus {
 	namespace engine {
+		bool element::initialized() const {
+			return _initialized;
+		}
+
 		void element::load(const nlohmann::json & parsed) { }
 		void element::preRender() { }
 		void element::render() { }

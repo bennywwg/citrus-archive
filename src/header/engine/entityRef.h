@@ -29,10 +29,6 @@ namespace citrus::engine {
 
 		bool null() const;
 
-		bool valid() const;
-		bool initialized() const;
-		bool destroyed() const;
-
 		uint64_t id() const;
 		std::string name() const;
 		engine* eng() const;
