@@ -75,8 +75,6 @@ namespace citrus {
 
 		class shader {
 			private:
-			//I can't think of any reason you'd want to NOT do this
-			//but feel free to use setUniform(unsigned int) if you don't want to
 			static const shader* _currentBound;
 			static GLuint _nextUnitAvailable;
 

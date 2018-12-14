@@ -32,7 +32,7 @@ namespace citrus {
 						column = 0;
 						continue;
 					}
-					positions.push_back(glm::vec2(column, -row));
+					positions.push_back(glm::vec2(column * 0.5f, -row));
 
 					tiles.push_back(glm::vec2((((unsigned char)text[i]) % 16 + 0.5f) / 16.0f, - (((unsigned char)text[i]) / 16 + 0.5f) / 16.0f));
 					column++;

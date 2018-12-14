@@ -97,9 +97,10 @@ namespace citrus {
 				         &interlace_type, NULL, NULL);
 			outWidth = int(width);
 			outHeight = int(height);
+			outHasAlpha = color_type | PNG_COLOR_MASK_ALPHA;
 		 
-			//unsigned int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
-			res.resize(outHeight * outWidth * 3);
+			unsigned int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+			res.resize(outHeight * row_bytes);
 			unsigned char* outData = res.data();
 		 
 			png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
@@ -109,7 +110,7 @@ namespace citrus {
 				// note that png is ordered top to
 				// bottom, but OpenGL expect it bottom to top
 				// so the order or swapped
-				memcpy(outData+((outWidth * 3) * (outHeight-1-i)), row_pointers[i], (outWidth * 3));
+				memcpy(outData+(row_bytes * (outHeight-1-i)), row_pointers[i], row_bytes);
 			}
 			
 		 

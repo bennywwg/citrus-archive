@@ -136,6 +136,7 @@ namespace citrus {
 
 			float controlleValue(windowInput::analog a);
 			bool  controllerButton(windowInput::button b);
+			std::vector<std::string> controllers();
 
 			glm::ivec2 framebufferSize();
 

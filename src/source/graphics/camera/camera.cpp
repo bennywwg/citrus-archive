@@ -20,7 +20,7 @@ namespace citrus {
 			);
 		}
 		mat4 camera::getViewMatrix() {
-			return translate(-trans.getPosition()) * inverse(toMat4(trans.getOrientation()));
+			return inverse(translate(trans.getPosition()) * toMat4(trans.getOrientation()));
 		}
 		mat4 camera::getProjectionMatrix() {
 			return glm::perspective(verticalFOV, aspectRatio, zNear, zFar);

@@ -41,6 +41,7 @@ namespace citrus {
 			vector<pair<double, string>> _log;
 			public:
 			void Log(string str);
+			void Log(std::vector<string> strs);
 			vector<pair<double, string>> flushLog();
 			private:
 			graphics::window* _win;
@@ -70,7 +71,8 @@ namespace citrus {
 			renderState getRenderState();
 
 			double time();
-
+			double dt();
+			
 			graphics::window* getWindow();
 
 			template<typename T>

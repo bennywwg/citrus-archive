@@ -39,8 +39,6 @@ namespace citrus::engine {
 		eleRef& operator=(std::nullptr_t other);
 
 		eleRef();
-
-	private:
 		eleRef(T* ele);
 	};
 }

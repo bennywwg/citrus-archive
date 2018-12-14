@@ -121,6 +121,13 @@ namespace citrus {
 					return false;
 			}
 		}
+		std::vector<std::string> window::controllers() {
+			if(glfwJoystickPresent(GLFW_JOYSTICK_1)) {
+				return {std::string(glfwGetJoystickName(GLFW_JOYSTICK_1))};
+			} else {
+				return {};
+			}
+		}
 		float window::controlleValue(windowInput::analog a) {
 			if(!glfwJoystickPresent(GLFW_JOYSTICK_1)) {
 				return 0.0f;

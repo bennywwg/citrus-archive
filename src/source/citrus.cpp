@@ -11,6 +11,7 @@
 #include <engine/elements/textureManager.h>
 #include <engine/elements/meshFilter.h>
 #include <engine/elements/rigidBodyComponent.h>
+#include <engine/elements/playerController.h>
 
 #include <engine/entityRef.inl>
 #include <engine/elementRef.inl>
@@ -48,6 +49,7 @@ int main(int argc, char **argv) {
 		e.man->registerType<engine::shaderManager>("Shader Manager");
 		e.man->registerType<engine::textureManager>("Texture Manager");
 		e.man->registerType<engine::meshFilter>("Mesh Filter");
+		e.man->registerType<engine::playerController>("Player Controller");
 		e.man->setOrder({
 			//typeid(engine::worldManager),
 			//typeid(engine::rigidBodyComponent),
@@ -55,6 +57,7 @@ int main(int argc, char **argv) {
 			typeid(engine::meshManager),
 			typeid(engine::textureManager),
 			typeid(engine::freeCam),
+			typeid(engine::playerController),
 			typeid(engine::renderManager),
 			typeid(engine::meshFilter)
 		});
@@ -65,6 +68,7 @@ int main(int argc, char **argv) {
 				[](engine::freeCam& c) {
 					c.cam.aspectRatio = 16.0f / 9.0f;
 					c.cam.zFar = 1500.0f;
+					c.cam.verticalFOV = 120.0f;
 				}
 			)
 		}, util::nextID());
@@ -74,7 +78,6 @@ int main(int argc, char **argv) {
 			engine::eleInit<engine::renderManager>::run(
 				[&cam2](engine::renderManager& man) {
 					man.camRef = cam2.getElement<engine::freeCam>();
-					man.text = "this is a test of the text";
 				}
 			)
 		}, util::nextID());
@@ -82,36 +85,27 @@ int main(int argc, char **argv) {
 		e.man->create("MeshTable", {
 			engine::eleInit<engine::meshManager>::run(
 				[](engine::meshManager& man) {
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\natsuki.dae", "Natsuki");
-				}
-			)
-		}, util::nextID());
-		e.man->create("ShaderTable", {
-			engine::eleInit<engine::shaderManager>::run(
-				[](engine::shaderManager& man) {
-					man.loadSimpleShader(
-						"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.vert",
-						"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.frag", "Natsuki");
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\natsuki.dae", 0);
 				}
 			)
 		}, util::nextID());
 		e.man->create("TextureTable", {
 			engine::eleInit<engine::textureManager>::run(
 				[](engine::textureManager& man) {
-					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\Natsuki_COLOR.png", "Natsuki");
-				}
-			)
-			}, util::nextID());
-
-		e.man->create("An Object", {
-			engine::eleInit<engine::meshFilter>::run(
-				[](engine::meshFilter& filt) {
-					filt.setMeshByName("Natsuki");
-					filt.setShaderByName("Natsuki");
-					filt.setTextureByName("Natsuki");
+					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\Natsuki_COLOR.png", 0);
 				}
 			)
 		}, util::nextID());
+
+		auto ent2 = e.man->create("Player", {
+			engine::eleInit<engine::meshFilter>::run(
+				[](engine::meshFilter& filt) {
+					filt.setState(0, 0, 0);
+				}
+			),
+			engine::eleInit<engine::playerController>()
+		}, util::nextID());
+		ent2.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 
 		/*auto world = e.man->create("World", {engine::eleInit<engine::worldManager>({})}, util::nextID());
@@ -133,7 +127,7 @@ int main(int argc, char **argv) {
 
 		bool exited = true;
 
-		while(!e.stopped() || (!exited)) {
+		while(!e.stopped()) {
 			std::string line;
 			std::cout << "citrus $ ";
 			std::getline(std::cin, line);

@@ -3,35 +3,38 @@
 #include <engine/engine.h>
 #include <engine/element.h>
 #include <graphics/texture/colorTexture.h>
+#include <optional>
 
 namespace citrus::engine {
 	class textureManager : public element {
 		private:
-		std::map<std::string, graphics::texture3b*> textures;
+		std::vector<graphics::texture3b*> textures;
 
 		public:
-		graphics::texture3b* getTexture(std::string name) {
-			auto it = textures.find(name);
-			if(it != textures.end()) return (*it).second;
-			return nullptr;
+		graphics::texture3b& getTexture(int index) {
+			if(index < 0) throw std::runtime_error("Texture access index negative");
+			if(index >= textures.size() || !textures[index]) throw std::runtime_error("Texture at index does not exist");
+			return *textures[index];
 		}
 
-		void loadPNG(std::string loc, std::string name) {
-			if(getTexture(name) == nullptr) {
-				try {
-					textures[name] = new graphics::texture3b(graphics::image3b(loc));
-				} catch(const std::runtime_error& er) {
-					e->Log("Failed to load texture \"" + name + "\": " + er.what());
-				} catch(...) {
-					e->Log("Failed to load texture \"" + name + "\": (Whack error)");
-				}
+		void loadPNG(std::string loc, int index) {
+			if(index < 0) throw std::runtime_error("Texture creation index negative");
+			if(index >= textures.size()) textures.resize(index + 1, nullptr);
+			if(textures[index]) throw std::runtime_error("Texture alread exists at index " + std::to_string(index));
+			try {
+				textures[index] = new graphics::texture3b(graphics::image3b(loc));
+				e->Log("Loaded texture " + std::to_string(index) + ": \"" + loc + "\"");
+			} catch(const std::runtime_error& er) {
+				e->Log("Failed to load texture " + std::to_string(index) + " \"" + loc + "\": " + er.what());
+			} catch(...) {
+				e->Log("Failed to load texture " + std::to_string(index) + " \"" + loc + "\": (Whack error)");
 			}
 		}
 
 		textureManager(entityRef ent) : element(ent, typeid(textureManager)) { }
 		~textureManager() {
 			for(auto it : textures) {
-				delete it.second;
+				if(it) delete it;
 			}
 		}
 	};

@@ -3,48 +3,29 @@
 #include <engine/elementRef.inl>
 #include <engine/manager.inl>
 
+#include <engine/elements/meshManager.h>
+#include <engine/elements/textureManager.h>
+
 //#include <openvr/openvr.h>
 
 namespace citrus {
 	namespace engine {
-		weak_ptr<renderManager::shaderInfo> renderManager::loadShader(string name, string vertFile, string geomFile, string fragFile) {
-			shared_ptr<renderManager::shaderInfo> info = std::make_shared<renderManager::shaderInfo>();
-			info->name = name;
-			info->vertFile = vertFile;
-			info->geomFile = geomFile;
-			info->fragFile = fragFile;
-			info->sh = nullptr;
-			_shaders.push_back(info);
-			return info;
-		}
-		weak_ptr<renderManager::shaderInfo> renderManager::getShader(string name) {
-			for(int i = 0; i < (int)_shaders.size(); i++) {
-				if(_shaders[i]->name == name) return _shaders[i];
-			}
-			return _invalid;
-		}
-		
-		void renderManager::flushShaders() {
-			std::lock_guard<mutex> lock(_shadersMut);
-			for(int i = 0; i < (int)_shaders.size(); i++) {
-				shared_ptr<shaderInfo> info = _shaders[i];
-				if(info->sh == nullptr) {
-					if(info->geomFile == "")
-						info->sh = new graphics::shader(info->vertFile, info->fragFile);
-					else
-						info->sh = new graphics::shader(info->vertFile, info->geomFile, info->fragFile);
-					if(!info->sh->good()) {
-						e->Log(info->sh->log());
-					}
+		void renderManager::addDrawable(eleRef<meshFilter> me, int index) {
+			std::lock_guard<std::mutex> lock(_drawableMut);
+			auto& eles = drawable[index].eles;
+			for(int i = 0; i < eles.size(); i++) {
+				if(eles[i].null()) {
+					eles[i] = me;
+					return;
 				}
 			}
+			drawable[index].eles.push_back(me);
 		}
-
-		void renderManager::resizeBuffer(unsigned int width, unsigned int height) {
+		void renderManager::resizeBuffers(unsigned int width, unsigned int height) {
 			if(width == 0 || height == 0) return;
 
-			standardFBO.reset();
-			standardFBO = std::make_unique<graphics::simpleFrameBuffer>(width, height);
+			meshFBO.reset();
+			meshFBO = std::make_unique<graphics::simpleFrameBuffer>(width, height);
 
 			textFBO.reset();
 			textFBO = std::make_unique<graphics::simpleFrameBuffer>(width, height);
@@ -52,7 +33,6 @@ namespace citrus {
 
 		void renderManager::load(const nlohmann::json& parsed) {
 			if(!parsed.empty()) {
-				text = parsed["text"].get<std::string>();
 				camRef = e->man->dereferenceElement<freeCam>(parsed["cam"]);
 			}
 		}
@@ -67,36 +47,63 @@ namespace citrus {
 			//int x = 5;
 		}
 		void renderManager::render() {
-			flushShaders();
-
 			auto win = e->getWindow();
 			auto size = win->framebufferSize();
-			if(standardFBO->width() != size.x || standardFBO->height() != size.y) {
-				resizeBuffer(size.x, size.y);
+			if(meshFBO->width() != size.x || meshFBO->height() != size.y) {
+				resizeBuffers(size.x, size.y);
 			}
 
-			standardFBO->bind();
-			standardFBO->clearAll();
-			_shaders[0]->sh->use();
+			camera cam = camRef->cam;
+			eleRef<textureManager> textures = e->getAllOfType<textureManager>()[0];
+			eleRef<meshManager> models = e->getAllOfType<meshManager>()[0];
+
+			meshFBO->bind();
+			meshFBO->clearAll();
+
+			glEnable(GL_DEPTH_TEST);
+
+			for(int i = 0; i < drawable.size(); i++) {
+				shaderInfo& info = drawable[i];
+
+				info.sh->use();
+				info.sh->setUniform("projectionMat", cam.getProjectionMatrix());
+				info.sh->setUniform("viewMat", cam.getViewMatrix());
+				info.sh->setUniform("viewBone", 0);
+
+				for(int j = 0; j < info.eles.size(); j++) {
+					auto& ref = info.eles[j];
+
+					glm::mat4 modelMat = ref->ent.getGlobalTransform().getMat();
+
+					info.sh->setUniform("modelMat", modelMat);
+					info.sh->setUniform("modelViewProjectionMat", cam.getViewProjectionMatrix() * modelMat);
+
+					info.sh->setSampler("tex", textures->getTexture(ref->tex()));
+
+					models->getModel(ref->model()).drawAll();
+				}
+			}
+
+
 			glm::mat4 projectionViewMat = camRef->cam.getViewProjectionMatrix();
 			for(auto ent : e->man->allEntities()) {
-				_shaders[0]->sh->setUniform("modelViewProjectionMat", projectionViewMat * ent.getGlobalTransform().getMat());
+				transSh->setUniform("modelViewProjectionMat", projectionViewMat * ent.getGlobalTransform().getMat());
 				graphics::vertexArray::drawOne();
 			}
-			standardFBO->unbind();
+			meshFBO->unbind();
 
 
 			textFBO->bind();
 			textFBO->clearAll();
-			font.streamText(text, camRef->cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
+			font.streamText("Render Manager", camRef->cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
 			textFBO->unbind();
 
 			graphics::frameBuffer screen(win);
 			screen.bind();
 			screen.clearAll();
 			composite->use();
-			composite->setSampler("bottomColor", *(standardFBO->getColors()[0].tex));
-			composite->setSampler("bottomDepth", *(standardFBO->getDepth()));
+			composite->setSampler("bottomColor", *(meshFBO->getColors()[0].tex));
+			composite->setSampler("bottomDepth", *(meshFBO->getDepth()));
 			composite->setSampler("topColor", *(textFBO->getColors()[0].tex));
 			composite->setSampler("topDepth", *(textFBO->getDepth()));
 			graphics::vertexArray::drawOne();
@@ -120,15 +127,18 @@ namespace citrus {
 
 			auto win = e->getWindow();
 			auto size = win->framebufferSize();
-			standardFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y);
+			meshFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y);
 			textFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y);
 
-			_invalid = std::make_shared<shaderInfo>();
+			
 
 			std::string bonesVert = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.vert");
 			std::string bonesFrag = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.frag");
-			bones = std::make_unique<graphics::shader>(bonesVert, bonesFrag);
-
+			{
+				shaderInfo inf;
+				inf.sh = std::make_unique<graphics::shader>(bonesVert, bonesFrag);
+				drawable.push_back(std::move(inf));
+			}
 			composite = std::make_unique<graphics::shader>(
 				"#version 450\n"
 				""
@@ -237,7 +247,7 @@ namespace citrus {
 				"  color = texture(tex, fUV);\n"
 				"}\n"
 				);
-			loadShader("TransformShader",
+			transSh = std::make_unique<graphics::shader>(
 				"#version 450\n"
 				""
 				"void main() {\n"

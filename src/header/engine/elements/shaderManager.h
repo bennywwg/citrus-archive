@@ -6,34 +6,51 @@
 
 namespace citrus::engine {
 	class shaderManager : public element {
-	private:
-		std::map<std::string, graphics::shader*> shaders;
+		struct segmenter {
+			
+		};
 
-	public:
-		graphics::shader* getShader(std::string name) {
-			auto it = shaders.find(name);
-			if(it != shaders.end()) return (*it).second;
-			return nullptr;
+	private:
+		static constexpr int shaderCount = 32;
+
+		graphics::shader *shaders[shaderCount];
+		std::vector<eleRef<meshFilter>> filters[shaderCount];
+
+		inline int allocateIndex() {
+			for(int i = 0; i < shaderCount; i++) {
+				if(shaders[i] == 0) {
+					return i;
+				}
+			}
+			throw std::runtime_error("Ran out of shader slots (" + std::to_string(shaderCount) + " max)");
+		}
+		inline void deallocateIndex(int i) {
+			shaders[i] = nullptr;
 		}
 
-		void loadSimpleShader(std::string vertLoc, std::string fragLoc, std::string name) {
-			if(getShader(name) == nullptr) {
-				try {
-					std::string vertSrc = util::loadEntireFile(vertLoc);
-					std::string fragSrc = util::loadEntireFile(fragLoc);
-					shaders[name] = new graphics::shader(vertSrc, fragSrc);
-				} catch(const std::runtime_error& er) {
-					e->Log("Failed to load simple shader \"" + name + "\": " + er.what());
-				} catch(...) {
-					e->Log("Failed to load simple shader \"" + name + "\": (Whack error)");
-				}
+	public:
+		
+
+		inline void loadSimpleShader(std::string vertLoc, std::string fragLoc) {
+			try {
+				std::string vertSrc = util::loadEntireFile(vertLoc);
+				std::string fragSrc = util::loadEntireFile(fragLoc);
+				int index = allocateIndex();
+				shaders[index] = new graphics::shader(vertSrc, fragSrc);
+				e->Log("Loaded Shader \"" + vertLoc + "\" with index " + std::to_string(index));
+			} catch(const std::runtime_error& er) {
+				e->Log("Failed to load simple shader \"" + vertLoc + "\": " + er.what());
+			} catch(...) {
+				e->Log("Failed to load simple shader \"" + vertLoc + "\": (Whack error)");
 			}
 		}
 
-		shaderManager(entityRef ent) : element(ent, typeid(shaderManager)) { }
-		~shaderManager() {
-			for(auto it : shaders) {
-				delete it.second;
+		inline shaderManager(entityRef ent) : element(ent, typeid(shaderManager)) {
+			memset(shaders, 0, sizeof(shaders));
+		}
+		inline ~shaderManager() {
+			for(int i = 0; i < shaderCount; i++) {
+				if(shaders[i]) delete shaders[i];
 			}
 		}
 	};

@@ -44,6 +44,7 @@ namespace citrus {
 			static eleInit<T> run(std::function<void(T&)> init) {
 				return eleInit(init);
 			}
+			eleInit() : eleInitBase(typeid(T), json()) { }
 			eleInit(json data) : eleInitBase(typeid(T), data) { }
 			eleInit(std::function<void(T&)> init) : eleInitBase(typeid(T), std::function<void(element*)>([=](element* ele) { init(*((T*)(ele))); })) { }
 			eleInit(json data, std::function<void(T&)> init) : eleInitBase(typeid(T), data, [=](element* ele) { init(*((T*)(ele))); }) { }

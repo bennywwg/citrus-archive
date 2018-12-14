@@ -16,6 +16,12 @@ namespace citrus {
 			std::lock_guard<std::mutex> lock(_logMut);
 			_log.emplace_back(this->time(), str);
 		}
+		void engine::Log(std::vector<string> strs) {
+			std::lock_guard<std::mutex> lock(_logMut);
+			for(auto str : strs) {
+				_log.emplace_back(this->time(), str);
+			}
+		}
 
 		vector<pair<double, string>> engine::flushLog() {
 			std::lock_guard<std::mutex> lock(_logMut);
@@ -34,6 +40,8 @@ namespace citrus {
 				_win = new graphics::window(512, 512, "Citrus Engine");
 
 				this->Log(_win->getAdapter());
+
+				Log(_win->controllers());
 
 				graphics::frameBuffer screen(_win);
 
@@ -100,6 +108,10 @@ namespace citrus {
 
 		double engine::time() {
 			return (clock::now() - _engineStart).count() * 0.000000001;
+		}
+
+		double engine::dt() {
+			return _timeStep;
 		}
 
 		float engine::controllerValue(graphics::windowInput::analog a) {

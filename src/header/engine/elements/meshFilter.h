@@ -8,18 +8,19 @@
 
 namespace citrus::engine {
 	class meshFilter : public element {
-		graphics::vertexArray*		model;
-		graphics::texture3b*		tex;
-		graphics::shader*			sh;
+	private:
+		int _model = -1;
+		int _tex = -1;
+		int _sh = -1;
 
 	public:
-		void setMeshByName(std::string name);
-		void setTextureByName(std::string name);
-		void setShaderByName(std::string name);
+		void setState(int m, int t, int s);
+		int model();
+		int tex();
+		int sh();
 
-		void render();
+		void load(const json&);
 
-		public:
 		meshFilter(entityRef ent);
 	};
 }
