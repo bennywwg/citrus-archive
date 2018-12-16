@@ -12,6 +12,8 @@
 #include <engine/elements/meshFilter.h>
 #include <engine/elements/rigidBodyComponent.h>
 #include <engine/elements/playerController.h>
+#include <engine/elements/worldManager.h>
+#include <engine/elements/rigidBodyComponent.h>
 
 #include <engine/entityRef.inl>
 #include <engine/elementRef.inl>
@@ -50,9 +52,13 @@ int main(int argc, char **argv) {
 		e.man->registerType<engine::textureManager>("Texture Manager");
 		e.man->registerType<engine::meshFilter>("Mesh Filter");
 		e.man->registerType<engine::playerController>("Player Controller");
+		e.man->registerType<engine::worldManager>("World Manager");
+		e.man->registerType<engine::rigidBodyComponent>("Rigid Body");
 		e.man->setOrder({
 			//typeid(engine::worldManager),
 			//typeid(engine::rigidBodyComponent),
+			typeid(engine::worldManager),
+			typeid(engine::rigidBodyComponent),
 			typeid(engine::shaderManager),
 			typeid(engine::meshManager),
 			typeid(engine::textureManager),
@@ -97,15 +103,26 @@ int main(int argc, char **argv) {
 			)
 		}, util::nextID());
 
+		e.man->create("Physics", {engine::eleInit<engine::worldManager>()}, util::nextID());
+
 		auto ent2 = e.man->create("Player", {
+			engine::eleInit<engine::playerController>(),
+			engine::eleInit<engine::rigidBodyComponent>::run(
+				[](engine::rigidBodyComponent& rb) {
+					rb.body->dynamic = false;
+				}
+			)
+		}, util::nextID());
+		
+
+		auto playerModel = e.man->create("Player Model", {
 			engine::eleInit<engine::meshFilter>::run(
 				[](engine::meshFilter& filt) {
-					filt.setState(0, 0, 0);
-				}
-			),
-			engine::eleInit<engine::playerController>()
-		}, util::nextID());
-		ent2.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
+				filt.setState(0, 0, 0);
+			}
+		)}, util::nextID());
+		playerModel.setParent(ent2);
+		playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 
 		/*auto world = e.man->create("World", {engine::eleInit<engine::worldManager>({})}, util::nextID());

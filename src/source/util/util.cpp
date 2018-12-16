@@ -16,20 +16,26 @@ namespace citrus {
 			return _currentID;
 		}
 
-		/*vec3 btToGlm(btVector3 vec) {
-			return vec3(vec.x(), vec.y(), vec.z());
+		vec3 btToGlm(btVector3 vec) {
+			return vec3(vec.getX(), vec.getY(), vec.getZ());
 		}
 		btVector3 glmToBt(vec3 vec) {
 			return btVector3(vec.x, vec.y, vec.z);
 		}
+		transform btToGlm(btTransform tr) {
+			return transform(btToGlm(tr.getOrigin()), btToGlm(tr.getRotation()));
+		}
 
 		quat btToGlm(btQuaternion quat) {
-			return quat::tquat(quat.w(), quat.x(), quat.y(), quat.z());
+			return glm::quat(quat.getW(), quat.getX(), quat.getY(), quat.getZ());
 		}
 		btQuaternion glmToBt(quat quat) {
 			return btQuaternion(quat.x, quat.y, quat.z, quat.w);
 		}
-
+		btTransform glmToBt(transform tr) {
+			return btTransform(glmToBt(tr.getOrientation()), glmToBt(tr.getPosition()));
+		}
+		
 		vector<btVector3> glmToBtVector(const vector<vec3>& verts) {
 			vector<btVector3> btVerts;
 			btVerts.resize(verts.size());
@@ -37,7 +43,7 @@ namespace citrus {
 				btVerts[i] = btVector3(verts[i].x, verts[i].y, verts[i].z);
 			}
 			return btVerts;
-		}*/
+		}
 
 		bool isPowerOfTwo(unsigned int val) {
 			return (val != 0) && ((val & (val - 1)) == 0);

@@ -15,20 +15,26 @@ namespace citrus::engine {
 		float ySpeed = 90.0f, xSpeed = 90.0f, distSpeed = 1.0f;
 		eleRef<freeCam> cam;
 
+		float navSpeed = 2.0f;
+
 		inline void preRender() {
 			//do movement
 			glm::vec2 movement = glm::vec2(e->controllerValue(analog::ctr_lstick_x), e->controllerValue(analog::ctr_lstick_y));
-			movement = glm::vec2(glm::rotate(y / 180.0f * glm::pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::vec4(movement, 0.0f, 0.0f));
-			movement *= e->dt();
-			ent.setLocalPosition(ent.getLocalPosition() + glm::vec3(movement.x, 0.0f, -movement.y));
+			if(glm::length(movement) > 0.05f) {
+				movement = glm::vec2(glm::rotate(y / 180.0f * glm::pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::vec4(movement, 0.0f, 0.0f));
+				movement *= e->dt() * navSpeed;
+				ent.setLocalPosition(ent.getLocalPosition() + glm::vec3(movement.x, 0.0f, -movement.y));
 
+				float movementAngle = glm::atan(movement.y, movement.x) + glm::pi<float>() * 0.5f;
+				ent.setLocalOrientation(glm::rotate(movementAngle, glm::vec3(0.0f, 1.0f, 0.0f)));
+			}
 			
 			//close if needed
 			if(e->getKey(button::escape)) e->stop();
 
 
 			//do camera stuff
-			y += e->dt() * ySpeed * e->controllerValue(analog::ctr_rstick_x);
+			y += -e->dt() * ySpeed * e->controllerValue(analog::ctr_rstick_x);
 			dist += -e->dt() * distSpeed * e->controllerValue(analog::ctr_rstick_y);
 			dist = glm::clamp(dist, minDist, maxDist);
 

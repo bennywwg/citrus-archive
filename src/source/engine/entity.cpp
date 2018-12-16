@@ -25,7 +25,7 @@ namespace citrus::engine {
 	}
 	transform entity::getGlobalTransform() const {
 		if(_parent != nullptr) {
-			return _trans * _parent->getGlobalTransform();
+			return _parent->getGlobalTransform() * _trans;
 		} else {
 			return _trans;
 		}

@@ -103,6 +103,10 @@ namespace citrus {
 		public:
 			std::vector<bone> bones;
 
+			std::vector<glm::mat4> getAnimationTransforms() {
+
+			}
+
 			vertexBoneInfo getInfo(unsigned int vertex) {
 				vertexBoneInfo res;
 				for (int i = 0; i < bones.size(); i++) {
@@ -298,6 +302,9 @@ namespace citrus {
 					for (size_t j = 0; j < mesh->mNumBones; j++) {
 						const aiBone& inBone = *mesh->mBones[j];
 						
+						std::string name(inBone.mName.data);
+						util::sout("Bone: " + name + "\n");
+
 						bone theBone;
 						theBone.name = inBone.mName.C_Str();
 						aiMatrix4x4 m = inBone.mOffsetMatrix;
@@ -317,6 +324,15 @@ namespace citrus {
 						weight0.push_back(info.primaryWeight);
 						weight1.push_back(info.secondaryWeight);
 					}
+
+					for(int j = 0; j < scene->mNumAnimations; j++) {
+						std::string animName = scene->mAnimations[j]->mName.data;
+						util::sout("Animation: " + animName + "\n");
+						//scene->mAnimations[0]->
+						//scene->mAnimations[j]->mMeshChannels[0]->mKeys[0].
+					}
+
+					
 				}
 			}
 		 };

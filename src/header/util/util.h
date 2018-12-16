@@ -21,7 +21,7 @@ namespace citrus {
 
 		int nextID();
 
-		//std::vector<btVector3> glmToBtVector(const std::vector<glm::vec3>& verts);
+		std::vector<btVector3> glmToBtVector(const std::vector<glm::vec3>& verts);
 
 		void spin_until(std::function<bool()> func, std::chrono::microseconds wait = std::chrono::microseconds(50));
 
@@ -76,18 +76,21 @@ namespace citrus {
 			return glm::quat(q["w"].get<float>(), q["x"].get<float>(), q["y"].get<float>(), q["z"].get<float>());
 		}
 		
-		inline json save(engine::transform trans) {
+		inline json save(transform trans) {
 			return json({
 				{"Position", save(trans.getPosition())},
 				{"Orientation", save(trans.getOrientation())}
 			});
 		}
-		inline engine::transform loadTransform(json trans) {
-			return engine::transform(
+		inline transform loadTransform(json trans) {
+			return transform(
 				loadVec3(trans["Position"]),
 				loadQuat(trans["Orientation"])
 			);
 		}
+
+		transform btToGlm(btTransform tr);
+		btTransform glmToBt(transform tr);
 
 		template<class UnaryFunction>
 		void recursive_iterate(json& j, UnaryFunction f) {
@@ -104,6 +107,11 @@ namespace citrus {
 		inline std::string toString(glm::vec3 vec, int precision = 3) {
 			std::stringstream ss;
 			ss << std::fixed << std::setfill('0') << std::setw(8) << std::setprecision(3) << "<" << vec.x << ", " << vec.y << ", " << vec.z << ">";
+			return ss.str();
+		}
+		inline std::string toString(glm::vec2 vec, int precision = 3) {
+			std::stringstream ss;
+			ss << std::fixed << std::setfill('0') << std::setw(8) << std::setprecision(3) << "<" << vec.x << ", " << vec.y << ">";
 			return ss.str();
 		}
 	}

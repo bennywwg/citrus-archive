@@ -7,7 +7,7 @@
 #include <glm/ext.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
-//#include <btBulletDynamicsCommon.h>
+#include <btBulletDynamicsCommon.h>
 
 using glm::quat;
 using glm::vec2;
@@ -27,13 +27,13 @@ using glm::inverse;
 using glm::toMat4;
 using glm::toQuat;
 
-//namespace citrus {
-//	namespace util {
-//		vec3 btToGlm(btVector3 vec);
-//		btVector3 glmToBt(vec3 vec);
-//		quat btToGlm(btQuaternion quat);
-//		btQuaternion glmToBt(quat quat);
-//	}
-//}
+namespace citrus {
+	namespace util {
+		vec3 btToGlm(btVector3 vec);
+		btVector3 glmToBt(vec3 vec);
+		quat btToGlm(btQuaternion quat);
+		btQuaternion glmToBt(quat quat);
+	}
+}
 
 #endif
