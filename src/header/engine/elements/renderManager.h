@@ -31,7 +31,7 @@ namespace citrus {
 				std::vector<eleRef<meshFilter>> eles;
 			};
 			std::vector<shaderInfo> drawable;
-			void addDrawable(eleRef<meshFilter> me, int model);
+			void addDrawable(eleRef<meshFilter> me, int m, int t, int s);
 
 			eleRef<freeCam> camRef;
 			public:

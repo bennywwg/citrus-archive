@@ -40,7 +40,7 @@ namespace citrus {
 				return _attributebuffers;
 			}
 
-			void drawAll(GLint mode = GL_TRIANGLES) {
+			void drawAll(GLint mode = GL_TRIANGLES) const {
 				glBindVertexArray(_ptr);
 				if (_indexbuffer) {
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _indexbuffer->ptr());

@@ -277,21 +277,33 @@ namespace citrus {
 		}
 
 		void manager::render() {
-			for(const auto& oType : _order)
-				for(auto& ele : getInfo(oType)->existing)
+			for(const auto& oType : _order) {
+				auto& info = *getInfo(oType);
+				auto begin = std::chrono::high_resolution_clock::now();
+				for(auto& ele : info.existing)
 					ele->render();
+				auto end = std::chrono::high_resolution_clock::now();
+				info.stats.render = (end - begin);
+			}
 		}
 
 		void manager::preRender() {
-			for(const auto& oType : _order)
-				for(auto& ele : getInfo(oType)->existing)
+			for(const auto& oType : _order) {
+				auto& info = *getInfo(oType);
+				auto begin = std::chrono::high_resolution_clock::now();
+				for(auto& ele : info.existing)
 					ele->preRender();
+				auto end = std::chrono::high_resolution_clock::now();
+				info.stats.render = end - begin;
+			}
 		}
 
 		void manager::flushToCreateUnsafe() {
 			//initialize all elements in order
 			for(const auto& oType : _order) {
 				auto& info = *getInfo(oType);
+
+				auto begin = std::chrono::high_resolution_clock::now();
 
 				for(auto& meta : info.toCreate) {
 					info.ctor(std::get<0>(meta), std::get<1>(meta));
@@ -300,6 +312,10 @@ namespace citrus {
 					if(std::get<3>(meta)) std::get<3>(meta)(std::get<0>(meta));
 					std::get<0>(meta)->_initialized = true;
 				}
+
+				auto end = std::chrono::high_resolution_clock::now();
+
+				info.stats.ctor = end - begin;
 			}
 
 			//add newly created entities
@@ -314,9 +330,15 @@ namespace citrus {
 			for(const auto& oType : _order) {
 				auto& info = *getInfo(oType);
 
+				auto begin = std::chrono::high_resolution_clock::now();
+
 				for(auto& meta : info.toCreate) {
 					std::get<0>(meta)->load(std::get<2>(meta));
 				}
+
+				auto end = std::chrono::high_resolution_clock::now();
+
+				info.stats.load = end - begin;
 			}
 
 			//clear all element toCreate lists
@@ -342,6 +364,8 @@ namespace citrus {
 			for(const auto& oType : _order) {
 				auto& info = *getInfo(oType);
 
+				auto begin = std::chrono::high_resolution_clock::now();
+
 				for(auto& meta : info.toDestroy) {
 					//remove from existing entity list
 					for(unsigned int i = 0; i < info.existingEntities.size(); ++i)
@@ -357,6 +381,10 @@ namespace citrus {
 					info.dtor(std::get<0>(meta));
 					::operator delete(std::get<0>(meta));
 				}
+
+				auto end = std::chrono::high_resolution_clock::now();
+
+				info.stats.dtor = end - begin;
 			}
 
 			//clear all element toDestroy lists

@@ -99,6 +99,7 @@ namespace citrus {
 			//keeps track of allocating texture units, incrementing once after each texture bind
 			void setSampler(string name, const texture& tex);
 			void setUniform(string name, mat4 m);
+			void setUniform(string name, mat4* ms, int count);
 
 			private:
 			shader();

@@ -23,15 +23,14 @@ namespace citrus {
 
 			btRigidBody* _body;
 			btMotionState* _state;
-
-			bool _updatedTrans = false;
-			transform _trans = transform();
+			collisionShape* const _shape;
 
 		public:
 			bool dynamic = true;
 			double mass = 1.0;
 
 			btRigidBody* ptr() const;
+			collisionShape* getShape() const;
 
 			glm::vec3 getPosition() const;
 			glm::quat getOrientation() const;

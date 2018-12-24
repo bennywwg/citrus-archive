@@ -15,7 +15,7 @@ namespace citrus {
 			std::unique_ptr<depthTexture> _depth;
 
 			public:
-			simpleFrameBuffer(unsigned int width, unsigned int height) :
+			inline simpleFrameBuffer(unsigned int width, unsigned int height) :
 				_color(getColors()[0].tex),
 				_depth(getDepth()),
 				frameBuffer( { colorAttachment(new texture3b(image3b(width, height)), 0) }, new depthTexture24(width, height), width, height) { }

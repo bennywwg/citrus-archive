@@ -18,7 +18,7 @@ namespace citrus {
 	}
 
 	namespace geom {
-		class simpleModel;
+		class model;
 	}
 
 	namespace dynamics {

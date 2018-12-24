@@ -30,7 +30,7 @@ namespace citrus {
 	bool transform::operator!=(const transform & other) const {
 		return !(*this == other);
 	}
-	transform::transform() : _position(0.0f, 0.0f, 0.0f), _orientation() { }
+	transform::transform() : _position(0.0f, 0.0f, 0.0f), _orientation(1.0f, 0.0f, 0.0f, 0.0f) { }
 	transform::transform(mat4 mat) : _position(glm::vec3(mat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f))), _orientation(glm::toQuat(mat)) { }
 	transform::transform(vec3 position, quat orientation) : _position(position), _orientation(orientation) { }
 }

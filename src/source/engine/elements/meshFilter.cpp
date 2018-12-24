@@ -25,7 +25,7 @@ namespace citrus::engine {
 
 	void meshFilter::load(const json& js) {
 		auto g = e->getAllOfType<renderManager>()[0];
-		g->addDrawable(eleRef<meshFilter>(this), _model);
+		g->addDrawable(eleRef<meshFilter>(this), _model, _tex, _sh);
 	}
 
 	meshFilter::meshFilter(entityRef ent) : element(ent, typeid(meshFilter)) {

@@ -34,6 +34,12 @@ namespace citrus {
 			~scopedProfiler();
 		};
 
+		template<typename T>
+		inline T rmod(T val, T mod) {
+			static_assert(std::is_floating_point<T>::value, "can only rmod a floating point type");
+			return val - floor(val / mod) * mod;
+		}
+
 		inline json save(glm::vec2 vec) {
 			return json({
 				{"x", vec.x},

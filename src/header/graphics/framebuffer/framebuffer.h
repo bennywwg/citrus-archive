@@ -15,8 +15,8 @@ namespace citrus {
 		struct colorAttachment {
 			colorTexture* tex;
 			unsigned int attachment;
-			colorAttachment() = default;
-			colorAttachment(colorTexture* tex, unsigned int attachment) : tex(tex), attachment(attachment) {}
+			inline colorAttachment() = default;
+			inline colorAttachment(colorTexture* tex, unsigned int attachment) : tex(tex), attachment(attachment) {}
 		};
 
 		class frameBuffer {
@@ -28,41 +28,41 @@ namespace citrus {
 			depthTexture* _depth;
 			std::vector<colorAttachment> _colors;
 		public:
-			GLuint ptr() const {
+			inline GLuint ptr() const {
 				return _ptr;
 			}
 
-			void bind() const {
+			inline void bind() const {
 				glBindFramebuffer(GL_FRAMEBUFFER, _ptr);
 			}
-			void setViewport(GLint x, GLint y, GLsizei width, GLsizei height) const {
+			inline void setViewport(GLint x, GLint y, GLsizei width, GLsizei height) const {
 				bind();
 				glViewport(x, y, width, height);
 			}
-			void clearColor(float r, float g, float b, float a) const {
+			inline void clearColor(float r, float g, float b, float a) const {
 				bind();
 				glClearColor(r, g, b, a);
 				glClear(GL_COLOR_BUFFER_BIT);
 			}
-			void clearColor() const {
+			inline void clearColor() const {
 				clearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			}
-			void clearDepth() const {
+			inline void clearDepth() const {
 				bind();
 				glClear(GL_DEPTH_BUFFER_BIT);
 			}
-			void clearAll(float r, float g, float b, float a) const {
+			inline void clearAll(float r, float g, float b, float a) const {
 				bind();
 				glClearColor(r, g, b, a);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			}
-			void clearAll() const {
+			inline void clearAll() const {
 				clearAll(0.0f, 0.0f, 0.0f, 0.0f);
 			}
-			unsigned int width() const {
+			inline unsigned int width() const {
 				return _width;
 			}
-			unsigned int height() const {
+			inline unsigned int height() const {
 				return _height;
 			}
 

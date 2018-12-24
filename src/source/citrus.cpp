@@ -79,7 +79,6 @@ int main(int argc, char **argv) {
 			)
 		}, util::nextID());
 
-
 		e.man->create("Renderer", {
 			engine::eleInit<engine::renderManager>::run(
 				[&cam2](engine::renderManager& man) {
@@ -92,6 +91,9 @@ int main(int argc, char **argv) {
 			engine::eleInit<engine::meshManager>::run(
 				[](engine::meshManager& man) {
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\natsuki.dae", 0);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\sphere.dae", 1);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\cube1x1x1.dae", 2);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\walker.dae", 3);
 				}
 			)
 		}, util::nextID());
@@ -99,6 +101,7 @@ int main(int argc, char **argv) {
 			engine::eleInit<engine::textureManager>::run(
 				[](engine::textureManager& man) {
 					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\Natsuki_COLOR.png", 0);
+					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\grid.png", 1);
 				}
 			)
 		}, util::nextID());
@@ -107,22 +110,24 @@ int main(int argc, char **argv) {
 
 		auto ent2 = e.man->create("Player", {
 			engine::eleInit<engine::playerController>(),
-			engine::eleInit<engine::rigidBodyComponent>::run(
-				[](engine::rigidBodyComponent& rb) {
-					rb.body->dynamic = false;
-				}
-			)
+			engine::eleInit<engine::rigidBodyComponent>::run([](engine::rigidBodyComponent& rb) {
+				//rb.body->dynamic = false;
+			})
 		}, util::nextID());
-		
-
 		auto playerModel = e.man->create("Player Model", {
-			engine::eleInit<engine::meshFilter>::run(
-				[](engine::meshFilter& filt) {
+			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
 				filt.setState(0, 0, 0);
-			}
-		)}, util::nextID());
+			})
+		}, util::nextID());
 		playerModel.setParent(ent2);
-		playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
+		//playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
+
+
+		e.man->create("Walker Test", {
+			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
+				filt.setState(3, 1, 0);
+			})
+		}, util::nextID());
 
 
 		/*auto world = e.man->create("World", {engine::eleInit<engine::worldManager>({})}, util::nextID());
@@ -138,7 +143,20 @@ int main(int argc, char **argv) {
 			
 		delete prof; prof = nullptr;
 
+		graphics::image4b img("C:\\Users\\benny\\OneDrive\\Desktop\\citrus\\index.png");
 
+		std::ofstream fo("C:\\Users\\benny\\OneDrive\\Desktop\\citrus\\output.txt");
+
+		for(int x = 0; x < img.width(); x++) {
+			for(int y = img.height() - 1; y >= 0; y--) {
+				auto px = img.at(x, y);
+				int val = px.b << 24 | px.g << 16 | px.r << 8 | px.a;
+				fo << val << ",";
+			}
+			fo << "\n";
+		}
+
+		fo.close();
 
 		//e.man->loadPrefabUnsafe(savedJS);
 

@@ -44,15 +44,33 @@ namespace citrus {
 			static eleInit<T> run(std::function<void(T&)> init) {
 				return eleInit(init);
 			}
-			eleInit() : eleInitBase(typeid(T), json()) { }
-			eleInit(json data) : eleInitBase(typeid(T), data) { }
-			eleInit(std::function<void(T&)> init) : eleInitBase(typeid(T), std::function<void(element*)>([=](element* ele) { init(*((T*)(ele))); })) { }
-			eleInit(json data, std::function<void(T&)> init) : eleInitBase(typeid(T), data, [=](element* ele) { init(*((T*)(ele))); }) { }
+			inline eleInit() : eleInitBase(typeid(T), json()) { }
+			inline eleInit(json data) : eleInitBase(typeid(T), data) { }
+			inline eleInit(std::function<void(T&)> init) : eleInitBase(typeid(T), std::function<void(element*)>([=](element* ele) { init(*((T*)(ele))); })) { }
+			inline eleInit(json data, std::function<void(T&)> init) : eleInitBase(typeid(T), data, [=](element* ele) { init(*((T*)(ele))); }) { }
 		};
 
 		class manager {;
 			friend class entity;
 			friend class engine;
+
+			struct edbi {
+				std::chrono::nanoseconds dtor;		//dtor
+				std::chrono::nanoseconds ctor;		//ctor
+				std::chrono::nanoseconds load;		//load(const json&)
+				std::chrono::nanoseconds preRender;	//preRender()
+				std::chrono::nanoseconds render;	//render()
+				std::chrono::nanoseconds save;		//json save()
+				inline void zero() {
+					dtor = std::chrono::nanoseconds::zero();
+					ctor = std::chrono::nanoseconds::zero();
+					load = std::chrono::nanoseconds::zero();
+					preRender = std::chrono::nanoseconds::zero();
+					render = std::chrono::nanoseconds::zero();
+					save = std::chrono::nanoseconds::zero();
+				}
+			};
+
 			struct elementInfo {
 				function<void(element*, entityRef)> ctor;
 				function<void(element*)> dtor;
@@ -65,28 +83,30 @@ namespace citrus {
 				type_index type;
 				std::shared_mutex mut;
 
-				int findInToCreate(element* ele) {
+				edbi stats;
+
+				inline int findInToCreate(element* ele) {
 					for(uint32_t i = 0; i < toCreate.size(); ++i)
 						if(std::get<0>(toCreate[i]) == ele)
 							return i;
 
 					return -1;
 				}
-				int findInToDestroy(element* ele) {
+				inline int findInToDestroy(element* ele) {
 					for(uint32_t i = 0; i < toDestroy.size(); ++i)
 						if(toDestroy[i].first == ele)
 							return i;
 
 					return -1;
 				}
-				int findInExisting(element* ele) {
+				inline int findInExisting(element* ele) {
 					for(uint32_t i = 0; i < existing.size(); ++i)
 						if(existing[i] == ele)
 							return i;
 
 					return -1;
 				}
-				int findInExistingEntities(entityRef ent) {
+				inline int findInExistingEntities(entityRef ent) {
 					for(uint32_t i = 0; i < existingEntities.size(); ++i)
 						if(existingEntities[i] == ent)
 							return i;
@@ -94,7 +114,9 @@ namespace citrus {
 					return -1;
 				}
 
-				elementInfo() : type(typeid(void)) { }
+				inline elementInfo() : type(typeid(void)) {
+					stats.zero();
+				}
 			};
 
 			

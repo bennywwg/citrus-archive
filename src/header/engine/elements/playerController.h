@@ -9,10 +9,10 @@ namespace citrus::engine {
 
 	class playerController : public element {
 	public:
-		float minDist = 6.0f, maxDist = 6.0f;
+		float minDist = 3.0f, maxDist = 160.0f;
 		float minX = 45.0f, maxX = 45.0f;
 		float y = 45.0f, x = 30.0f, dist = 5.0f;
-		float ySpeed = 90.0f, xSpeed = 90.0f, distSpeed = 1.0f;
+		float ySpeed = 90.0f, xSpeed = 90.0f, distSpeed = 2.0f;
 		eleRef<freeCam> cam;
 
 		float navSpeed = 2.0f;
@@ -34,8 +34,8 @@ namespace citrus::engine {
 
 
 			//do camera stuff
-			y += -e->dt() * ySpeed * e->controllerValue(analog::ctr_rstick_x);
-			dist += -e->dt() * distSpeed * e->controllerValue(analog::ctr_rstick_y);
+			y += -e->dt() * ySpeed * ((e->getKey(button::arrowLeft) ? 1 : 0 + e->getKey(button::arrowRight) ? -1 : 0) + e->controllerValue(analog::ctr_rstick_x));
+			dist += -e->dt() * distSpeed * ((e->getKey(button::arrowUp) ? 1 : 0 + e->getKey(button::arrowDown) ? -1 : 0) + e->controllerValue(analog::ctr_rstick_y));
 			dist = glm::clamp(dist, minDist, maxDist);
 
 			if(y < 0) y += 360.0f;

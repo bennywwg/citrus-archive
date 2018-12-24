@@ -1,5 +1,6 @@
 #include <dynamics/physics/world.h>
 #include <util/util.h>
+#include <dynamics/physics/collisionShape.h>
 
 #include <iostream>
 
@@ -14,22 +15,14 @@ namespace citrus {
 			_bodies.erase(body);
 		}
 		void world::step() {
-			for(rigidBody* body : _bodies) {
-				if(body->_updatedTrans) {
-					body->_body->setWorldTransform(util::glmToBt(body->_trans));
-					body->_updatedTrans = false;
-				}
+			/*for(rigidBody* body : _bodies) {
 				if(body->dynamic) {
 					body->_body->setMassProps(body->mass, btVector3(1.0, 1.0, 1.0));
 				} else {
 					body->_body->setMassProps(0.0, btVector3(1.0, 1.0, 1.0));
 				}
-			}
+			}*/
 			_world->stepSimulation(1.0 / 60.0, 1, 1.0 / 60.0);
-			for(rigidBody* body : _bodies) {
-				body->_trans = transform(util::btToGlm(body->_body->getCenterOfMassPosition()), util::btToGlm(body->_body->getOrientation()));
-				body->_updatedTrans = false;
-			}
 		}
 		world::world() :
 			_collisionConfiguration(new btDefaultCollisionConfiguration()),
@@ -37,7 +30,13 @@ namespace citrus {
 			_broadphaseInterface(new btDbvtBroadphase()),
 			_constraintSolver(new btSequentialImpulseConstraintSolver()),
 			_world(new btDiscreteDynamicsWorld(_dispatcher.get(), _broadphaseInterface.get(), _constraintSolver.get(), _collisionConfiguration.get())) {
-			_world->setGravity(btVector3(0.0, -9.81, 0.0));
+			_world->setGravity(btVector3(0.0, -0.0981, 0.0));
+
+			collisionShape* sh = new collisionShape(0.5f, 0.5f, 0.5f);
+			rigidBody* bd = new rigidBody(sh, this);
+			bd->dynamic = false;
+			bd->setPosition(glm::vec3(0.0f, -2.0f, 0.0f));
+			bd->_body->setMassProps(0.0, btVector3(0.0, 0.0, 0.0));
 		}
 	}
 }

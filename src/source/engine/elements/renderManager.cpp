@@ -10,16 +10,16 @@
 
 namespace citrus {
 	namespace engine {
-		void renderManager::addDrawable(eleRef<meshFilter> me, int index) {
+		void renderManager::addDrawable(eleRef<meshFilter> me, int m, int t, int s) {
 			std::lock_guard<std::mutex> lock(_drawableMut);
-			auto& eles = drawable[index].eles;
+			auto& eles = drawable[s].eles;
 			for(int i = 0; i < eles.size(); i++) {
 				if(eles[i].null()) {
 					eles[i] = me;
 					return;
 				}
 			}
-			drawable[index].eles.push_back(me);
+			drawable[s].eles.push_back(me);
 		}
 		void renderManager::resizeBuffers(unsigned int width, unsigned int height) {
 			if(width == 0 || height == 0) return;
@@ -29,6 +29,8 @@ namespace citrus {
 
 			textFBO.reset();
 			textFBO = std::make_unique<graphics::simpleFrameBuffer>(width, height);
+
+			camRef->cam.aspectRatio = width / (float) height;
 		}
 
 		void renderManager::load(const nlohmann::json& parsed) {
@@ -58,7 +60,7 @@ namespace citrus {
 			eleRef<meshManager> models = e->getAllOfType<meshManager>()[0];
 
 			meshFBO->bind();
-			meshFBO->clearAll();
+			//meshFBO->clearAll();
 
 			glEnable(GL_DEPTH_TEST);
 
@@ -78,25 +80,46 @@ namespace citrus {
 					info.sh->setUniform("modelMat", modelMat);
 					info.sh->setUniform("modelViewProjectionMat", cam.getViewProjectionMatrix() * modelMat);
 
+					std::vector<glm::mat4> trData(64, glm::translate(glm::vec3(0.f, 0.f, 0.f)));
+					if(models->getMesh(ref->model()).animations.animations.size() != 0) {
+						models->getMesh(ref->model()).calculateAnimationTransforms(0, trData, e->time() - 10.0f);
+					}
+					info.sh->setUniform("boneData", trData.data(), 64);
+
 					info.sh->setSampler("tex", textures->getTexture(ref->tex()));
 
 					models->getModel(ref->model()).drawAll();
 				}
 			}
 
+			/*glm::mat4 projectionViewMat = camRef->cam.getViewProjectionMatrix();
+			transSh->use();
+			for(int i = 0; i < drawable.size(); i++) {
+				shaderInfo& info = drawable[i];
 
-			glm::mat4 projectionViewMat = camRef->cam.getViewProjectionMatrix();
-			for(auto ent : e->man->allEntities()) {
+				for(int j = 0; j < info.eles.size(); j++) {
+					auto& ref = info.eles[j];
+
+					auto& me = models->getMesh(ref->model());
+						glm::mat4 modelMat = ref->ent.getGlobalTransform().getMat();
+					for(int k = 0; k < me.boneBase.allBones().size(); k++) {
+						transSh->setUniform("modelViewProjectionMat", projectionViewMat * me.boneBase.allBones()[k].accumulatedTransform * modelMat * glm::scale(glm::vec3(0.01f, 0.01f, 0.01f)));
+						graphics::vertexArray::drawOne();
+					}
+				}
+			}*/
+
+
+			/*for(auto& ent : e->man->allEntities()) {
 				transSh->setUniform("modelViewProjectionMat", projectionViewMat * ent.getGlobalTransform().getMat());
 				graphics::vertexArray::drawOne();
-			}
+			}*/
 			meshFBO->unbind();
 
 
-			textFBO->bind();
-			textFBO->clearAll();
+			/*textFBO->bind();
 			font.streamText("Render Manager", camRef->cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
-			textFBO->unbind();
+			textFBO->unbind();*/
 
 			graphics::frameBuffer screen(win);
 			screen.bind();
@@ -108,6 +131,9 @@ namespace citrus {
 			composite->setSampler("topDepth", *(textFBO->getDepth()));
 			graphics::vertexArray::drawOne();
 			composite->unuse();
+
+			meshFBO->clearAll();
+			textFBO->clearAll();
 
 			//vr::Texture_t t;
 			//t.eColorSpace = vr::ColorSpace_Gamma;

@@ -178,6 +178,11 @@ namespace citrus {
 			GLuint loc = glGetUniformLocation(_ptr, name.c_str());
 			glUniformMatrix4fv(loc, 1, GL_FALSE, &m[0][0]);
 		}
+		void shader::setUniform(string name, mat4* ms, int count) {
+			use();
+			GLuint loc = glGetUniformLocation(_ptr, name.c_str());
+			glUniformMatrix4fv(loc, count, GL_FALSE, (GLfloat*)ms);
+		}
 		shader::shader() {
 			_ptr = glCreateProgram();
 		}
