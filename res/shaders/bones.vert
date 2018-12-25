@@ -26,7 +26,7 @@ void main() {
   if(vert_bone1 != -1) {
     transformed1 = vec3(boneData[vert_bone1] * vec4(vert_position, 1.0)) * vert_weight1;
   }
-  gl_Position = modelViewProjectionMat * vec4(transformed0, 1.0);
+  gl_Position = modelViewProjectionMat * vec4(transformed0 + transformed1, 1.0);
   //gl_Position = modelViewProjectionMat * vec4(vert_position, 1.0);
   inter_uv = vert_uv;
   if(vert_bone0 == viewBone) {

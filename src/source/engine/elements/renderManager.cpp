@@ -80,15 +80,17 @@ namespace citrus {
 					info.sh->setUniform("modelMat", modelMat);
 					info.sh->setUniform("modelViewProjectionMat", cam.getViewProjectionMatrix() * modelMat);
 
+					int model = ref->model();
 					std::vector<glm::mat4> trData(64, glm::translate(glm::vec3(0.f, 0.f, 0.f)));
-					if(models->getMesh(ref->model()).animations.animations.size() != 0) {
-						models->getMesh(ref->model()).calculateAnimationTransforms(0, trData, e->time() - 10.0f);
+					int ani = ref->ani();
+					if(ani != -1) {
+						models->getMesh(model).calculateAnimationTransforms(ani, trData, e->time() - ref->aniStart());
 					}
 					info.sh->setUniform("boneData", trData.data(), 64);
 
 					info.sh->setSampler("tex", textures->getTexture(ref->tex()));
 
-					models->getModel(ref->model()).drawAll();
+					models->getModel(model).drawAll();
 				}
 			}
 

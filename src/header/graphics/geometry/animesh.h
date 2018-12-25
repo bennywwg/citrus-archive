@@ -25,15 +25,17 @@ namespace citrus::geom {
 	};
 
 	struct vertexBoneInfo {
-		unsigned int primary = -1, secondary = -1;
+		int primary = -1, secondary = -1;
 		float primaryWeight = 0.0f, secondaryWeight = 0.0f;
 		void normalize() {
-			if(primary == -1) {
-				primaryWeight = 1.0f;
-			} else {
-				float total = primaryWeight + secondaryWeight;
-				primaryWeight /= total;
-				secondaryWeight /= total;
+			if(primary != -1) {
+				if(secondary == -1) {
+					primaryWeight = 1.0f;
+				} else {
+					float total = primaryWeight + secondaryWeight;
+					primaryWeight /= total;
+					secondaryWeight /= total;
+				}
 			}
 		}
 	};
@@ -91,31 +93,31 @@ namespace citrus::geom {
 	struct bone {
 		int node;
 		glm::mat4 offset;
-		std::map<unsigned int, float> weights;
 	};
 
 	struct boneContainer {
 		std::vector<bone> bones;
 		std::map<string, int> nameMap;
+		std::vector<std::vector<float>> weights;
 
 		inline vertexBoneInfo getInfo(unsigned int vertex) {
 			vertexBoneInfo res;
 			for(int i = 0; i < bones.size(); i++) {
-				bone& bone = bones[i];
+				float val = weights[i][vertex];
+				if(val <= 0.0f) continue;
 
-				if(bone.weights.find(vertex) != bone.weights.end()) {
-					float weight = bone.weights.find(vertex)->second;
-					if(weight > res.primaryWeight) {
-						res.secondary = res.primary;
-						res.secondaryWeight = res.primaryWeight;
-						res.primary = i;
-						res.primaryWeight = weight;
-					} else if(weight > res.secondaryWeight) {
-						res.secondary = i;
-						res.secondaryWeight = weight;
-					}
+				if(res.primary == -1) {
+					res.primary = i;
+					res.primaryWeight = val;
+				} else if(val > res.primaryWeight && res.secondary == -1) {
+					res.secondary = res.primary;
+					res.secondaryWeight = res.primaryWeight;
+					res.primary = i;
+					res.primaryWeight = val;
+				} else if(res.secondary == -1 || val > res.secondaryWeight) {
+					res.secondary = i;
+					res.secondaryWeight = val;
 				}
-
 			}
 			return res;
 		}
@@ -135,8 +137,9 @@ namespace citrus::geom {
 				bone& bone = bones.back();
 				bone.node = nodeIndexIt->second;
 				bone.offset = node::convertMat(inBone.mOffsetMatrix);
+				weights.emplace_back(scene->mMeshes[0]->mNumVertices, -1.0f);
 				for (size_t k = 0; k < inBone.mNumWeights; k++) {
-					bone.weights[inBone.mWeights[k].mVertexId] = inBone.mWeights[k].mWeight;
+					weights[j][inBone.mWeights[k].mVertexId] = inBone.mWeights[k].mWeight;
 				}
 
 				nameMap[name] = j;

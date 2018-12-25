@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\sphere.dae", 1);
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\cube1x1x1.dae", 2);
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\walker.dae", 3);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human.dae", 4);
 				}
 			)
 		}, util::nextID());
@@ -125,7 +126,8 @@ int main(int argc, char **argv) {
 
 		e.man->create("Walker Test", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
-				filt.setState(3, 1, 0);
+				filt.setState(4, 1, 0);
+				filt.startAnimation(0, geom::repeat);
 			})
 		}, util::nextID());
 
