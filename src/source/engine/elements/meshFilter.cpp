@@ -26,8 +26,11 @@ namespace citrus::engine {
 	int meshFilter::ani() const {
 		return _ani;
 	}
-	double meshFilter::aniStart() const {
-		return _aniStart;
+	geom::behavior meshFilter::mode() const {
+		return _mode;
+	}
+	double meshFilter::aniTime() const {
+		return e->time() - _aniStart;
 	}
 
 	void meshFilter::startAnimation(int ani, geom::behavior mode) {

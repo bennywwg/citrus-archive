@@ -90,11 +90,16 @@ int main(int argc, char **argv) {
 		e.man->create("MeshTable", {
 			engine::eleInit<engine::meshManager>::run(
 				[](engine::meshManager& man) {
+					man.loadAnimation("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\run.cta", 0);
+					man.loadAnimation("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\idle.cta", 1);
+
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\natsuki.dae", 0);
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\sphere.dae", 1);
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\cube1x1x1.dae", 2);
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\walker.dae", 3);
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human.dae", 4);
+
+					man.bindAllAvailableAnimations();
 				}
 			)
 		}, util::nextID());
@@ -139,13 +144,17 @@ int main(int argc, char **argv) {
 			}))
 		}, util::nextID());*/
 
+		/*geom::animesh::convertAnimationFromCollada(
+			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human_export.dae",
+			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\run.cta");*/
+
 		e.start();
 
 		util::spin_until([&e]() { return e.getRenderState() == engine::engine::render_doingRender; });
-			
+			     
 		delete prof; prof = nullptr;
 
-		graphics::image4b img("C:\\Users\\benny\\OneDrive\\Desktop\\citrus\\index.png");
+		/*graphics::image4b img("C:\\Users\\benny\\OneDrive\\Desktop\\citrus\\index.png");
 
 		std::ofstream fo("C:\\Users\\benny\\OneDrive\\Desktop\\citrus\\output.txt");
 
@@ -159,7 +168,7 @@ int main(int argc, char **argv) {
 		}
 
 		fo.close();
-
+*/
 		//e.man->loadPrefabUnsafe(savedJS);
 
 		bool exited = true;

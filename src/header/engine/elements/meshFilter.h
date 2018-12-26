@@ -24,7 +24,8 @@ namespace citrus::engine {
 		int tex() const;
 		int sh() const;
 		int ani() const;
-		double aniStart() const;
+		geom::behavior mode() const;
+		double aniTime() const;
 		void startAnimation(int ani, geom::behavior mode = geom::nearest);
 
 		void load(const json&);

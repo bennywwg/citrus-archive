@@ -40,6 +40,16 @@ namespace citrus {
 			return val - floor(val / mod) * mod;
 		}
 
+		//value inside or outside of range [min, max) will modulo inside the range
+		template<typename T>
+		inline T wrap(T val, T min, T max) {
+			static_assert(std::is_floating_point<T>::value, "can only wrap a floating point type");
+			T dif = max - min;
+			T res = rmod(val - min, dif) + min;
+			if(res < min || res >= max) return min;
+			return res;
+		}
+
 		inline json save(glm::vec2 vec) {
 			return json({
 				{"x", vec.x},

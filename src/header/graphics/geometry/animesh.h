@@ -166,50 +166,26 @@ namespace citrus::geom {
 		};
 
 		struct channel {
-			int node;
-			double duration; //inhereted from animation
-			behavior preState, postState;
+			string nodeName;
+			double begin, end;
 			std::vector<key<glm::vec3>> positions;
 			std::vector<key<glm::quat>> orientations;
 			std::vector<key<glm::vec3>> scalings;
 
 			template<typename T>
 			inline T get(double time, std::vector<key<T>>const& keys) const {
-				if(time < 0) {
-					if(preState == behavior::base) {
-						return keys.front().val;
-					} else if(preState == behavior::nearest) {
-						return keys.front().val;
-					} else if(preState == behavior::repeat) {
-						time = util::rmod(time, duration);
-					} else if(preState == behavior::linear) {
-						if(keys.size() == 1) {
-							return keys.front().val;
-						} else {
-							return key<T>::mix(time, keys.front(), keys[1]);
-						}
-					}
-				} else if(time >= duration) {
-					if(preState == behavior::base) {
-						return keys.back().val;
-					} else if(preState == behavior::nearest) {
-						return keys.back().val;
-					} else if(preState == behavior::repeat) {
-						time = util::rmod(time, duration);
-					} else if(preState == behavior::linear) {
-						if(keys.size() == 1) {
-							return keys.back().val;
-						} else {
-							return key<T>::mix(time, keys[keys.size() - 2], keys.back());
-						}
-					}
-				}
 				if(keys.size() == 1) {
 					return keys.front().val;
 				} else {
-					for(int i = 0; i < keys.size() - 1; i++) {
-						if(time >= keys[i].time && time < keys[i + 1].time) {
-							return key<T>::mix(time, keys[i], keys[i + 1]);
+					if(time < keys.front().time) {
+						return keys.front().val;
+					} else if(time >= keys.back().time) {
+						return keys.back().val;
+					} else {
+						for(int i = 0; i < keys.size() - 1; i++) {
+							if(time >= keys[i].time && time < keys[i + 1].time) {
+								return key<T>::mix(time, keys[i], keys[i + 1]);
+							}
 						}
 					}
 				}
@@ -225,18 +201,146 @@ namespace citrus::geom {
 			inline glm::vec3 getScaling(double time) const {
 				return get(time, scalings);
 			}
+
+			inline void write(std::ostream& s) const {
+				s << "c " << nodeName << std::endl;
+				s << "p " << positions.size() << std::endl;
+				for(int i = 0; i < positions.size(); i++)
+					s << positions[i].time << " " << positions[i].val.x << " " << positions[i].val.y << " " << positions[i].val.z << std::endl;
+				s << "o " << orientations.size() << std::endl;
+				for(int i = 0; i < orientations.size(); i++)
+					s << orientations[i].time << " " << orientations[i].val.w << " " << orientations[i].val.x << " " << orientations[i].val.y << " " << orientations[i].val.z << std::endl;
+				s << "s " << scalings.size() << std::endl;
+				for(int i = 0; i < scalings.size(); i++)
+					s << scalings[i].time << " " << scalings[i].val.x << " " << scalings[i].val.y << " " << scalings[i].val.z << std::endl;
+			}
+			inline void read(std::istream& s) {
+				std::string line;
+				char mode = 'n';
+				int remaining = 0;
+				bool pd = false, od = false, sd = false;
+				while(true) {
+					if(!std::getline(s, line)) throw std::runtime_error("Error parsing animation channel stream ended early");
+
+					if(mode == 'n') {
+						if(line[0] == 'c') {
+							nodeName = line.substr(2);
+						} else {
+							if(remaining != 0) {
+								throw std::runtime_error("Error parsing animation channel indicated keys exceeded actual amount");
+							}
+							if(line[0] == 'p') {
+								mode = 'p';
+								remaining = std::stoi(line.substr(2));
+							} else if(line[0] == 'o') {
+								mode = 'o';
+								remaining = std::stoi(line.substr(2));
+							} else if(line[0] == 's') {
+								mode = 's';
+								remaining = std::stoi(line.substr(2));
+							} else {
+								throw std::runtime_error("Error parsing animation channel expected p/o/s line");
+							}
+							if(remaining <= 0) throw std::runtime_error("Error parsing animation channel indicated keys is 0 or negative");
+						}
+					} else {
+						if(remaining == 0) throw std::runtime_error(("Error parsing animation channel exceeded amount of keys for mode " + std::string(1, mode)).c_str());
+						double time;
+						if(mode == 'p') {
+							float x, y, z;
+							int s0 = line.find_first_of(' ', 0);
+							time = std::stod(line.substr(0, s0));
+							int s1 = line.find_first_of(' ', s0 + 1);
+							x = std::stof(line.substr(s0 + 1));
+							int s2 = line.find_first_of(' ', s1 + 1);
+							y = std::stof(line.substr(s1 + 1));
+							z = std::stof(line.substr(s2 + 1));
+							positions.emplace_back(time, glm::vec3(x, y, z));
+						} else if(mode == 'o') {
+							float w, x, y, z;
+							int s0 = line.find_first_of(' ', 0);
+							time = std::stod(line.substr(0, s0));
+							int s1 = line.find_first_of(' ', s0 + 1);
+							w = std::stof(line.substr(s0 + 1));
+							int s2 = line.find_first_of(' ', s1 + 1);
+							x = std::stof(line.substr(s1 + 1));
+							int s3 = line.find_first_of(' ', s2 + 1);
+							y = std::stof(line.substr(s2 + 1));
+							z = std::stof(line.substr(s3 + 1));
+							orientations.emplace_back(time, glm::quat(w, x, y, z));
+						} else if(mode == 's') {
+							float x, y, z;
+							int s0 = line.find_first_of(' ', 0);
+							time = std::stod(line.substr(0, s0));
+							int s1 = line.find_first_of(' ', s0 + 1);
+							x = std::stof(line.substr(s0 + 1));
+							int s2 = line.find_first_of(' ', s1 + 1);
+							y = std::stof(line.substr(s1 + 1));
+							z = std::stof(line.substr(s2 + 1));
+							scalings.emplace_back(time, glm::vec3(x, y, z));
+						}
+						remaining--;
+						if(remaining == 0) {
+							if(mode == 'p') pd = true;
+							if(mode == 'o') od = true;
+							if(mode == 's') sd = true;
+							mode = 'n';
+						}
+						if(pd && od && sd) {
+							begin = glm::min(positions.front().time, glm::min(positions.front().time, positions.front().time));
+							end = glm::max(positions.back().time, glm::max(positions.back().time, positions.back().time));
+							return;
+						}
+					}
+				}
+			}
 		};
 
 		string name;
-		double duration;
+		double begin, end;
 		std::vector<channel> channels;
+
+		inline void write(std::ostream& s) const {
+			s << name << std::endl;
+			for(const channel& c : channels) {
+				c.write(s);
+			}
+		}
+		inline void read(std::istream& s) {
+			string line;
+			std::getline(s, line);
+
+			name = line;
+
+			while(s && s.peek() != EOF) {
+				channels.emplace_back();
+				channels.back().read(s);
+			}
+
+			if(channels.size() == 0) throw std::runtime_error("Animation error animation has no channels");
+			begin = channels[0].begin;
+			end = channels[0].end;
+			for(int i = 1; i < channels.size(); i++) {
+				begin = glm::min(channels[i].begin, begin);
+				end = glm::max(channels[i].end, end);
+			}
+		}
+	};
+
+	//this references an animation
+	//it has a list of node indices instead of
+	//node names so it can be used to animate
+	//nodes[i] corresponds to ani->channels[i]
+	struct animationBinding {
+		const animation* ani;
+		std::vector<int> nodes;
 	};
 
 	struct animationContainer {
 		std::vector<animation> animations;
 		std::map<string, int> nameMap;
 
-		inline void loadAllAnimations(const aiScene* scene, const nodeContainer& nodes) {
+		inline void loadAllAnimations(const aiScene* scene) {
 			for(int i = 0; i < scene->mNumAnimations; i++) {
 				aiAnimation* ani = scene->mAnimations[i];
 				std::string name = ani->mName.C_Str();
@@ -244,23 +348,18 @@ namespace citrus::geom {
 				animations.emplace_back();
 				animation& a = animations.back();
 				a.name = name;
-				a.duration = ani->mDuration;
+				//a.duration = ani->mDuration;
 
 				for(int j = 0; j < ani->mNumChannels; j++) {
 					aiNodeAnim* ch = ani->mChannels[j];
 
 					string nodeName = ch->mNodeName.C_Str();
-					auto nodeIndexIt = nodes.nameMap.find(nodeName);
-					if(nodeIndexIt == nodes.nameMap.end()) throw std::runtime_error("Mesh error can't find node associated with channel");
 
 					a.channels.emplace_back();
 					animation::channel& c = a.channels.back();
 
-					c.node = nodeIndexIt->second;
-					c.duration = a.duration;
-					c.preState = (behavior)ch->mPreState; c.preState = repeat;
-					c.postState = (behavior)ch->mPostState; c.postState = repeat;
-
+					c.nodeName = nodeName;
+					
 					c.positions.reserve(ch->mNumPositionKeys);
 					for(int k = 0; k < ch->mNumPositionKeys; k++) {
 						glm::vec3 v = {
@@ -310,7 +409,7 @@ namespace citrus::geom {
 
 		nodeContainer nodes;
 		boneContainer bones;
-		animationContainer animations;
+		std::vector<animationBinding> animations;
 
 		inline uint32_t requiredMemory() {
 			return 0
@@ -324,8 +423,8 @@ namespace citrus::geom {
 				+ weight1.size() * sizeof(float);
 		}
 
-		inline void calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4>& data, double time) const {
-			const animation& ani = animations.animations[animationIndex];
+		inline void calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4>& data, double time, behavior mode) const {
+			const animationBinding& ani = animations[animationIndex];
 
 			//localTransforms[i] corresponds to bones.bones[i]
 			std::vector<glm::mat4> localTransforms(nodes.nodes.size());
@@ -337,12 +436,13 @@ namespace citrus::geom {
 			}
 
 			//for each node that has an animation channel generate the correct transform
-			for(int i = 0; i < ani.channels.size(); i++) {
-				const animation::channel& ch = ani.channels[i];
+			if(mode == repeat) time = util::wrap(time, ani.ani->begin, ani.ani->end);
+			for(int i = 0; i < ani.ani->channels.size(); i++) {
+				const animation::channel& ch = ani.ani->channels[i];
 				glm::vec3 translation = ch.getPosition(time);
 				glm::quat orientation = ch.getOrientation(time);
 				glm::vec3 scaling = ch.getScaling(time);
-				localTransforms[ch.node] = glm::translate(translation) * glm::toMat4(orientation) * glm::scale(scaling);
+				localTransforms[ani.nodes[i]] = glm::translate(translation) * glm::toMat4(orientation) * glm::scale(scaling);
 			}
 
 			//generate subspace transforms using the hierarchy
@@ -393,13 +493,47 @@ namespace citrus::geom {
 				weight1.push_back(info.secondaryWeight);
 			}
 		}
-		inline void loadAnimations(const aiScene* scene, aiMesh* mesh) {
-			animations.loadAllAnimations(scene, nodes);
+
+		inline bool bindAnimation(const animation& ani) {
+			animationBinding binding;
+			binding.ani = &ani;
+			binding.nodes.resize(ani.channels.size());
+			for(int i = 0; i < ani.channels.size(); i++) {
+				const auto& it = nodes.nameMap.find(ani.channels[i].nodeName);
+				if(it == nodes.nameMap.end()) return false;
+				binding.nodes[i] = it->second;
+			}
+			animations.emplace_back(std::move(binding));
+			return true;
+		}
+
+		inline static void convertAnimationFromCollada(std::string location, std::string outLocation) {
+			Assimp::Importer imp;
+			//imp.SetExtraVerbose(true);
+
+			const aiScene* scene = imp.ReadFile(location,
+				aiProcess_CalcTangentSpace |
+				aiProcess_Triangulate |
+				aiProcess_JoinIdenticalVertices |
+				aiProcess_SortByPType);
+			if(!scene) {
+				util::sout(imp.GetErrorString());
+				throw std::runtime_error(("Failed to load model " + location).c_str());
+			}
+
+			animationContainer rawAnimation;
+			rawAnimation.loadAllAnimations(scene);
+
+			if(rawAnimation.animations.size() != 1) {
+				throw std::runtime_error("Must be only one animation in collada file");
+			}
+			std::ofstream output(outLocation);
+			rawAnimation.animations[0].write(output);
 		}
 
 		inline animesh(std::string location, transformCoordinates tr = xyz) {
 			Assimp::Importer imp;
-			imp.SetExtraVerbose(true);
+			//imp.SetExtraVerbose(true);
 
 			const aiScene* scene = imp.ReadFile(location,
 				aiProcess_CalcTangentSpace |
@@ -422,8 +556,6 @@ namespace citrus::geom {
 			loadNodes(scene, mesh, tr);
 
 			loadBones(scene, mesh);
-
-			loadAnimations(scene, mesh);
 
 			imp.FreeScene();
 		}

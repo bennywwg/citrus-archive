@@ -15,6 +15,7 @@ namespace citrus::engine {
 		};
 
 		std::vector<modelInfo> models;
+		std::vector<geom::animation*> animations;
 		
 		public:
 		geom::animesh& getMesh(int index) {
@@ -27,8 +28,25 @@ namespace citrus::engine {
 			if(index >= models.size() || !models[index].vao) throw std::runtime_error("Model at index does not exist");
 			return *models[index].vao;
 		}
+		geom::animation& getAnimation(int index) {
+			if(index < 0) throw std::runtime_error("Animation access index negative");
+			if(index >= animations.size() || !animations[index]) throw std::runtime_error("Animation at index does not exist");
+			return *animations[index];
+		}
 
+		void loadAnimation(std::string loc, int index) {
+			if(index < 0) throw std::runtime_error("Animation create index negative");
+			if(index >= animations.size()) animations.resize(index + 1);
+			if(animations[index]) throw std::runtime_error("Animation already exists at index");
+
+			geom::animation* ani = new	geom::animation();
+			std::ifstream s(loc);
+			ani->read(s);
+
+			animations[index] = ani;
+		}
 		void loadMesh(std::string loc, int index) {
+			util::sout("Started mesh " + std::to_string(index) + ": \"" + loc + "\"\n");
 			if(index < 0) throw std::runtime_error("Model create index negative");
 			if(index >= models.size()) models.resize(index + 1);
 			if(models[index].vao) throw std::runtime_error("Model already exists at index");
@@ -58,6 +76,20 @@ namespace citrus::engine {
 			};
 
 			e->Log("Loaded mesh " + std::to_string(index) + ": \"" + loc + "\"");
+			util::sout("Loaded mesh " + std::to_string(index) + ": \"" + loc + "\"\n");
+		}
+		void bindAllAvailableAnimations() {
+			int successful = 0;
+			for(int i = 0; i < models.size(); i++) {
+				if(models[i].mesh == nullptr) continue;
+				for(int j = 0; j < animations.size(); j++) {
+					if(animations[j] == nullptr) continue;
+					if(models[i].mesh->bindAnimation(*animations[j])) {
+						successful++;
+					}
+				}
+			}
+			util::sout(std::to_string(successful) + " animations matched");
 		}
 
 		meshManager(entityRef ent) : element(ent, typeid(meshManager)) {

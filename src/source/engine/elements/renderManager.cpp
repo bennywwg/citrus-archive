@@ -84,7 +84,8 @@ namespace citrus {
 					std::vector<glm::mat4> trData(64, glm::translate(glm::vec3(0.f, 0.f, 0.f)));
 					int ani = ref->ani();
 					if(ani != -1) {
-						models->getMesh(model).calculateAnimationTransforms(ani, trData, e->time() - ref->aniStart());
+						double actualTime = ref->aniTime();
+						models->getMesh(model).calculateAnimationTransforms(ani, trData, actualTime, geom::repeat);
 					}
 					info.sh->setUniform("boneData", trData.data(), 64);
 
