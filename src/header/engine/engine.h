@@ -52,6 +52,8 @@ namespace citrus {
 			std::thread _renderThread;
 
 			public:
+			int frame = 0;
+
 			manager* man;
 
 			private:

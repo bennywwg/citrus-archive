@@ -31,14 +31,21 @@ namespace citrus::engine {
 			disableDebugDraw();
 		}
 
+
 		auto list = e->getAllOfType<rigidBodyComponent>();
 		for(auto& rbc : list) {
 			if(rbc->ent.getGlobalTransform() != rbc->body->getTransform()) {
+				auto et = rbc->ent.getGlobalTransform();
+				auto bt = rbc->body->getTransform();
 				rbc->body->setTransform(rbc->ent.getGlobalTransform());
 			}
 		}
 
-		w->step();	
+		w->step();
+
+		for(auto& rbc : list) {
+			rbc->ent.setLocalTransform(rbc->body->getTransform());
+		}
 	}
 	void worldManager::render() {
 		if(fbo != nullptr) {
@@ -51,6 +58,10 @@ namespace citrus::engine {
 			fbo->bind();
 			for(auto& ele : list) {
 				glm::mat4 model = ele->ent.getGlobalTransform().getMat();
+				if(ele->isBox()) {
+					auto size = ((btBoxShape*)ele->shape->ptr())->getHalfExtentsWithoutMargin();
+					model = model * glm::scale(2.0f * glm::vec3(size.getX(), size.getY(), size.getZ()));
+				}
 				debugShader->setUniform("modelViewProjectionMat", man->camRef->cam.getViewProjectionMatrix() * model);
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				if(ele->isSphere()) {

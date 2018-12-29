@@ -1,7 +1,7 @@
 #include <engine/manager.h>
 
 namespace citrus::engine {
-	template<class T> void manager::registerType(string name) {
+	template<class T> void manager::registerType(string name, bool active) {
 		static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
 		const auto& index = type_index(typeid(T));
 		auto it = _data.find(index);
@@ -14,6 +14,7 @@ namespace citrus::engine {
 			info.size = sizeof(T);
 			info.type = index;
 			info.name = name;
+			info.active = active;
 		}
 	}
 

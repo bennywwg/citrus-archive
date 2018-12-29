@@ -165,7 +165,7 @@ namespace citrus {
 			glUniform1i(loc, _nextUnitAvailable - GL_TEXTURE0);
 			_nextUnitAvailable++;
 			if(_nextUnitAvailable > GL_TEXTURE31) {
-				throw std::exception("You can't use more than 32 textures in one shader pass");
+				throw std::runtime_error("You can't use more than 32 textures in one shader pass");
 			}
 		}
 		void shader::setUniform(string name, unsigned int i) {

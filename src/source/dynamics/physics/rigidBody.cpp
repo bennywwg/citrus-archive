@@ -39,7 +39,7 @@ namespace citrus::dynamics {
 		//_state = new btDefaultMotionState();
 		btRigidBody::btRigidBodyConstructionInfo ci = btRigidBody::btRigidBodyConstructionInfo(mass, nullptr, shape->ptr(), btVector3(0.0f, 0.0f, 0.0f));
 		ci.m_friction = 1.0f;
-		ci.m_restitution = 1.0f;
+		ci.m_restitution = 0.1f;
 		_body = new btRigidBody(ci);
 		_world->addBody(this);
 		_body->setActivationState(DISABLE_DEACTIVATION);

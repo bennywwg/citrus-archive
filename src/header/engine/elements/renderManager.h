@@ -26,12 +26,22 @@ namespace citrus {
 			std::unique_ptr<graphics::shader> bones;
 			std::unique_ptr<graphics::shader> transSh;
 			
+			std::vector<graphics::texture3b*> textures;
+
 			struct shaderInfo {
+				struct textureInfo {
+					std::vector<eleRef<meshFilter>> eles;
+				};
 				std::unique_ptr<graphics::shader> sh;
-				std::vector<eleRef<meshFilter>> eles;
+				std::vector<textureInfo> groups;
 			};
 			std::vector<shaderInfo> drawable;
 			void addDrawable(eleRef<meshFilter> me, int m, int t, int s);
+			void removeDrawable(eleRef<meshFilter> me, int m, int t, int s);
+
+			graphics::texture3b& getTexture(int index);
+
+			void loadPNG(std::string loc, int index);
 
 			eleRef<freeCam> camRef;
 			public:

@@ -34,7 +34,7 @@ namespace citrus {
 			Log("Render Thread Begin");
 			_renderState.store(render_halted);
 
-			try {
+			//try {
 				_renderState.store(render_initializing);
 				_win = nullptr;
 				_win = new graphics::window(512, 512, "Citrus Engine");
@@ -48,6 +48,9 @@ namespace citrus {
 				_renderState.store(render_doingRender);
 				clock::time_point fpsSampleStart = clock::now();
 				int fpsSample = 0;
+
+				long long lastFrameNanos = 0;
+
 				while(!stopped()) {
 					//util::scopedProfiler fullFrame("Entire Frame");
 
@@ -56,6 +59,8 @@ namespace citrus {
 						_framesPerSecond = fpsSample;
 						fpsSample = 0;
 					}
+
+					clock::time_point fbegin = clock::now();
 					
 					{
 						//util::scopedProfiler profiler("Polling Input");
@@ -67,18 +72,35 @@ namespace citrus {
 					man->flush();
 
 					man->preRender();
-
+						
 					man->render();
 
 					{
 						//util::scopedProfiler profiler("Displaying Screen");
 						_win->swapBuffers();
+						/*for(auto& o : man->_order) {
+							auto inf = man->getInfo(o);
+							util::sout(inf->name + " stats: \n");
+							util::sout("\tRender: " + std::to_string(inf->stats.preRender.count() * 0.000001) + " ms\n");
+							util::sout("\tPre-Render: " + std::to_string(inf->stats.render.count() *   0.000001) + " ms\n");
+						}
+						util::sout("\n");*/
 					}
 					fpsSample++;
 
+					long long nextLastFrame = (clock::now() - fbegin).count();
+
+					//std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+					while(((clock::now() - fbegin).count() + lastFrameNanos) <= (long long)(_timeStep * 1000000000)) { }
+					lastFrameNanos = nextLastFrame;
+
 					//std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+					frame++;
+
 				}
-			} catch(std::runtime_error ex) {
+			/*} catch(std::runtime_error ex) {
 				Log("Unrecoverable Error in Render Thread: " + std::string(ex.what()));
 			} catch(eleDereferenceException ex) {
 				Log("Unrecoverable Error in Render Thread: " + std::string(ex.er));
@@ -86,7 +108,7 @@ namespace citrus {
 				Log("Unrecoverable Error in Render Thread: " + std::string(ex.er));
 			} catch(...) {
 				Log("Unrecoverable Error in Render Thread (Whack error.)");
-			}
+			}*/
 
 			if(_win) delete _win;
 
@@ -107,7 +129,7 @@ namespace citrus {
 		}
 
 		double engine::time() {
-			return (clock::now() - _engineStart).count() * 0.000000001;
+			return frame * _timeStep;
 		}
 
 		double engine::dt() {

@@ -8,6 +8,12 @@
 
 namespace citrus::engine {
 	void meshFilter::setState(int m, int t, int s, int a) {
+		auto g = e->getAllOfType<renderManager>()[0];
+		if(s != -1) {
+			g->addDrawable(eleRef<meshFilter>(this), m, t, s);
+		} else {
+			g->removeDrawable(eleRef<meshFilter>(this), _model, _tex, _sh);
+		}
 		_model = m;
 		_tex = t;
 		_sh = s;
@@ -39,8 +45,6 @@ namespace citrus::engine {
 		_mode = mode;
 	}
 	void meshFilter::load(const json& js) {
-		auto g = e->getAllOfType<renderManager>()[0];
-		g->addDrawable(eleRef<meshFilter>(this), _model, _tex, _sh);
 	}
 
 	meshFilter::meshFilter(entityRef ent) : element(ent, typeid(meshFilter)) {

@@ -82,6 +82,7 @@ namespace citrus {
 				string name;
 				type_index type;
 				std::shared_mutex mut;
+				bool active;
 
 				edbi stats;
 
@@ -143,7 +144,7 @@ namespace citrus {
 
 
 	public: //element functions
-			template<class T> void		   registerType(string name);
+			template<class T> void		   registerType(string name, bool active);
 			void							   setOrder(const vector<type_index>& order);
 
 

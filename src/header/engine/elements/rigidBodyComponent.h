@@ -15,7 +15,8 @@ namespace citrus::engine {
 		enum shapeType {
 			sphere,
 			box,
-			hull
+			hull,
+			none
 		};
 		shapeType type;
 
@@ -30,21 +31,50 @@ namespace citrus::engine {
 			return shape->ptr()->getShapeType() == BOX_SHAPE_PROXYTYPE;
 		}
 
-		void preRender() {
-			ent.setLocalTransform(body->getTransform());
-			/*util::sout(util::toString(ent.getLocalPosition()) + "\n");*/
+		void setToSphere(float radius) {
+			type = sphere;
+			body.reset();
+			shape.reset(new dynamics::collisionShape(radius));
+			body.reset(new dynamics::rigidBody(shape.get(), w));
+		}
+		void setToBox(glm::vec3 boxSize) {
+			type = box;
+			body.reset();
+			shape.reset(new dynamics::collisionShape(boxSize.x, boxSize.y, boxSize.z));
+			body.reset(new dynamics::rigidBody(shape.get(), w));
+		}
+		void setToHull() {
+			throw std::runtime_error("Not implemented");
 		}
 
-		void load(const json&) {
-			if(type == sphere) {
+		void setPosition(const glm::vec3& pos) {
+			body->setPosition(pos);
+			ent.setLocalPosition(pos);
+		}
+		void setOrientation(const glm::quat& ori) {
+			body->setOrientation(ori);
+			ent.setLocalOrientation(ori);
+		}
+		void setTransform(const transform& tr) {
+			body->setTransform(tr);
+			ent.setLocalTransform(tr);
+		}
+		glm::vec3 getPosition() {
+			return body->getPosition();
+		}
+		glm::quat getOrientation() {
+			return body->getOrientation();
+		}
+		transform getTransform() {
+			return body->getTransform();
+		}
 
-			}
+		void setDynamic(bool d) {
+			body->dynamic = d;
 		}
 
 		rigidBodyComponent(entityRef owner) : element(owner, typeid(rigidBodyComponent)) {
 			w = (e->getAllOfType<worldManager>()[0]->w);
-			shape.reset(new dynamics::collisionShape(1.0f));
-			body.reset(new dynamics::rigidBody(shape.get(), w));
 		}
 	};
 }

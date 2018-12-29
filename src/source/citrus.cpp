@@ -8,7 +8,6 @@
 #include <engine/elements/worldManager.h>
 #include <engine/elements/meshManager.h>
 #include <engine/elements/shaderManager.h>
-#include <engine/elements/textureManager.h>
 #include <engine/elements/meshFilter.h>
 #include <engine/elements/rigidBodyComponent.h>
 #include <engine/elements/playerController.h>
@@ -45,15 +44,14 @@ int main(int argc, char **argv) {
 		
 		//e.man->registerType<engine::worldManager>("World Manager");
 		//e.man->registerType<engine::rigidBodyComponent>("Rigid Body");
-		e.man->registerType<engine::renderManager>("Render Manager");
-		e.man->registerType<engine::freeCam>("Free Cam");
-		e.man->registerType<engine::meshManager>("Mesh Manager");
-		e.man->registerType<engine::shaderManager>("Shader Manager");
-		e.man->registerType<engine::textureManager>("Texture Manager");
-		e.man->registerType<engine::meshFilter>("Mesh Filter");
-		e.man->registerType<engine::playerController>("Player Controller");
-		e.man->registerType<engine::worldManager>("World Manager");
-		e.man->registerType<engine::rigidBodyComponent>("Rigid Body");
+		e.man->registerType<engine::renderManager>("Render Manager", true);
+		e.man->registerType<engine::freeCam>("Free Cam", true);
+		e.man->registerType<engine::meshManager>("Mesh Manager", false);
+		e.man->registerType<engine::shaderManager>("Shader Manager", false);
+		e.man->registerType<engine::meshFilter>("Mesh Filter", false);
+		e.man->registerType<engine::playerController>("Player Controller", true);
+		e.man->registerType<engine::worldManager>("World Manager", true);
+		e.man->registerType<engine::rigidBodyComponent>("Rigid Body", false);
 		e.man->setOrder({
 			//typeid(engine::worldManager),
 			//typeid(engine::rigidBodyComponent),
@@ -61,7 +59,6 @@ int main(int argc, char **argv) {
 			typeid(engine::rigidBodyComponent),
 			typeid(engine::shaderManager),
 			typeid(engine::meshManager),
-			typeid(engine::textureManager),
 			typeid(engine::freeCam),
 			typeid(engine::playerController),
 			typeid(engine::renderManager),
@@ -83,6 +80,10 @@ int main(int argc, char **argv) {
 			engine::eleInit<engine::renderManager>::run(
 				[&cam2](engine::renderManager& man) {
 					man.camRef = cam2.getElement<engine::freeCam>();
+
+					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\Natsuki_COLOR.png", 0);
+					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\gridsmall.png", 1);
+					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\cement.png", 2);
 				}
 			)
 		}, util::nextID());
@@ -103,38 +104,47 @@ int main(int argc, char **argv) {
 				}
 			)
 		}, util::nextID());
-		e.man->create("TextureTable", {
-			engine::eleInit<engine::textureManager>::run(
-				[](engine::textureManager& man) {
-					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\Natsuki_COLOR.png", 0);
-					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\grid.png", 1);
-				}
-			)
-		}, util::nextID());
 
 		e.man->create("Physics", {engine::eleInit<engine::worldManager>()}, util::nextID());
 
 		auto ent2 = e.man->create("Player", {
 			engine::eleInit<engine::playerController>(),
-			engine::eleInit<engine::rigidBodyComponent>::run([](engine::rigidBodyComponent& rb) {
+			engine::eleInit<engine::rigidBodyComponent>::run([](engine::rigidBodyComponent& cmp) {
 				//rb.body->dynamic = false;
+				cmp.setToBox(glm::vec3(0.4f, 0.5f, 0.3f));
 			})
 		}, util::nextID());
 		auto playerModel = e.man->create("Player Model", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
-				filt.setState(0, 0, 0);
+				filt.setState(0, 0, 1);
 			})
 		}, util::nextID());
 		playerModel.setParent(ent2);
-		//playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
-
+		playerModel.setLocalPosition(glm::vec3(0.0f, -0.35f, 0.0f));
+		playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 		e.man->create("Walker Test", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
-				filt.setState(4, 1, 0);
-				filt.startAnimation(0, geom::repeat);
+				filt.setState(4, 1, 1);
+				filt.startAnimation(1, geom::repeat);
 			})
 		}, util::nextID());
+
+		for(int x = -15; x < 15; x++) {
+			for(int z = -15; z < 15; z++) {
+				e.man->create("Floor: " + std::to_string(x) + " " + std::to_string(z), {
+					engine::eleInit<engine::rigidBodyComponent>::run([x,z](engine::rigidBodyComponent& cmp) {
+						cmp.setToBox(glm::vec3(0.5f, 0.5f, 0.5f));
+						cmp.ent.setLocalPosition(glm::vec3(x, -5.0f + sin(x * 0.2f) + cos(z * 0.2f), z));
+						cmp.body->dynamic = false;
+					}),
+					engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& m) {
+						m.setState(2, 2, 0);
+					})
+				}, util::nextID());
+			}
+		}
+		
 
 
 		/*auto world = e.man->create("World", {engine::eleInit<engine::worldManager>({})}, util::nextID());

@@ -280,8 +280,9 @@ namespace citrus {
 			for(const auto& oType : _order) {
 				auto& info = *getInfo(oType);
 				auto begin = std::chrono::high_resolution_clock::now();
-				for(auto& ele : info.existing)
-					ele->render();
+				if(info.active)
+					for(auto& ele : info.existing)
+						ele->render();
 				auto end = std::chrono::high_resolution_clock::now();
 				info.stats.render = (end - begin);
 			}
@@ -291,10 +292,11 @@ namespace citrus {
 			for(const auto& oType : _order) {
 				auto& info = *getInfo(oType);
 				auto begin = std::chrono::high_resolution_clock::now();
-				for(auto& ele : info.existing)
-					ele->preRender();
+				if(info.active)
+					for(auto& ele : info.existing)
+						ele->preRender();
 				auto end = std::chrono::high_resolution_clock::now();
-				info.stats.render = end - begin;
+				info.stats.preRender = end - begin;
 			}
 		}
 
@@ -309,7 +311,7 @@ namespace citrus {
 					info.ctor(std::get<0>(meta), std::get<1>(meta));
 					info.existing.push_back(std::get<0>(meta));
 					info.existingEntities.push_back(std::get<1>(meta));
-					if(std::get<3>(meta)) std::get<3>(meta)(std::get<0>(meta));
+					//if(std::get<3>(meta)) std::get<3>(meta)(std::get<0>(meta));
 					std::get<0>(meta)->_initialized = true;
 				}
 
@@ -340,6 +342,17 @@ namespace citrus {
 
 				info.stats.load = end - begin;
 			}
+
+			for(const auto& oType : _order) {
+				auto& info = *getInfo(oType);
+
+				for(auto& meta : info.toCreate) {
+					if(std::get<3>(meta)) std::get<3>(meta)(std::get<0>(meta));
+					//std::get<0>(meta)->_initialized = true;
+				}
+
+			}
+
 
 			//clear all element toCreate lists
 			for(const auto& oType : _order) {

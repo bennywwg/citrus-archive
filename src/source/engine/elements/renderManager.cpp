@@ -4,7 +4,6 @@
 #include <engine/manager.inl>
 
 #include <engine/elements/meshManager.h>
-#include <engine/elements/textureManager.h>
 
 //#include <openvr/openvr.h>
 
@@ -12,14 +11,44 @@ namespace citrus {
 	namespace engine {
 		void renderManager::addDrawable(eleRef<meshFilter> me, int m, int t, int s) {
 			std::lock_guard<std::mutex> lock(_drawableMut);
-			auto& eles = drawable[s].eles;
+			auto& eles = drawable[s].groups[t].eles;
 			for(int i = 0; i < eles.size(); i++) {
 				if(eles[i].null()) {
 					eles[i] = me;
 					return;
 				}
 			}
-			drawable[s].eles.push_back(me);
+			eles.push_back(me);
+		}
+		void renderManager::removeDrawable(eleRef<meshFilter> me, int oldM, int oldT, int oldS) {
+			std::lock_guard<std::mutex> lock(_drawableMut);
+			auto& eles = drawable[oldS].groups[oldT].eles;
+			for(int i = 0; i < eles.size(); i++) {
+				if(eles[i] == me) {
+					eles[i] = nullptr;
+				}
+			}
+		}
+		graphics::texture3b & renderManager::getTexture(int index) {
+			if(index < 0) throw std::runtime_error("Texture access index negative");
+			if(index >= textures.size() || !textures[index]) throw std::runtime_error("Texture at index does not exist");
+			return *textures[index];
+		}
+		void renderManager::loadPNG(std::string loc, int index) {
+			if(index < 0) throw std::runtime_error("Texture creation index negative");
+			if(index >= textures.size()) textures.resize(index + 1, nullptr);
+			for(int i = 0; i < drawable.size(); i++) {
+				if(index >= drawable[i].groups.size()) drawable[i].groups.resize(index + 1, shaderInfo::textureInfo());
+			}
+			if(textures[index]) throw std::runtime_error("Texture already exists at index " + std::to_string(index));
+			try {
+				textures[index] = new graphics::texture3b(graphics::image3b(loc));
+				e->Log("Loaded texture " + std::to_string(index) + ": \"" + loc + "\"");
+			} catch(const std::runtime_error& er) {
+				e->Log("Failed to load texture " + std::to_string(index) + " \"" + loc + "\": " + er.what());
+			} catch(...) {
+				e->Log("Failed to load texture " + std::to_string(index) + " \"" + loc + "\": (Whack error)");
+			}
 		}
 		void renderManager::resizeBuffers(unsigned int width, unsigned int height) {
 			if(width == 0 || height == 0) return;
@@ -56,7 +85,6 @@ namespace citrus {
 			}
 
 			camera cam = camRef->cam;
-			eleRef<textureManager> textures = e->getAllOfType<textureManager>()[0];
 			eleRef<meshManager> models = e->getAllOfType<meshManager>()[0];
 
 			meshFBO->bind();
@@ -64,34 +92,65 @@ namespace citrus {
 
 			glEnable(GL_DEPTH_TEST);
 
-			for(int i = 0; i < drawable.size(); i++) {
-				shaderInfo& info = drawable[i];
+			{
+				shaderInfo& info = drawable[0];
+
+				info.sh->use();
+				info.sh->setUniform("projectionMat", cam.getProjectionMatrix());
+				info.sh->setUniform("viewMat", cam.getViewMatrix());
+
+				for(int i = 0; i < info.groups.size(); i++) {
+					if(info.groups[i].eles.empty()) continue;
+					textures[i]->bind(GL_TEXTURE0);
+					for(int j = 0; j < info.groups[i].eles.size(); j++) {
+						auto& ref = info.groups[i].eles[j];
+
+						glm::mat4 modelMat = ref->ent.getGlobalTransform().getMat();
+
+						info.sh->setUniform("modelMat", modelMat);
+						info.sh->setUniform("modelViewProjectionMat", cam.getViewProjectionMatrix() * modelMat);
+
+						int model = ref->model();
+
+						info.sh->setUniform("tex", 0);
+
+						models->getModel(model).drawAll();
+					}
+				}
+			}
+
+			{
+				shaderInfo& info = drawable[1];
 
 				info.sh->use();
 				info.sh->setUniform("projectionMat", cam.getProjectionMatrix());
 				info.sh->setUniform("viewMat", cam.getViewMatrix());
 				info.sh->setUniform("viewBone", 0);
 
-				for(int j = 0; j < info.eles.size(); j++) {
-					auto& ref = info.eles[j];
+				for(int i = 0; i < info.groups.size(); i++) {
+					if(info.groups[i].eles.empty()) continue;
+					textures[i]->bind(GL_TEXTURE0);
+					for(int j = 0; j < info.groups[i].eles.size(); j++) {
+						auto& ref = info.groups[i].eles[j];
 
-					glm::mat4 modelMat = ref->ent.getGlobalTransform().getMat();
+						glm::mat4 modelMat = ref->ent.getGlobalTransform().getMat();
 
-					info.sh->setUniform("modelMat", modelMat);
-					info.sh->setUniform("modelViewProjectionMat", cam.getViewProjectionMatrix() * modelMat);
+						info.sh->setUniform("modelMat", modelMat);
+						info.sh->setUniform("modelViewProjectionMat", cam.getViewProjectionMatrix() * modelMat);
 
-					int model = ref->model();
-					std::vector<glm::mat4> trData(64, glm::translate(glm::vec3(0.f, 0.f, 0.f)));
-					int ani = ref->ani();
-					if(ani != -1) {
-						double actualTime = ref->aniTime();
-						models->getMesh(model).calculateAnimationTransforms(ani, trData, actualTime, geom::repeat);
+						int model = ref->model();
+						std::vector<glm::mat4> trData(64, glm::translate(glm::vec3(0.f, 0.f, 0.f)));
+						int ani = ref->ani();
+						if(ani != -1) {
+							double actualTime = ref->aniTime();
+							models->getMesh(model).calculateAnimationTransforms(ani, trData, actualTime, geom::repeat);
+						}
+						info.sh->setUniform("boneData", trData.data(), 64);
+
+						info.sh->setUniform("tex", 0);
+
+						models->getModel(model).drawAll();
 					}
-					info.sh->setUniform("boneData", trData.data(), 64);
-
-					info.sh->setSampler("tex", textures->getTexture(ref->tex()));
-
-					models->getModel(model).drawAll();
 				}
 			}
 
@@ -159,15 +218,21 @@ namespace citrus {
 			meshFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y);
 			textFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y);
 
-			
-
-			std::string bonesVert = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.vert");
-			std::string bonesFrag = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.frag");
 			{
+				std::string simpleVert = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\simple.vert");
+				std::string simpleFrag = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\simple.frag");
+				shaderInfo inf;
+				inf.sh = std::make_unique<graphics::shader>(simpleVert, simpleFrag);
+				drawable.push_back(std::move(inf));
+			}
+			{
+				std::string bonesVert = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.vert");
+				std::string bonesFrag = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.frag");
 				shaderInfo inf;
 				inf.sh = std::make_unique<graphics::shader>(bonesVert, bonesFrag);
 				drawable.push_back(std::move(inf));
 			}
+			
 			composite = std::make_unique<graphics::shader>(
 				"#version 450\n"
 				""
