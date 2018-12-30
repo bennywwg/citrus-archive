@@ -34,7 +34,7 @@ namespace citrus::engine {
 
 	}
 	void freeCam::render() {
-		cam.trans = ent.getGlobalTransform();
+		cam.trans = ent().getGlobalTransform();
 	}
 	freeCam::freeCam(entityRef ent) : element(ent, typeid(freeCam)) { }
 }

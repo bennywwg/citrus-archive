@@ -76,18 +76,23 @@ namespace citrus {
 		entityRef manager::createUnsafe(string name, const vector<eleInitBase>& data, uint64_t id) {
 			auto orderedData = reorder(data);
 
-			vector<element*> eles;
+			vector<std::pair<std::type_index, element*>> eles;
 			eles.reserve(orderedData.size());
-			for(const auto& info : orderedData) {
+			for(int i = 0; i < orderedData.size(); i++) {
+				const auto& info = orderedData[i];
 				const auto& traits = getInfo(info.type);
 				//TODO: allocate all next to each other in memory
-				eles.emplace_back((element*)(::operator new(traits->size)));
+				element* ptr = (element*)(::operator new(traits->size));
+				ptr->_initialized = false;
+				ptr->_type = info.type;
+				eles.emplace_back(orderedData[i].type, ptr);
 			}
 
 			std::shared_ptr<entity> sp(new entity(eles, _eng, name, id));
+			sp->_this = sp;
 
 			for(uint32_t i = 0; i < eles.size(); ++i)
-				getInfo(orderedData[i].type)->toCreate.emplace_back(eles[i], entityRef(sp), orderedData[i].data, orderedData[i].init);
+				getInfo(orderedData[i].type)->toCreate.emplace_back(eles[i].second, entityRef(sp), orderedData[i].data, orderedData[i].init);
 
 			_toCreate.push_back(sp);
 
@@ -108,7 +113,8 @@ namespace citrus {
 			int entIndex = findEntity(_toCreate, ent._ref.lock());
 			if(entIndex != -1) {
 				//if ent is in _toCreate, also remove the elements from their lists
-				for(element* ele : rent->_elements) {
+				for(auto& pair : rent->_elements) {
+					element* ele = pair.second;
 					auto& info = *getInfo(ele->_type);
 
 					int eleIndex = info.findInToCreate(ele);
@@ -130,8 +136,8 @@ namespace citrus {
 
 			//otherwise add it and all of its elements to _toDestroy
 			_toDestroy.push_back(ent._ref.lock());
-			for(element* ele : rent->_elements)
-				getInfo(ele->_type)->toDestroy.emplace_back(ele, ent);
+			for(auto& pair : rent->_elements)
+				getInfo(pair.first)->toDestroy.emplace_back(pair.second, ent);
 		}
 
 		vector<element*> manager::ofType(const type_index & index) {
@@ -246,8 +252,8 @@ namespace citrus {
 			res["Entities"] = { };
 			for(entityRef ent : connected) {
 				json entElements;
-				for(element* ele : ent._ref.lock().get()->_elements) {
-					entElements[getInfo(ele->_type)->name] = ele->save();
+				for(auto& pair : ent._ref.lock().get()->_elements) {
+					entElements[getInfo(pair.first)->name] = pair.second->save();
 				}
 
 				json entDescriptor({

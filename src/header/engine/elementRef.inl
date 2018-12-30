@@ -7,7 +7,7 @@ namespace citrus::engine {
 
 	template<class T>
 	bool eleRef<T>::null() const {
-		return _ptr == nullptr && !_owner.null();
+		return _ptr == nullptr || _owner.null();
 	}
 
 	template<class T>
@@ -35,6 +35,11 @@ namespace citrus::engine {
 	template<class T>
 	T* eleRef<T>::operator->() const {
 		return &get();
+	}
+
+	template<class T>
+	void eleRef<T>::destroy() const {
+		if(!null()) _owner.eng()->man.destroy(_owner);
 	}
 	
 	template<class T>
@@ -66,5 +71,7 @@ namespace citrus::engine {
 	template<class T>
 	eleRef<T>::eleRef() : _owner(), _ptr(nullptr) { }
 	template<class T>
-	eleRef<T>::eleRef(T* ele) : _owner(ele ? ele->ent : entityRef()), _ptr(ele) { }
+	eleRef<T>::eleRef(T* ele) : _owner((ele == nullptr) ? entityRef() : ele->ent()), _ptr(ele) { }
+	template<class T>
+	eleRef<T>::eleRef(const entityRef& owner, T* ele) : _owner(owner), _ptr(ele) { }
 }

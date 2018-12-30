@@ -23,9 +23,12 @@ namespace citrus::engine {
 		std::type_index _type;
 		bool _initialized = false;
 
+		entityRef _ent;
+		engine* _eng;
+
 	public:
-		entityRef const ent;
-		engine* const e;
+		entityRef ent() const;
+		engine* eng() const;
 
 		bool initialized() const;
 

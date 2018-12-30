@@ -1,7 +1,7 @@
 #include <engine/manager.h>
 
 namespace citrus::engine {
-	template<class T> void manager::registerType(string name, bool active) {
+	template<class T> inline void manager::registerType(string name, bool active) {
 		static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
 		const auto& index = type_index(typeid(T));
 		auto it = _data.find(index);
@@ -18,7 +18,7 @@ namespace citrus::engine {
 		}
 	}
 
-	template<class T> vector<eleRef<T>> manager::ofType() {
+	template<class T> inline vector<eleRef<T>> manager::ofType() {
 		static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
 		vector<element*> pre = ofType(type_index(typeid(T)));
 		vector<eleRef<T>> res;
@@ -29,7 +29,7 @@ namespace citrus::engine {
 		return res;
 	}
 
-	template<class T> eleRef<T> manager::dereferenceElement(const json& data) {
+	template<class T> inline eleRef<T> manager::dereferenceElement(const json& data) {
 		static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
 		if(!isElementReference(data)) throw std::runtime_error(("Tried to derefence invalid element reference\n" + data.dump(2)).c_str());
 		auto info = getInfo(typeid(T));
@@ -40,7 +40,7 @@ namespace citrus::engine {
 		return ent.getElement<T>();
 	}
 
-	template<class T> json manager::referenceElement(entityRef ent) {
+	template<class T> inline json manager::referenceElement(entityRef ent) {
 		static_assert(std::is_base_of<element, T>::value, "T must be derived from element");
 		auto info = getInfo(typeid(T));
 		if(info == nullptr) throw std::runtime_error("Trying to reference element type that isn't registered");
@@ -48,6 +48,6 @@ namespace citrus::engine {
 			{"Type", "Element Reference"},
 			{"Name", info->name},
 			{"ID", ent != nullptr ? ent.id() : entity::nullID}
-			});
+		});
 	}
 }

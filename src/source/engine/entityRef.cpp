@@ -32,6 +32,10 @@ namespace citrus::engine {
 		if(null()) throw entDereferenceException("setLocalOrientation(): null entity");
 		_ref.lock()->setLocalOrientation(ori);
 	}
+	void entityRef::setLocalScale(const glm::vec3& scale) const {
+		if(null()) throw entDereferenceException("setLocalOrientation(): null entity");
+		_ref.lock()->setLocalScale(scale);
+	}
 	transform entityRef::getLocalTransform() const {
 		if(null()) throw entDereferenceException("getLocalTransform(): null entity");
 		return _ref.lock()->getLocalTransform();

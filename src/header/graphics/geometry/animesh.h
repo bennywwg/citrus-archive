@@ -464,10 +464,15 @@ namespace citrus::geom {
 					(tr == xyz) ? mesh->mVertices[j].y : mesh->mVertices[j].z,
 					(tr == xyz) ? mesh->mVertices[j].z : mesh->mVertices[j].y
 				));
-				uv.push_back(glm::vec2(
-					mesh->mTextureCoords[0][j].x,
-					-mesh->mTextureCoords[0][j].y
-				));
+			}
+
+			if(mesh->HasTextureCoords(0)) {
+				for(size_t j = 0; j < mesh->mNumVertices; j++) {
+					uv.push_back(glm::vec2(
+						mesh->mTextureCoords[0][j].x,
+						-mesh->mTextureCoords[0][j].y
+					));
+				}
 			}
 
 			for(size_t j = 0; j < mesh->mNumFaces; j++) {

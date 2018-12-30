@@ -11,7 +11,7 @@
 
 namespace citrus::engine {
 	void worldManager::enableDebugDraw() {
-		fbo = e->getAllOfType<renderManager>()[0]->meshFBO.get();
+		fbo = eng()->getAllOfType<renderManager>()[0]->meshFBO.get();
 		debugShader.reset(new graphics::shader(
 			util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\wireframe.vert"),
 			util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\wireframe.frag"))
@@ -23,41 +23,41 @@ namespace citrus::engine {
 	}
 
 	void worldManager::preRender() {
-		if(e->getKey(graphics::windowInput::equals)) {
+		if(eng()->getKey(graphics::windowInput::equals)) {
 			if(fbo == nullptr) enableDebugDraw();
 		}
 
-		if(e->getKey(graphics::windowInput::minus)) {
+		if(eng()->getKey(graphics::windowInput::minus)) {
 			disableDebugDraw();
 		}
 
 
-		auto list = e->getAllOfType<rigidBodyComponent>();
+		auto list = eng()->getAllOfType<rigidBodyComponent>();
 		for(auto& rbc : list) {
-			if(rbc->ent.getGlobalTransform() != rbc->body->getTransform()) {
-				auto et = rbc->ent.getGlobalTransform();
+			if(rbc->ent().getGlobalTransform() != rbc->body->getTransform()) {
+				auto et = rbc->ent().getGlobalTransform();
 				auto bt = rbc->body->getTransform();
-				rbc->body->setTransform(rbc->ent.getGlobalTransform());
+				rbc->body->setTransform(rbc->ent().getGlobalTransform());
 			}
 		}
 
 		w->step();
 
 		for(auto& rbc : list) {
-			rbc->ent.setLocalTransform(rbc->body->getTransform());
+			rbc->ent().setLocalTransform(rbc->body->getTransform());
 		}
 	}
 	void worldManager::render() {
 		if(fbo != nullptr) {
-			auto man = e->getAllOfType<renderManager>()[0];
-			const auto& sphere = e->getAllOfType<meshManager>()[0]->getModel(1);
-			const auto& cube = e->getAllOfType<meshManager>()[0]->getModel(2);
-			const auto& list = e->getAllOfType<rigidBodyComponent>();
+			auto man = eng()->getAllOfType<renderManager>()[0];
+			const auto& sphere = eng()->getAllOfType<meshManager>()[0]->getModel(1);
+			const auto& cube = eng()->getAllOfType<meshManager>()[0]->getModel(2);
+			const auto& list = eng()->getAllOfType<rigidBodyComponent>();
 			debugShader->use();
 			debugShader->setUniform("lineColor", glm::vec3(1.0f, 0.0f, 0.0f));
 			fbo->bind();
 			for(auto& ele : list) {
-				glm::mat4 model = ele->ent.getGlobalTransform().getMat();
+				glm::mat4 model = ele->ent().getGlobalTransform().getMat();
 				if(ele->isBox()) {
 					auto size = ((btBoxShape*)ele->shape->ptr())->getHalfExtentsWithoutMargin();
 					model = model * glm::scale(2.0f * glm::vec3(size.getX(), size.getY(), size.getZ()));

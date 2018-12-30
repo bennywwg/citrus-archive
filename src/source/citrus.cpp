@@ -13,6 +13,7 @@
 #include <engine/elements/playerController.h>
 #include <engine/elements/worldManager.h>
 #include <engine/elements/rigidBodyComponent.h>
+#include <engine/elements/projectile.h>
 
 #include <engine/entityRef.inl>
 #include <engine/elementRef.inl>
@@ -52,6 +53,7 @@ int main(int argc, char **argv) {
 		e.man->registerType<engine::playerController>("Player Controller", true);
 		e.man->registerType<engine::worldManager>("World Manager", true);
 		e.man->registerType<engine::rigidBodyComponent>("Rigid Body", false);
+		e.man->registerType<engine::projectile>("Projectile", true);
 		e.man->setOrder({
 			//typeid(engine::worldManager),
 			//typeid(engine::rigidBodyComponent),
@@ -61,6 +63,7 @@ int main(int argc, char **argv) {
 			typeid(engine::meshManager),
 			typeid(engine::freeCam),
 			typeid(engine::playerController),
+			typeid(engine::projectile),
 			typeid(engine::renderManager),
 			typeid(engine::meshFilter)
 		});
@@ -99,6 +102,7 @@ int main(int argc, char **argv) {
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\cube1x1x1.dae", 2);
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\walker.dae", 3);
 					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human.dae", 4);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\blast.dae", 5);
 
 					man.bindAllAvailableAnimations();
 				}
@@ -111,22 +115,25 @@ int main(int argc, char **argv) {
 			engine::eleInit<engine::playerController>(),
 			engine::eleInit<engine::rigidBodyComponent>::run([](engine::rigidBodyComponent& cmp) {
 				//rb.body->dynamic = false;
-				cmp.setToBox(glm::vec3(0.4f, 0.5f, 0.3f));
+				cmp.setToBox(glm::vec3(0.4f, 0.7f, 0.3f));
 			})
 		}, util::nextID());
 		auto playerModel = e.man->create("Player Model", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
-				filt.setState(0, 0, 1);
+				filt.setState(4, 1, 1);
+				filt.startAnimation(0, geom::repeat);
 			})
 		}, util::nextID());
 		playerModel.setParent(ent2);
-		playerModel.setLocalPosition(glm::vec3(0.0f, -0.35f, 0.0f));
-		playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
+		//playerModel.setLocalScale(vec3(0.5f, 0.4f, 0.5f));
+		playerModel.setLocalPosition(glm::vec3(0.0f, -0.55f, 0.0f));
+		//playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
+		playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(0.0f, 1.0f, 0.0f)));
 
 		e.man->create("Walker Test", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
 				filt.setState(4, 1, 1);
-				filt.startAnimation(1, geom::repeat);
+				filt.startAnimation(0, geom::repeat);
 			})
 		}, util::nextID());
 
@@ -135,7 +142,7 @@ int main(int argc, char **argv) {
 				e.man->create("Floor: " + std::to_string(x) + " " + std::to_string(z), {
 					engine::eleInit<engine::rigidBodyComponent>::run([x,z](engine::rigidBodyComponent& cmp) {
 						cmp.setToBox(glm::vec3(0.5f, 0.5f, 0.5f));
-						cmp.ent.setLocalPosition(glm::vec3(x, -5.0f + sin(x * 0.2f) + cos(z * 0.2f), z));
+						cmp.ent().setLocalPosition(glm::vec3(x, -5.0f + sin(x * 0.2f) + cos(z * 0.2f), z));
 						cmp.body->dynamic = false;
 					}),
 					engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& m) {
@@ -155,8 +162,11 @@ int main(int argc, char **argv) {
 		}, util::nextID());*/
 
 		/*geom::animesh::convertAnimationFromCollada(
-			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human_export.dae",
-			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\run.cta");*/
+			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human_run.dae",
+			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\run.cta");
+		geom::animesh::convertAnimationFromCollada(
+			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human_idle.dae",
+			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\idle.cta");*/
 
 		e.start();
 

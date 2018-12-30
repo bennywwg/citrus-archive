@@ -19,6 +19,8 @@ namespace citrus::engine {
 		double _aniStart = 0.0;
 
 	public:
+		glm::vec3 color;
+
 		void setState(int m, int t, int s, int a = -1);
 		int model() const;
 		int tex() const;
@@ -31,5 +33,6 @@ namespace citrus::engine {
 		void load(const json&);
 
 		meshFilter(entityRef ent);
+		~meshFilter();
 	};
 }

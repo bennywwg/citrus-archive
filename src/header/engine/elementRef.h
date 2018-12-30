@@ -31,6 +31,8 @@ namespace citrus::engine {
 		T& operator*() const;
 		T* operator->() const;
 
+		void destroy() const;
+
 		bool operator==(const eleRef& other) const;
 		bool operator==(std::nullptr_t other) const;
 		operator bool() const;
@@ -40,5 +42,6 @@ namespace citrus::engine {
 
 		eleRef();
 		eleRef(T* ele);
+		eleRef(const entityRef& owner, T* ele);
 	};
 }

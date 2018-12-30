@@ -18,7 +18,7 @@ namespace citrus {
 			friend class manager;
 			friend class entityRef;
 
-			const std::vector<element*> _elements;
+			const std::vector<std::pair<std::type_index, element*>> _elements;
 			entity* _parent = nullptr;
 			std::vector<entity*> _children;
 			transform _trans;
@@ -32,6 +32,7 @@ namespace citrus {
 			void setLocalTransform(const transform &trans);
 			void setLocalPosition(const glm::vec3& pos);
 			void setLocalOrientation(const glm::quat& ori);
+			void setLocalScale(const glm::vec3& scale);
 			transform getLocalTransform() const;
 			glm::vec3 getLocalPosition() const;
 			glm::quat getLocalOrientation() const;
@@ -57,7 +58,7 @@ namespace citrus {
 			constexpr static uint64_t nullID = std::numeric_limits<uint64_t>::max();
 
 			private:
-			entity(const std::vector<element*>& toCreate, engine* eng, const std::string& name, const uint64_t id);
+			entity(const std::vector<std::pair<std::type_index, element*>>& toCreate, engine* eng, const std::string& name, const uint64_t id);
 
 		};
 	}

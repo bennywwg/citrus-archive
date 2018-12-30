@@ -8,7 +8,7 @@
 
 namespace citrus::engine {
 	void meshFilter::setState(int m, int t, int s, int a) {
-		auto g = e->getAllOfType<renderManager>()[0];
+		auto g = eng()->getAllOfType<renderManager>()[0];
 		if(s != -1) {
 			g->addDrawable(eleRef<meshFilter>(this), m, t, s);
 		} else {
@@ -36,11 +36,11 @@ namespace citrus::engine {
 		return _mode;
 	}
 	double meshFilter::aniTime() const {
-		return e->time() - _aniStart;
+		return eng()->time() - _aniStart;
 	}
 
 	void meshFilter::startAnimation(int ani, geom::behavior mode) {
-		_aniStart = e->time();
+		_aniStart = eng()->time();
 		_ani = ani;
 		_mode = mode;
 	}
@@ -48,5 +48,11 @@ namespace citrus::engine {
 	}
 
 	meshFilter::meshFilter(entityRef ent) : element(ent, typeid(meshFilter)) {
+	}
+	meshFilter::~meshFilter() {
+		if(_sh != -1) {
+			auto g = eng()->getAllOfType<renderManager>()[0];
+			g->removeDrawable(eleRef<meshFilter>(this), _model, _tex, _sh);
+		}
 	}
 }

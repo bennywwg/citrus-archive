@@ -36,6 +36,7 @@ namespace citrus::engine {
 		void setLocalTransform(const transform &trans) const;
 		void setLocalPosition(const glm::vec3& pos) const;
 		void setLocalOrientation(const glm::quat& ori) const;
+		void setLocalScale(const glm::vec3& scale) const;
 		transform getLocalTransform() const;
 		glm::vec3 getLocalPosition() const;
 		glm::quat getLocalOrientation() const;

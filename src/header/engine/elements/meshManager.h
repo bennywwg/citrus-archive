@@ -53,7 +53,7 @@ namespace citrus::engine {
 
 			geom::animesh *mesh = new geom::animesh(loc, geom::xyz);
 			if((*mesh).pos.size() == 0) {
-				e->Log("Failed to load mesh " + std::to_string(index) + ": " + loc);
+				eng()->Log("Failed to load mesh " + std::to_string(index) + ": " + loc);
 				return;
 			}
 
@@ -75,7 +75,7 @@ namespace citrus::engine {
 				vao
 			};
 
-			e->Log("Loaded mesh " + std::to_string(index) + ": \"" + loc + "\"");
+			eng()->Log("Loaded mesh " + std::to_string(index) + ": \"" + loc + "\"");
 			util::sout("Loaded mesh " + std::to_string(index) + ": \"" + loc + "\"\n");
 		}
 		void bindAllAvailableAnimations() {

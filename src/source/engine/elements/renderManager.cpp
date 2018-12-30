@@ -43,11 +43,11 @@ namespace citrus {
 			if(textures[index]) throw std::runtime_error("Texture already exists at index " + std::to_string(index));
 			try {
 				textures[index] = new graphics::texture3b(graphics::image3b(loc));
-				e->Log("Loaded texture " + std::to_string(index) + ": \"" + loc + "\"");
+				eng()->Log("Loaded texture " + std::to_string(index) + ": \"" + loc + "\"");
 			} catch(const std::runtime_error& er) {
-				e->Log("Failed to load texture " + std::to_string(index) + " \"" + loc + "\": " + er.what());
+				eng()->Log("Failed to load texture " + std::to_string(index) + " \"" + loc + "\": " + er.what());
 			} catch(...) {
-				e->Log("Failed to load texture " + std::to_string(index) + " \"" + loc + "\": (Whack error)");
+				eng()->Log("Failed to load texture " + std::to_string(index) + " \"" + loc + "\": (Whack error)");
 			}
 		}
 		void renderManager::resizeBuffers(unsigned int width, unsigned int height) {
@@ -64,7 +64,7 @@ namespace citrus {
 
 		void renderManager::load(const nlohmann::json& parsed) {
 			if(!parsed.empty()) {
-				camRef = e->man->dereferenceElement<freeCam>(parsed["cam"]);
+				camRef = eng()->man->dereferenceElement<freeCam>(parsed["cam"]);
 			}
 		}
 		nlohmann::json renderManager::save() const {
@@ -78,19 +78,20 @@ namespace citrus {
 			//int x = 5;
 		}
 		void renderManager::render() {
-			auto win = e->getWindow();
+			auto win = eng()->getWindow();
 			auto size = win->framebufferSize();
 			if(meshFBO->width() != size.x || meshFBO->height() != size.y) {
 				resizeBuffers(size.x, size.y);
 			}
 
 			camera cam = camRef->cam;
-			eleRef<meshManager> models = e->getAllOfType<meshManager>()[0];
+			eleRef<meshManager> models = eng()->getAllOfType<meshManager>()[0];
 
 			meshFBO->bind();
 			//meshFBO->clearAll();
 
 			glEnable(GL_DEPTH_TEST);
+			glEnable(GL_CULL_FACE);
 
 			{
 				shaderInfo& info = drawable[0];
@@ -102,17 +103,19 @@ namespace citrus {
 				for(int i = 0; i < info.groups.size(); i++) {
 					if(info.groups[i].eles.empty()) continue;
 					textures[i]->bind(GL_TEXTURE0);
+					info.sh->setUniform("tex", 0);
+
 					for(int j = 0; j < info.groups[i].eles.size(); j++) {
 						auto& ref = info.groups[i].eles[j];
+						if(ref.null()) continue;
 
-						glm::mat4 modelMat = ref->ent.getGlobalTransform().getMat();
+						glm::mat4 modelMat = ref->ent().getGlobalTransform().getMat();
 
 						info.sh->setUniform("modelMat", modelMat);
 						info.sh->setUniform("modelViewProjectionMat", cam.getViewProjectionMatrix() * modelMat);
 
 						int model = ref->model();
 
-						info.sh->setUniform("tex", 0);
 
 						models->getModel(model).drawAll();
 					}
@@ -130,10 +133,13 @@ namespace citrus {
 				for(int i = 0; i < info.groups.size(); i++) {
 					if(info.groups[i].eles.empty()) continue;
 					textures[i]->bind(GL_TEXTURE0);
+					info.sh->setUniform("tex", 0);
+
 					for(int j = 0; j < info.groups[i].eles.size(); j++) {
 						auto& ref = info.groups[i].eles[j];
+						if(ref.null()) continue;
 
-						glm::mat4 modelMat = ref->ent.getGlobalTransform().getMat();
+						glm::mat4 modelMat = ref->ent().getGlobalTransform().getMat();
 
 						info.sh->setUniform("modelMat", modelMat);
 						info.sh->setUniform("modelViewProjectionMat", cam.getViewProjectionMatrix() * modelMat);
@@ -147,8 +153,32 @@ namespace citrus {
 						}
 						info.sh->setUniform("boneData", trData.data(), 64);
 
-						info.sh->setUniform("tex", 0);
 
+						models->getModel(model).drawAll();
+					}
+				}
+			}
+
+			{
+				shaderInfo& info = drawable[2];
+
+				info.sh->use();
+				info.sh->setUniform("projectionMat", cam.getProjectionMatrix());
+				info.sh->setUniform("viewMat", cam.getViewMatrix());
+
+				for(int i = 0; i < info.groups.size(); i++) {
+					if(info.groups[i].eles.empty()) continue;
+					for(int j = 0; j < info.groups[i].eles.size(); j++) {
+						auto& ref = info.groups[i].eles[j];
+						if(ref.null()) continue;
+
+						glm::mat4 modelMat = ref->ent().getGlobalTransform().getMat();
+
+						info.sh->setUniform("drawColor", ref->color);
+						info.sh->setUniform("modelMat", modelMat);
+						info.sh->setUniform("modelViewProjectionMat", cam.getViewProjectionMatrix() * modelMat);
+
+						int model = ref->model();
 						models->getModel(model).drawAll();
 					}
 				}
@@ -213,7 +243,7 @@ namespace citrus {
 			font("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\consolas1024x1024.png", 16, 16),
 			element(ent, std::type_index(typeid(renderManager))) {
 
-			auto win = e->getWindow();
+			auto win = eng()->getWindow();
 			auto size = win->framebufferSize();
 			meshFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y);
 			textFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y);
@@ -230,6 +260,13 @@ namespace citrus {
 				std::string bonesFrag = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.frag");
 				shaderInfo inf;
 				inf.sh = std::make_unique<graphics::shader>(bonesVert, bonesFrag);
+				drawable.push_back(std::move(inf));
+			}
+			{
+				std::string colorVert = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\color.vert");
+				std::string colorFrag = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\color.frag");
+				shaderInfo inf;
+				inf.sh = std::make_unique<graphics::shader>(colorVert, colorFrag);
 				drawable.push_back(std::move(inf));
 			}
 			

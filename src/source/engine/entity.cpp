@@ -14,6 +14,9 @@ namespace citrus::engine {
 	void entity::setLocalOrientation(const glm::quat& ori) {
 		_trans.setOrientation(ori);
 	}
+	void entity::setLocalScale(const glm::vec3& scale) {
+		_trans.setScale(scale);
+	}
 	transform entity::getLocalTransform() const {
 		return _trans;
 	}
@@ -82,14 +85,14 @@ namespace citrus::engine {
 	}
 
 	element* entity::getElement(const std::type_index& type) const {
-		for(element* e : _elements)
-			if(e->_type == type)
-				return e;
+		for(auto e : _elements)
+			if(e.first == type)
+				return e.second;
 
 		return nullptr;
 	}
 
-	entity::entity(const std::vector<element*>& toCreate, engine* eng, const std::string& name, const uint64_t id) : _elements(toCreate), name(name), id(id), eng(eng) {
+	entity::entity(const std::vector<std::pair<std::type_index, element*>>& toCreate, engine* eng, const std::string& name, const uint64_t id) : _elements(toCreate), name(name), id(id), eng(eng) {
 		this->_trans = transform();
 	}
 }

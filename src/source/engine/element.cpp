@@ -4,6 +4,12 @@
 
 namespace citrus {
 	namespace engine {
+		entityRef element::ent() const {
+			return _ent;
+		}
+		engine* element::eng() const {
+			return _eng;
+		}
 		bool element::initialized() const {
 			return _initialized;
 		}
@@ -13,6 +19,6 @@ namespace citrus {
 		void element::render() { }
 		nlohmann::json element::save() { return nlohmann::json::object(); }
 
-		element::element(entityRef ent, std::type_index const & type) : _type(type), ent(ent), e(ent.eng()) { }
+		element::element(entityRef ent, std::type_index const & type) : _type(type), _ent(ent), _eng(ent.eng()) { }
 	}
 }

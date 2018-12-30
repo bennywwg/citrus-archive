@@ -6,13 +6,17 @@ namespace citrus {
 	class transform {
 		vec3 _position;
 		quat _orientation;
+		vec3 _scale;
 
 		public:
 		vec3 getPosition() const;
-		void setPosition(vec3 position);
+		void setPosition(const vec3& position);
 
 		quat getOrientation() const;
-		void setOrientation(quat orientation);
+		void setOrientation(const quat& orientation);
+
+		vec3 getScale() const;
+		void setScale(const vec3& scale);
 
 		transform getTranslated(vec3 trans);
 
@@ -23,7 +27,7 @@ namespace citrus {
 		bool operator!=(const transform& other) const;
 
 		transform();
-		transform(mat4 mat);
-		transform(vec3 position, quat orientation);
+		transform(const mat4& mat);
+		transform(const vec3& position, const quat& orientation);
 	};
 }
