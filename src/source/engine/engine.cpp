@@ -5,8 +5,13 @@
 
 #include <engine/engine.h>
 #include <graphics/window/window.h>
-#include <graphics/framebuffer/framebuffer.h>
-
+#include <graphics/framebuffer/standaloneFramebuffer.h>
+#include <graphics/shader/shader.h>
+#include <editor/gui.h>
+#include <vector>
+#include <graphics/geometry/vertexarray.h>
+#include <highlevel/tilemapFont.h>
+#include <editor/editor.h>
 
 namespace citrus {
 	namespace engine {
@@ -179,6 +184,7 @@ namespace citrus {
 		}
 
 		engine::engine(double timeStep) : _timeStep(timeStep) {
+			ed = new editor::ctEditor();
 			_engineStart = clock::now();
 			man = new manager(this);
 			Log("Engine Start");

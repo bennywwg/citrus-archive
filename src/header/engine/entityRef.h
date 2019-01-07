@@ -6,6 +6,7 @@
 #include <glm/ext.hpp>
 #include <dynamics/transform.h>
 #include <mutex>
+#include <editor/gui.h>
 
 namespace citrus::engine {
 
@@ -26,6 +27,8 @@ namespace citrus::engine {
 		std::weak_ptr<entity> _ref;
 
 		public:
+
+		std::unique_ptr<editor::gui> renderGUI() const;
 
 		bool null() const;
 
@@ -55,6 +58,7 @@ namespace citrus::engine {
 		bool operator==(const std::nullptr_t& null) const;
 		bool operator!=(const entityRef& other) const;
 		bool operator!=(const std::nullptr_t& null) const;
+		operator bool() const;
 
 		constexpr static uint64_t nullID = std::numeric_limits<uint64_t>::max();
 

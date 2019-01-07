@@ -1,6 +1,7 @@
 #include <engine/elements/meshFilter.h>
 
 #include <engine/elements/renderManager.h>
+#include <engine/elements/meshManager.h>
 
 #include <engine/manager.inl>
 
@@ -43,6 +44,18 @@ namespace citrus::engine {
 		_aniStart = eng()->time();
 		_ani = ani;
 		_mode = mode;
+	}
+	std::unique_ptr<editor::gui> meshFilter::renderGUI() {
+		editor::container* c = new	editor::container();
+		c->title = "Mesh Filter";
+
+		{
+			editor::button* b = new editor::button();
+			b->info = "Mesh: " + ((_model == -1) ? string("(None)") : eng()->getAllOfType<meshManager>()[0]->getMesh(_model).name);
+			c->items.emplace_back(b);
+		}
+
+		return std::unique_ptr<editor::gui>(c);
 	}
 	void meshFilter::load(const json& js) {
 	}

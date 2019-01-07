@@ -153,10 +153,25 @@ namespace citrus {
 			GLuint loc = glGetUniformLocation(_ptr, name.c_str());
 			glUniform3f(loc, v.x, v.y, v.z);
 		}
+		void shader::setUniform(string name, vec4 v) {
+			use();
+			GLuint loc = glGetUniformLocation(_ptr, name.c_str());
+			glUniform4f(loc, v.x, v.y, v.z, v.w);
+		}
 		void shader::setUniform(string name, int i) {
 			use();
 			GLuint loc = glGetUniformLocation(_ptr, name.c_str());
 			glUniform1i(loc, i);
+		}
+		void shader::setUniform(string name, ivec2 v) {
+			use();
+			GLuint loc = glGetUniformLocation(_ptr, name.c_str());
+			glUniform2i(loc, v.x, v.y);
+		}
+		void shader::setUniform(string name, ivec3 v) {
+			use();
+			GLuint loc = glGetUniformLocation(_ptr, name.c_str());
+			glUniform3i(loc, v.x, v.y, v.z);
 		}
 		void shader::setSampler(string name, const texture& tex) {
 			use();

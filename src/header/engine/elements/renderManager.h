@@ -25,6 +25,7 @@ namespace citrus {
 			std::unique_ptr<graphics::shader> composite;
 			std::unique_ptr<graphics::shader> bones;
 			std::unique_ptr<graphics::shader> transSh;
+			std::unique_ptr<graphics::shader> rectshader;
 			
 			std::vector<graphics::texture3b*> textures;
 

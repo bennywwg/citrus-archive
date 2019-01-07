@@ -94,7 +94,10 @@ namespace citrus {
 			void setUniform(string name, float f);
 			void setUniform(string name, vec2 v);
 			void setUniform(string name, vec3 v);
+			void setUniform(string name, vec4 v);
 			void setUniform(string name, int i);
+			void setUniform(string name, ivec2 v);
+			void setUniform(string name, ivec3 v);
 			void setUniform(string name, unsigned int i);
 			//keeps track of allocating texture units, incrementing once after each texture bind
 			void setSampler(string name, const texture& tex);

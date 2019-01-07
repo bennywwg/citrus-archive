@@ -9,11 +9,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include <graphics/buffer/vertexView.h>
-#include <graphics/buffer/indexView.h>
-#include <graphics/buffer/buffer.h>
-#include <graphics/buffer/bufferView.h>
-#include <graphics/geometry/vertexarray.h>
+#include <graphics/buffer/buffer.inl>
 
 #include <util/util.h>
 #include <util/stdUtil.h>
@@ -400,6 +396,8 @@ namespace citrus::geom {
 
 	class animesh {
 		public:
+		string name = "Default Mesh Name";
+
 		std::vector<glm::vec3> pos;
 		std::vector<glm::vec3> normal;
 		std::vector<glm::vec2> uv;

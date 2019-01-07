@@ -34,7 +34,6 @@ void terminateGLFW() {
 }
 
 int main(int argc, char **argv) {
-
 	util::sout("Citrus 0.0.0 - PRIVATE DEVELOPMENT BUILD - DO NOT DISTRIBUTE\n");
 
 	initializeGLFW();
@@ -68,6 +67,25 @@ int main(int argc, char **argv) {
 			typeid(engine::meshFilter)
 		});
 
+		e.man->create("MeshTable", {
+			engine::eleInit<engine::meshManager>::run(
+				[](engine::meshManager& man) {
+					man.loadAnimation("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\run.cta", 0);
+					man.loadAnimation("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\idle.cta", 1);
+
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\natsuki.dae", 0);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\sphere.dae", 1);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\cube1x1x1.dae", 2);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\walker.dae", 3);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human.dae", 4);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\blast.dae", 5);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\icosphere.dae", 6);
+					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\arrow.dae", 7);
+
+					man.bindAllAvailableAnimations();
+				}
+			)
+			}, util::nextID());
 
 		entityRef cam2 = e.man->create("Test 2", {
 			engine::eleInit<engine::freeCam>::run(
@@ -87,27 +105,12 @@ int main(int argc, char **argv) {
 					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\Natsuki_COLOR.png", 0);
 					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\gridsmall.png", 1);
 					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\cement.png", 2);
+					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\consolas256x256.png", 3);
 				}
 			)
 		}, util::nextID());
 
-		e.man->create("MeshTable", {
-			engine::eleInit<engine::meshManager>::run(
-				[](engine::meshManager& man) {
-					man.loadAnimation("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\run.cta", 0);
-					man.loadAnimation("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\idle.cta", 1);
-
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\natsuki.dae", 0);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\sphere.dae", 1);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\cube1x1x1.dae", 2);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\walker.dae", 3);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human.dae", 4);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\blast.dae", 5);
-
-					man.bindAllAvailableAnimations();
-				}
-			)
-		}, util::nextID());
+		
 
 		e.man->create("Physics", {engine::eleInit<engine::worldManager>()}, util::nextID());
 
@@ -120,7 +123,7 @@ int main(int argc, char **argv) {
 		}, util::nextID());
 		auto playerModel = e.man->create("Player Model", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
-				filt.setState(4, 1, 1);
+				filt.setState(4, 3, 1);
 				filt.startAnimation(0, geom::repeat);
 			})
 		}, util::nextID());
@@ -137,8 +140,8 @@ int main(int argc, char **argv) {
 			})
 		}, util::nextID());
 
-		for(int x = -15; x < 15; x++) {
-			for(int z = -15; z < 15; z++) {
+		for(int x = -1; x < 15; x++) {
+			for(int z = -1; z < 15; z++) {
 				e.man->create("Floor: " + std::to_string(x) + " " + std::to_string(z), {
 					engine::eleInit<engine::rigidBodyComponent>::run([x,z](engine::rigidBodyComponent& cmp) {
 						cmp.setToBox(glm::vec3(0.5f, 0.5f, 0.5f));

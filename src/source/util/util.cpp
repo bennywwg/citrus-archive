@@ -4,11 +4,42 @@
 #include <util/glmUtil.h>
 #include <util/stdUtil.h>
 
+#include <nativefiledialog-master/src/include/nfd.h>
+
 namespace citrus {
 	namespace util {
 		mutex _soutMut;
 		mutex _idMut;
 		int _currentID = 0;
+
+		string selectFolder() {
+			nfdchar_t *outPath = nullptr;
+			nfdresult_t result = NFD_PickFolder(nullptr, &outPath);
+
+			if(result == NFD_OKAY) {
+				string res = outPath;
+				free(outPath);
+				return res;
+			} else if(result == NFD_CANCEL) {
+				return "";
+			} else {
+				return "";
+			}			
+		}
+		string selectFile() {
+			nfdchar_t *outPath = nullptr;
+			nfdresult_t result = NFD_OpenDialog(nullptr, nullptr, &outPath);
+
+			if(result == NFD_OKAY) {
+				string res = outPath;
+				free(outPath);
+				return res;
+			} else if(result == NFD_CANCEL) {
+				return "";
+			} else {
+				return "";
+			}
+		}
 
 		int nextID() {
 			std::lock_guard<mutex> lock(_idMut);

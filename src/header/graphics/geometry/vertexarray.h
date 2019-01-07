@@ -8,9 +8,8 @@
 
 
 #include <util/graphics_h.h>
-#include <graphics/buffer/indexView.h>
-#include <graphics/buffer/vertexView.h>
 #include <util/glmUtil.h>
+#include <graphics/buffer/buffer.inl>
 
 namespace citrus {
 	namespace graphics {

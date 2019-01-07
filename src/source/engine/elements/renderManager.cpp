@@ -4,6 +4,7 @@
 #include <engine/manager.inl>
 
 #include <engine/elements/meshManager.h>
+#include <editor/editor.h>
 
 //#include <openvr/openvr.h>
 
@@ -57,7 +58,7 @@ namespace citrus {
 			meshFBO = std::make_unique<graphics::simpleFrameBuffer>(width, height);
 
 			textFBO.reset();
-			textFBO = std::make_unique<graphics::simpleFrameBuffer>(width, height);
+			textFBO = std::make_unique<graphics::simpleFrameBuffer>(width, height, true);
 
 			camRef->cam.aspectRatio = width / (float) height;
 		}
@@ -208,7 +209,12 @@ namespace citrus {
 			}*/
 			meshFBO->unbind();
 
-
+			textFBO->clearColor(0, 0, 0, 0);
+			if(eng()->ed) {
+				eng()->ed->update(*this, cam);
+				eng()->ed->render(*this, cam);
+			}
+			//textFBO->clearAll(1.0f, 1.0f, 1.0f, 1.0f);
 			/*textFBO->bind();
 			font.streamText("Render Manager", camRef->cam.getViewProjectionMatrix() * glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)));
 			textFBO->unbind();*/
@@ -225,7 +231,7 @@ namespace citrus {
 			composite->unuse();
 
 			meshFBO->clearAll();
-			textFBO->clearAll();
+			//textFBO->clearAll();
 
 			//vr::Texture_t t;
 			//t.eColorSpace = vr::ColorSpace_Gamma;
@@ -240,13 +246,13 @@ namespace citrus {
 		}
 
 		renderManager::renderManager(entityRef ent) :
-			font("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\consolas1024x1024.png", 16, 16),
+			font("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\consolas256x256.png", 16, 16),
 			element(ent, std::type_index(typeid(renderManager))) {
 
 			auto win = eng()->getWindow();
 			auto size = win->framebufferSize();
 			meshFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y);
-			textFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y);
+			textFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y, true);
 
 			{
 				std::string simpleVert = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\simple.vert");
@@ -270,6 +276,11 @@ namespace citrus {
 				drawable.push_back(std::move(inf));
 			}
 			
+			rectshader = std::make_unique<graphics::shader>(
+				util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\rect.vert"),
+				util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\rect.geom"),
+				util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\rect.frag"));
+
 			composite = std::make_unique<graphics::shader>(
 				"#version 450\n"
 				""
@@ -330,8 +341,8 @@ namespace citrus {
 				"}\n"
 				"void main() {\n"
 				"  color = texture(bottomColor, fUV);\n"
-				"  int count = sampleNear(fUV, topColor);\n"
-				"  color = vec4(mix(color.xyz, vec3(1.0, 1.0, 1.0), count / 28.0), 1.0);\n"
+				"  vec4 guiLayer = texture(topColor, fUV);\n"
+				"  color = vec4(mix(color.rgb, guiLayer.rgb, guiLayer.a), 1.0);\n"
 				"}\n"
 			);
 			passthrough = std::make_unique<graphics::shader>(

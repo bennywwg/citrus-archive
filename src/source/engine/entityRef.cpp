@@ -5,6 +5,16 @@
 namespace citrus::engine {
 	using std::vector;
 
+	std::unique_ptr<editor::gui> entityRef::renderGUI() const {
+		editor::container* res = new editor::container();
+		res->title = "Entity: " + name() + " (" + std::to_string(id()) + ")";
+
+		for(int i = 0; i < this->_ref.lock()->_elements.size(); i++)
+			res->items.emplace_back(this->_ref.lock()->_elements[i].second->renderGUI());
+
+		return std::unique_ptr<editor::gui>((editor::gui*)res);
+	}
+
 	bool entityRef::null() const {
 		return _ref.expired();
 	}
@@ -93,6 +103,9 @@ namespace citrus::engine {
 	}
 	bool entityRef::operator!=(const std::nullptr_t& other) const {
 		return !(*this == other);
+	}
+	entityRef::operator bool() const {
+		return !null();
 	}
 	entityRef::entityRef() : entityRef(std::weak_ptr<entity>()) { }
 	entityRef::entityRef(std::weak_ptr<entity> ref) : _ref(ref), _eng(!ref.expired() ? ref.lock()->eng : nullptr) { }

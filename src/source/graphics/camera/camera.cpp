@@ -11,12 +11,14 @@ namespace citrus {
 			));
 		}
 		geom::line camera::getRayFromScreenSpace(vec2 ss) {
-			const vec4 toUntransformNear = vec4(ss.x, ss.y, -1.0f, 1.0f);
+			const vec4 toUntransformNear = vec4(ss.x, ss.y, 0.0f, 1.0f);
 			const vec4 toUntransformFar = vec4(ss.x, ss.y, 1.0f, 1.0f);
 			const mat4 invViewProjection = inverse(getViewProjectionMatrix());
+			glm::vec4 nearw = invViewProjection * toUntransformNear;
+			glm::vec4 farw = invViewProjection * toUntransformFar;
 			return geom::line(
-				vec3(invViewProjection * toUntransformNear),
-				vec3(invViewProjection * toUntransformFar)
+				vec3(nearw) / nearw.w,
+				vec3(farw) / farw.w
 			);
 		}
 		mat4 camera::getViewMatrix() {

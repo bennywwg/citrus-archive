@@ -30,6 +30,8 @@ namespace citrus::engine {
 		double aniTime() const;
 		void startAnimation(int ani, geom::behavior mode = geom::nearest);
 
+		std::unique_ptr<editor::gui> renderGUI();
+
 		void load(const json&);
 
 		meshFilter(entityRef ent);

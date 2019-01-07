@@ -10,6 +10,8 @@
 
 #include <engine/entityRef.h>
 
+#include <editor/gui.h>
+
 namespace citrus::engine {
 	class engine;
 	class manager;
@@ -31,6 +33,8 @@ namespace citrus::engine {
 		engine* eng() const;
 
 		bool initialized() const;
+
+		virtual std::unique_ptr<editor::gui> renderGUI();
 
 		virtual void load(const nlohmann::json& parsed);
 		virtual void preRender();

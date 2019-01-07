@@ -111,6 +111,20 @@ namespace citrus {
 			_windowTable[win]->_cursorPos = glm::dvec2(x, y);
 			_cursorCallbackTable[win](x, y);
 		}
+		void window::mouseButtonCallback(GLFWwindow* win, int button, int action, int mods) {
+			using namespace windowInput;
+			windowInput::button but = none;
+			if(button == GLFW_MOUSE_BUTTON_LEFT) {
+				but = leftMouse;
+			} else if(button == GLFW_MOUSE_BUTTON_RIGHT) {
+				but = rightMouse;
+			} else if(button == GLFW_MOUSE_BUTTON_MIDDLE) {
+				but = middleMouse;
+			}
+			if(but != none) {
+				_windowTable[win]->_buttonStates[but] = action != GLFW_RELEASE;
+			}
+		}
 
 		bool window::shouldClose() {
 			return glfwWindowShouldClose(_win);
@@ -236,6 +250,7 @@ namespace citrus {
 			glfwSetWindowIcon(_win, 1, &img);
 			_windowTable[_win] = this;
 			glfwSetKeyCallback(_win, buttonCallback);
+			glfwSetMouseButtonCallback(_win, mouseButtonCallback);
 			setButtonCallback([](int, int, int, int){ });
 			glfwSetCursorPosCallback(_win, cursorCallback);
 			setCursorCallback([](double, double) { });

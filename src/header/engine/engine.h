@@ -8,7 +8,10 @@
 #include <util/stdUtil.h>
 #include <engine/manager.h>
 #include <graphics/window/window.h>
-
+#include <graphics/framebuffer/standaloneFramebuffer.h>
+#include <memory>
+#include <highlevel/tilemapFont.h>
+#include <graphics/camera/camera.h>
 
 namespace citrus {
 	namespace graphics {
@@ -23,6 +26,10 @@ namespace citrus {
 
 	namespace dynamics {
 		class world;
+	}
+
+	namespace editor {
+		class ctEditor;
 	}
 
 	namespace engine {
@@ -40,6 +47,8 @@ namespace citrus {
 			std::mutex _logMut;
 			vector<pair<double, string>> _log;
 			public:
+			editor::ctEditor* ed;
+
 			void Log(string str);
 			void Log(std::vector<string> strs);
 			vector<pair<double, string>> flushLog();
@@ -68,7 +77,9 @@ namespace citrus {
 			private: std::atomic<renderState> _renderState = render_halted;
 			private: void _runRender();
 
+
 			public:
+
 			int fps();
 			renderState getRenderState();
 

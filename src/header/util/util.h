@@ -21,6 +21,9 @@ namespace citrus {
 
 		int nextID();
 
+		std::string selectFolder();
+		std::string selectFile();
+
 		std::vector<btVector3> glmToBtVector(const std::vector<glm::vec3>& verts);
 
 		void spin_until(std::function<bool()> func, std::chrono::microseconds wait = std::chrono::microseconds(50));
