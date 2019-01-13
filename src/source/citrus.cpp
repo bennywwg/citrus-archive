@@ -1,5 +1,7 @@
 #include "util/util.h"
 
+#include <graphics/vulkan/instance.h>
+
 #include <iomanip>
 
 #include "engine/engine.h"
@@ -14,15 +16,15 @@
 #include <engine/elements/worldManager.h>
 #include <engine/elements/rigidBodyComponent.h>
 #include <engine/elements/projectile.h>
+#include <engine/elements/sensorEle.h>
 
 #include <engine/entityRef.inl>
 #include <engine/elementRef.inl>
 #include <engine/manager.inl>
 using citrus::engine::entityRef;
 
-#include <GLFW/glfw3.h>
-
 #include <sstream>
+
 
 using namespace citrus;
 
@@ -37,13 +39,19 @@ int main(int argc, char **argv) {
 	util::sout("Citrus 0.0.0 - PRIVATE DEVELOPMENT BUILD - DO NOT DISTRIBUTE\n");
 
 	initializeGLFW();
+
+	/*glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	auto win = glfwCreateWindow(640, 480, "test", nullptr, nullptr);
+
+	graphics::instance * inst = new graphics::instance("ctvk", win);
+	delete inst;
+
+	return 0;*/
 	
 	{
 		util::scopedProfiler* prof = new util::scopedProfiler("Initializing Engine");
 		engine::engine e(1.0 / 100.0);
 		
-		//e.man->registerType<engine::worldManager>("World Manager");
-		//e.man->registerType<engine::rigidBodyComponent>("Rigid Body");
 		e.man->registerType<engine::renderManager>("Render Manager", true);
 		e.man->registerType<engine::freeCam>("Free Cam", true);
 		e.man->registerType<engine::meshManager>("Mesh Manager", false);
@@ -52,11 +60,11 @@ int main(int argc, char **argv) {
 		e.man->registerType<engine::playerController>("Player Controller", true);
 		e.man->registerType<engine::worldManager>("World Manager", true);
 		e.man->registerType<engine::rigidBodyComponent>("Rigid Body", false);
+		e.man->registerType<engine::sensorEle>("Sensor", false);
 		e.man->registerType<engine::projectile>("Projectile", true);
 		e.man->setOrder({
-			//typeid(engine::worldManager),
-			//typeid(engine::rigidBodyComponent),
 			typeid(engine::worldManager),
+			typeid(engine::sensorEle),
 			typeid(engine::rigidBodyComponent),
 			typeid(engine::shaderManager),
 			typeid(engine::meshManager),
@@ -119,7 +127,9 @@ int main(int argc, char **argv) {
 			engine::eleInit<engine::rigidBodyComponent>::run([](engine::rigidBodyComponent& cmp) {
 				//rb.body->dynamic = false;
 				cmp.setToBox(glm::vec3(0.4f, 0.7f, 0.3f));
-			})
+				//cmp.body->ptr()->setAngularFactor(btVector3(0, 1, 0));
+			}),
+			//engine::eleInit<engine::sensorEle>()
 		}, util::nextID());
 		auto playerModel = e.man->create("Player Model", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
@@ -142,15 +152,17 @@ int main(int argc, char **argv) {
 
 		for(int x = -1; x < 15; x++) {
 			for(int z = -1; z < 15; z++) {
-				e.man->create("Floor: " + std::to_string(x) + " " + std::to_string(z), {
+				e.man->create("Floor: <" + std::to_string(x) + ", " + std::to_string(z) + ">", {
 					engine::eleInit<engine::rigidBodyComponent>::run([x,z](engine::rigidBodyComponent& cmp) {
 						cmp.setToBox(glm::vec3(0.5f, 0.5f, 0.5f));
 						cmp.ent().setLocalPosition(glm::vec3(x, -5.0f + sin(x * 0.2f) + cos(z * 0.2f), z));
 						cmp.body->dynamic = false;
 					}),
-					engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& m) {
+					engine::eleInit<engine::meshFilter>::run([x,z](engine::meshFilter& m) {
 						m.setState(2, 2, 0);
-					})
+						m.visible = true;
+					}),
+					//engine::eleInit<engine::sensorEle>()
 				}, util::nextID());
 			}
 		}

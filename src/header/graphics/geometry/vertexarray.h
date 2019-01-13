@@ -85,7 +85,7 @@ namespace citrus {
 							GL_FLOAT,
 							atc.normalized ? GL_TRUE : GL_FALSE,
 							0,
-							(void*)atc.buf->start()
+							reinterpret_cast<GLvoid*>(atc.buf->start())
 						);
 					} else if(type == GL_DOUBLE) {
 						glVertexAttribLPointer(
@@ -93,7 +93,7 @@ namespace citrus {
 							atc.buf->typeComponents(),
 							GL_DOUBLE,
 							0,
-							(void*)atc.buf->start()
+							reinterpret_cast<GLvoid*>(atc.buf->start())
 						);
 					} else {
 						glVertexAttribIPointer(
@@ -101,7 +101,7 @@ namespace citrus {
 							atc.buf->typeComponents(),
 							type,
 							0,
-							(void*)atc.buf->start()
+							reinterpret_cast<GLvoid*>(atc.buf->start())
 						);
 					}
 

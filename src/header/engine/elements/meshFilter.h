@@ -20,6 +20,7 @@ namespace citrus::engine {
 
 	public:
 		glm::vec3 color;
+		bool visible = true;;
 
 		void setState(int m, int t, int s, int a = -1);
 		int model() const;

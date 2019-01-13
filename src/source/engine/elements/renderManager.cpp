@@ -108,7 +108,7 @@ namespace citrus {
 
 					for(int j = 0; j < info.groups[i].eles.size(); j++) {
 						auto& ref = info.groups[i].eles[j];
-						if(ref.null()) continue;
+						if(ref.null() || !ref->visible) continue;
 
 						glm::mat4 modelMat = ref->ent().getGlobalTransform().getMat();
 
@@ -138,7 +138,7 @@ namespace citrus {
 
 					for(int j = 0; j < info.groups[i].eles.size(); j++) {
 						auto& ref = info.groups[i].eles[j];
-						if(ref.null()) continue;
+						if(ref.null() || !ref->visible) continue;
 
 						glm::mat4 modelMat = ref->ent().getGlobalTransform().getMat();
 
@@ -171,7 +171,7 @@ namespace citrus {
 					if(info.groups[i].eles.empty()) continue;
 					for(int j = 0; j < info.groups[i].eles.size(); j++) {
 						auto& ref = info.groups[i].eles[j];
-						if(ref.null()) continue;
+						if(ref.null() || !ref->visible) continue;
 
 						glm::mat4 modelMat = ref->ent().getGlobalTransform().getMat();
 

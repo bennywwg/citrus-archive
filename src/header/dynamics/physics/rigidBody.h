@@ -9,18 +9,17 @@
 
 #include <util/util.h>
 #include <dynamics/transform.h>
+#include <dynamics/physics/collisionObject.h>
 
 namespace citrus {
 	namespace dynamics {
 		class world;
 		class collisionShape;
 
-		class rigidBody {
+		class rigidBody : public collisionObject {
 			friend class world;
 
 		private:
-			world* _world;
-
 			btRigidBody* _body;
 			btMotionState* _state;
 			collisionShape* const _shape;

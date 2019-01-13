@@ -17,7 +17,7 @@ namespace citrus::editor {
 		vector<unique_ptr<viewBase>> items;
 
 		string title;
-		multiFieldEditor& addField(int* val) {
+		multiFieldEditor& addField(string name, int* val) {
 
 
 			return *this;
@@ -28,11 +28,17 @@ namespace citrus::editor {
 	};
 
 	struct viewBase {
+		string name;
 		multiFieldEditor* owner;
 		virtual unique_ptr<gui> render() = 0;
 	};
 	
 	struct intView : public viewBase {
 		int* ptr;
+		unique_ptr<gui> render() {
+			slider* sl = new slider();
+			sl->info = name;
+			sl.
+		}
 	};
 }

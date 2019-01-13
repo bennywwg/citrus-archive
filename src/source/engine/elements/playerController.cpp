@@ -2,6 +2,7 @@
 
 #include <engine/elements/projectile.h>
 #include <engine/elements/meshFilter.h>
+#include <engine/elements/sensorEle.h>
 
 #include <engine/manager.inl>
 #include <engine/elementRef.inl>
@@ -54,27 +55,31 @@ namespace citrus::engine {
 		}
 	}
 	void playerController::actionStuff() {
-		glm::vec3 playerPos = ent().getGlobalTransform().getPosition();
+		//glm::vec3 playerPos = ent().getGlobalTransform().getPosition();
 		glm::vec3 playerDir = glm::toMat4(ent().getLocalOrientation()) * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
 		glm::quat playerOri = glm::toQuat(glm::toMat4(ent().getGlobalTransform().getOrientation()) * glm::rotate(3.141596f * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 
 		if(eng()->controllerButton(ctr_west)) {
 			if(!fired) {
+				glm::vec3 projStart = ent().getGlobalTransform().getMat() * glm::translate(glm::vec3(0.0f, 0.0f, 1.5f)) * glm::vec4(0, 0, 0, 1);
 				fired = true;
 				engine* e = this->eng();
 				e->man->create("shot", {
-					eleInit<projectile>::run([e, playerPos, playerDir, playerOri](projectile& p) {
+					eleInit<projectile>::run([e, playerDir, playerOri, projStart](projectile& p) {
 						p.startTime = (float)e->time();
 						p.maxTime = (float) 1.0f;
 						p.velocity = playerDir * 15.0f;
-						p.ent().setLocalPosition(playerPos);
+						p.ent().setLocalPosition(projStart);
 						p.ent().setLocalOrientation(playerOri);
 						p.ent().setLocalScale(glm::vec3(0.1f, 0.1f, 0.1f));
 					}),
 					eleInit<meshFilter>::run([e](meshFilter& m) {
 						m.setState(5, 0, 2);
 						m.color = glm::vec3(1.0f, 0.5f, 0.5f);
+					}),
+					eleInit<sensorEle>::run([e](sensorEle& s) {
+						s.sense->setRadius(0.1f);
 					})
 					}, util::nextID());
 			}

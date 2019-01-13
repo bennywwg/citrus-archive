@@ -130,7 +130,7 @@ namespace citrus::editor {
 			rm.rectshader->setUniform("drawColor", v.color);
 			rm.rectshader->setUniform("depth", v.depth);
 			graphics::vertexArray::drawOne();
-			rm.font.streamText(v.text, v.loc, glm::vec3(0, 0, 0), v.depth + 0.05f, rm.eng()->getWindow()->framebufferSize());
+			rm.font.streamText(v.text, v.loc + ivec2(margin, 0), glm::vec3(0, 0, 0), v.depth + 0.05f, rm.eng()->getWindow()->framebufferSize());
 		}
 	}
 

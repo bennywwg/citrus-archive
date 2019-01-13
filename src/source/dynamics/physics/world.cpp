@@ -1,18 +1,31 @@
 #include <dynamics/physics/world.h>
 #include <util/util.h>
 #include <dynamics/physics/collisionShape.h>
-
+#include <dynamics/physics/sensor.h>
 #include <iostream>
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 
 namespace citrus {
 	namespace dynamics {
 		void citrus::dynamics::world::addBody(rigidBody * body) {
 			_world->addRigidBody(body->_body);
+			_world->computeOverlappingPairs();
 			_bodies.insert(body);
 		}
 		void world::removeBody(rigidBody * body) {
 			_world->removeRigidBody(body->_body);
+			_world->computeOverlappingPairs();
 			_bodies.erase(body);
+		}
+		void world::addSensor(sensor * se) {
+			_world->addCollisionObject(se->ptr());
+			_world->computeOverlappingPairs();
+			_sensors.insert(se);
+		}
+		void world::removeSensor(sensor * se) {
+			_world->removeCollisionObject(se->ptr());
+			_world->computeOverlappingPairs();
+			_sensors.erase(se);
 		}
 		void world::step() {
 			for(rigidBody* body : _bodies) {
@@ -31,6 +44,7 @@ namespace citrus {
 			_constraintSolver(new btSequentialImpulseConstraintSolver()),
 			_world(new btDiscreteDynamicsWorld(_dispatcher.get(), _broadphaseInterface.get(), _constraintSolver.get(), _collisionConfiguration.get())) {
 			_world->setGravity(btVector3(0.0, -9.81, 0.0));
+			_world->getPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
 		}
 	}
 }

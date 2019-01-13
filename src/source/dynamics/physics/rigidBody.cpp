@@ -2,6 +2,7 @@
 #include <dynamics/physics/world.h>
 #include <dynamics/physics/collisionShape.h>
 #include <util/util.h>
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 
 namespace citrus::dynamics {
 	btRigidBody* rigidBody::ptr() const {
@@ -35,12 +36,14 @@ namespace citrus::dynamics {
 		_body->activate(false);
 	}
 
-	rigidBody::rigidBody(collisionShape* shape, world* world) : _world(world), _shape(shape) {
+	rigidBody::rigidBody(collisionShape* shape, world* world) : collisionObject(world, (btRigidBody*)nullptr), _shape(shape) {
 		//_state = new btDefaultMotionState();
 		btRigidBody::btRigidBodyConstructionInfo ci = btRigidBody::btRigidBodyConstructionInfo(mass, nullptr, shape->ptr(), btVector3(0.0f, 0.0f, 0.0f));
 		ci.m_friction = 1.0f;
 		ci.m_restitution = 0.1f;
 		_body = new btRigidBody(ci);
+		_body->setUserPointer(this);
+		_ptr = _body;
 		_world->addBody(this);
 		_body->setActivationState(DISABLE_DEACTIVATION);
 		setTransform(transform());
