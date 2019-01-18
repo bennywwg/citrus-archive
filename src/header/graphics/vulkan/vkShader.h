@@ -11,8 +11,8 @@ namespace citrus::graphics {
 
 		vector<VkFramebuffer> _framebuffers;
 		vector<VkCommandBuffer> _buffers;
-
-		public:
+		
+	public:
 
 		vkShader(instance& inst, vector<VkImageView> fbos, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc);
 		~vkShader();

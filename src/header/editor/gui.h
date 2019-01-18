@@ -18,6 +18,8 @@ namespace citrus::editor {
 	const int margin = 2;
 	const int textWidth = 8;
 	const int textHeight = 16;
+
+	struct gui;
 	
 	struct view {
 		ivec2 loc;
@@ -26,18 +28,27 @@ namespace citrus::editor {
 		vec3 color;
 		bool border;
 		float depth;
+		gui* owner;
 	};
 
 	struct gui {
+		gui* parent = nullptr;
 		bool focused = false;
-		virtual ivec2 dimensions() { throw std::runtime_error("gui"); };
-		virtual void render(ivec2 pos, vector<view>& views, float depth) { throw std::runtime_error("gui"); };
+		virtual void mouseDown(ivec2 cursor, ivec2 myPos) { }
+		virtual void mouseDragged(ivec2 cursor, ivec2 myPos) { }
+		virtual void mouseUp(ivec2 cursor, ivec2 myPos) { }
+		virtual vector<gui*> children() { throw std::runtime_error("gui::children"); }
+		virtual ivec2 dimensions() { throw std::runtime_error("gui"); }
+		virtual void render(ivec2 pos, vector<view>& views, float depth) { throw std::runtime_error("gui"); }
 		virtual ~gui() = default;
+	};
+
+	struct guiLeaf : public gui {
+		vector<gui*> children();
 	};
 
 
 	struct container : public gui {
-		ivec2 pos;
 		vec3 color;
 		string title;
 
@@ -45,19 +56,21 @@ namespace citrus::editor {
 
 		void click(vec2 point, vector<view>& view);
 
+		vector<gui*> children();
 		ivec2 dimensions();
 		void render(ivec2 pos, vector<view>& views, float depth);
 	};
 
-	struct button : public gui {
+	struct button : public guiLeaf {
 		string info;
 		std::function<void(button&)> onClick;
 
 		ivec2 dimensions();
 		void render(ivec2 pos, vector<view>& views, float depth);
+		void mouseDown(ivec2 cursor, ivec2 myPos);
 	};
 
-	struct toggle : public gui {
+	struct toggle : public guiLeaf {
 		string info;
 		bool state;
 		std::function<void(toggle&, bool)> onChange;
@@ -66,7 +79,7 @@ namespace citrus::editor {
 		void render(ivec2 pos, vector<view>& views, float depth);
 	};
 
-	struct slider : public gui {
+	struct slider : public guiLeaf {
 		string info;
 		double min = 4, max = 5;
 		double state = 4.5;
@@ -76,7 +89,7 @@ namespace citrus::editor {
 		void render(ivec2 pos, vector<view>& views, float depth);
 	};
 
-	struct textField : public gui {
+	struct textField : public guiLeaf {
 		string info;
 		string state;
 		std::function<void(textField&, string)> onChange;
@@ -85,9 +98,18 @@ namespace citrus::editor {
 		void render(ivec2 pos, vector<view>& views, float depth);
 	};
 
-	struct horiBar : public gui {
+	struct horiBar : public guiLeaf {
 		vector<unique_ptr<button>> buttons;
 
+		ivec2 dimensions();
+		void render(ivec2 pos, vector<view>& views, float depth);
+	};
+
+	struct dropDown : public gui {
+		string title;
+		vector<unique_ptr<button>> buttons;
+
+		vector<gui*> children();
 		ivec2 dimensions();
 		void render(ivec2 pos, vector<view>& views, float depth);
 	};

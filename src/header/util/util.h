@@ -22,7 +22,7 @@ namespace citrus {
 		int nextID();
 
 		std::string selectFolder();
-		std::string selectFile();
+		std::string selectFile(std::string filter = "");
 
 		std::vector<btVector3> glmToBtVector(const std::vector<glm::vec3>& verts);
 

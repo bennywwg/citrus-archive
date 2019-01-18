@@ -26,9 +26,9 @@ namespace citrus {
 				return "";
 			}			
 		}
-		string selectFile() {
+		string selectFile(string filter) {
 			nfdchar_t *outPath = nullptr;
-			nfdresult_t result = NFD_OpenDialog(nullptr, nullptr, &outPath);
+			nfdresult_t result = NFD_OpenDialog(filter.empty() ? nullptr : filter.c_str(), nullptr, &outPath);
 
 			if(result == NFD_OKAY) {
 				string res = outPath;

@@ -36,6 +36,8 @@ namespace citrus {
 		}
 
 		void engine::_runRender() {
+			if (ed) ed->eng = this;
+
 			Log("Render Thread Begin");
 			_renderState.store(render_halted);
 
@@ -57,8 +59,6 @@ namespace citrus {
 				long long lastFrameNanos = 0;
 
 				while(!stopped()) {
-					//util::scopedProfiler fullFrame("Entire Frame");
-
 					if((clock::now() - fpsSampleStart) >= std::chrono::seconds(1)) {
 						fpsSampleStart = fpsSampleStart + std::chrono::seconds(1);
 						_framesPerSecond = fpsSample;
@@ -67,43 +67,24 @@ namespace citrus {
 
 					clock::time_point fbegin = clock::now();
 					
-					{
-						//util::scopedProfiler profiler("Polling Input");
-						_win->poll();
-					}
+					_win->poll();
 
 					screen.clearAll(0.8f, 0.85f, 1.0f, 1.0f);
 
 					man->flush();
-
-					man->preRender();
-						
+					if (!ed || ed->playing || ed->doFrame) man->preRender();
 					man->render();
 
-					{
-						//util::scopedProfiler profiler("Displaying Screen");
-						_win->swapBuffers();
-						/*for(auto& o : man->_order) {
-							auto inf = man->getInfo(o);
-							util::sout(inf->name + " stats: \n");
-							util::sout("\tRender: " + std::to_string(inf->stats.preRender.count() * 0.000001) + " ms\n");
-							util::sout("\tPre-Render: " + std::to_string(inf->stats.render.count() *   0.000001) + " ms\n");
-						}
-						util::sout("\n");*/
-					}
+					_win->swapBuffers();
 					fpsSample++;
 
 					long long nextLastFrame = (clock::now() - fbegin).count();
-
-					//std::this_thread::sleep_for(std::chrono::milliseconds(1));
-
 					while(((clock::now() - fbegin).count() + lastFrameNanos) <= (long long)(_timeStep * 1000000000)) { }
 					lastFrameNanos = nextLastFrame;
+					
+					if (!ed || ed->playing || ed->doFrame) frame++;
 
-					//std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-					frame++;
-
+					if (ed) ed->doFrame = false;
 				}
 			/*} catch(std::runtime_error ex) {
 				Log("Unrecoverable Error in Render Thread: " + std::string(ex.what()));
