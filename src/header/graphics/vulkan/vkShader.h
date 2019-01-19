@@ -4,6 +4,8 @@
 
 namespace citrus::graphics {
 	class vkShader {
+		friend class instance;
+
 		instance& _inst;
 		VkPipelineLayout _pipelineLayout;
 		VkRenderPass _renderPass;
@@ -13,6 +15,10 @@ namespace citrus::graphics {
 		vector<VkCommandBuffer> _buffers;
 		
 	public:
+
+		void beginAll();
+		void drawAll(int verts);
+		void endAll();
 
 		vkShader(instance& inst, vector<VkImageView> fbos, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc);
 		~vkShader();

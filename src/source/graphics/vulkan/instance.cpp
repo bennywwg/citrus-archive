@@ -73,7 +73,10 @@ namespace citrus::graphics {
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData) {
 
-		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+		if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT || messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+			std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+		}
+
 
 		return VK_FALSE;
 	}
@@ -461,52 +464,6 @@ namespace citrus::graphics {
 	void instance::destroyCommandPool() {
 		vkDestroyCommandPool(_device, _commandPool, nullptr);
 	}
-	void instance::initCommandBuffers() {
-		/*_commandBuffers.resize(_swapChainFramebuffers.size());
-
-		VkCommandBufferAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = commandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
-
-		if(vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate command buffers!");
-		}
-
-		for(size_t i = 0; i < commandBuffers.size(); i++) {
-			VkCommandBufferBeginInfo beginInfo = {};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-			if(vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
-				throw std::runtime_error("failed to begin recording command buffer!");
-			}
-
-			VkRenderPassBeginInfo renderPassInfo = {};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = renderPass;
-			renderPassInfo.framebuffer = swapChainFramebuffers[i];
-			renderPassInfo.renderArea.offset = {0, 0};
-			renderPassInfo.renderArea.extent = swapChainExtent;
-
-			VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
-			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &clearColor;
-
-			vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-
-			vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
-
-			vkCmdEndRenderPass(commandBuffers[i]);
-
-			if(vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to record command buffer!");
-			}
-		}*/
-	}
 
 	void instance::initSemaphores() {
 		VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -516,6 +473,10 @@ namespace citrus::graphics {
 			vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create semaphores!");
 		}
+	}
+	void instance::destroySemaphores() {
+		vkDestroySemaphore(_device, _imgAvailableSemaphore, nullptr);
+		vkDestroySemaphore(_device, _renderFinishedSemaphore, nullptr);
 	}
 
 	void instance::drawFrame() {
@@ -531,7 +492,7 @@ namespace citrus::graphics {
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &_commandBuffers[imageIndex];
+		submitInfo.pCommandBuffers = &_finalPass->_buffers[imageIndex];
 		VkSemaphore signalSemaphores[] = {_renderFinishedSemaphore};
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
@@ -551,7 +512,9 @@ namespace citrus::graphics {
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = nullptr; // Optional
+
 		vkQueuePresentKHR(_presentQueue, &presentInfo);
+		vkQueueWaitIdle(_presentQueue);
 	}
 
 	instance::instance(string name, GLFWwindow* win) {
@@ -569,8 +532,22 @@ namespace citrus::graphics {
 		chooseSurfacePresentMode();
 		chooseSurfaceExtent(640,480);
 		initSwapChain();
+		initCommandPool();
+		initSemaphores();
+		_finalPass = new vkShader(*this,
+			_swapChainImageViews,
+			640, 480,
+			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\vert.spv",
+			"",
+			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\frag.spv");
+		_finalPass->beginAll();
+		_finalPass->drawAll(3);
+		_finalPass->endAll();
 	}
 	instance::~instance() {
+		delete _finalPass;
+		destroySemaphores();
+		destroyCommandPool();
 		destroySwapChain();
 		destroySurface();
 		destroyDevice();

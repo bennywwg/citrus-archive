@@ -33,9 +33,7 @@ namespace citrus::graphics {
 		VkSwapchainKHR _swapChain;
 		vector<VkImage> _swapChainImages;
 		vector<VkImageView> _swapChainImageViews;
-		vector<VkFramebuffer> _frameBuffers;
 		VkCommandPool _commandPool;
-		vector<VkCommandBuffer> _commandBuffers;
 		VkSemaphore _imgAvailableSemaphore, _renderFinishedSemaphore;
 
 		vkShader* _finalPass;
@@ -72,13 +70,14 @@ namespace citrus::graphics {
 
 		void initCommandPool();
 		void destroyCommandPool();
-		void initCommandBuffers();
 
 		void initSemaphores();
+		void destroySemaphores();
+
+	public:
 
 		void drawFrame();
 
-	public:
 		instance(string name, GLFWwindow* win);
 		~instance();
 	};

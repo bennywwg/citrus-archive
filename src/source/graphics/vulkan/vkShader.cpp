@@ -3,14 +3,53 @@
 #include <graphics/vulkan/vkShader.h>
 
 namespace citrus::graphics {
+	void vkShader::beginAll() {
+		for (int i = 0; i < _buffers.size(); i++) {
+			VkCommandBufferBeginInfo beginInfo = {};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+			if (vkBeginCommandBuffer(_buffers[i], &beginInfo) != VK_SUCCESS) {
+				throw std::runtime_error("failed to begin recording command buffer!");
+			}
+
+			VkRenderPassBeginInfo renderPassInfo = {};
+			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			renderPassInfo.renderPass = _renderPass;
+			renderPassInfo.framebuffer = _framebuffers[i];
+
+			renderPassInfo.renderArea.offset = { 0, 0 };
+			renderPassInfo.renderArea.extent = _inst._extent;
+
+			VkClearValue clearColor = { 1.0f, 0.0f, 1.0f, 1.0f };
+			renderPassInfo.clearValueCount = 1;
+			renderPassInfo.pClearValues = &clearColor;
+
+			vkCmdBeginRenderPass(_buffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		}
+	}
+	void vkShader::drawAll(int verts) {
+		for (int i = 0; i < _buffers.size(); i++) {
+			vkCmdBindPipeline(_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+			vkCmdDraw(_buffers[i], verts, 1, 0, 0);
+		}
+	}
+	void vkShader::endAll() {
+		for (int i = 0; i < _buffers.size(); i++) {
+			vkCmdEndRenderPass(_buffers[i]);
+			if (vkEndCommandBuffer(_buffers[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to record command buffer!");
+			}
+		}
+	}
 	vkShader::vkShader(instance& inst, vector<VkImageView> fbos, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc) : _inst(inst) {
 
 		VkShaderModule vertModule = VK_NULL_HANDLE;
 		VkShaderModule geomModule = VK_NULL_HANDLE;
 		VkShaderModule fragModule = VK_NULL_HANDLE;
-		VkPipelineShaderStageCreateInfo vertCreateInfo;
-		VkPipelineShaderStageCreateInfo geomCreateInfo;
-		VkPipelineShaderStageCreateInfo fragCreateInfo;
+		VkPipelineShaderStageCreateInfo vertCreateInfo = { };
+		VkPipelineShaderStageCreateInfo geomCreateInfo = { };
+		VkPipelineShaderStageCreateInfo fragCreateInfo = { };
 		try {
 			{
 				string src = util::loadEntireFile(vertLoc);
@@ -67,7 +106,7 @@ namespace citrus::graphics {
 				fragCreateInfo.pName = "main";
 			}
 		} catch(std::runtime_error& rt) {
-
+			std::cout << "yooooo!\n";
 		}
 
 		vector<VkPipelineShaderStageCreateInfo> stages = geomLoc.empty() ?
@@ -77,10 +116,8 @@ namespace citrus::graphics {
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr; // Optional
 		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
-
+		
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -166,10 +203,6 @@ namespace citrus::graphics {
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
 
-		if(vertModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, vertModule, nullptr);
-		if(geomModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, geomModule, nullptr);
-		if(fragModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, fragModule, nullptr);
-
 		VkAttachmentDescription colorAttachment = {};
 		colorAttachment.format = _inst._surfaceFormat.format;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -189,12 +222,22 @@ namespace citrus::graphics {
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
 
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 		VkRenderPassCreateInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 		renderPassInfo.attachmentCount = 1;
 		renderPassInfo.pAttachments = &colorAttachment;
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
+		renderPassInfo.dependencyCount = 1;
+		renderPassInfo.pDependencies = &dependency;
 
 		if(vkCreateRenderPass(_inst._device, &renderPassInfo, nullptr, &_renderPass) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create render pass!");
@@ -222,6 +265,10 @@ namespace citrus::graphics {
 			
 			throw std::runtime_error("failed to create graphics pipeline!");
 		}
+
+		if(vertModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, vertModule, nullptr);
+		if(geomModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, geomModule, nullptr);
+		if(fragModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, fragModule, nullptr);
 
 		for(size_t i = 0; i < fbos.size(); i++) {
 			VkImageView attachments[] = {

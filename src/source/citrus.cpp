@@ -40,13 +40,20 @@ int main(int argc, char **argv) {
 
 	initializeGLFW();
 
-	/*glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	auto win = glfwCreateWindow(640, 480, "test", nullptr, nullptr);
 
 	graphics::instance * inst = new graphics::instance("ctvk", win);
+
+	for (int i = 0; i < 1000; i++) {
+		inst->drawFrame();
+		glfwPollEvents();
+	}
+
+
 	delete inst;
 
-	return 0;*/
+	return 0;
 	
 	{
 		util::scopedProfiler* prof = new util::scopedProfiler("Initializing Engine");
