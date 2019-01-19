@@ -1,17 +1,24 @@
 #include <graphics/vulkan/instance.h>
 #include <iostream>
+
+#ifdef __linux__
+#include <experimental/optional>
+#elif _WIN32
 #include <optional>
+#endif
+
+#include <cstdlib>
 #include <set>
 #include <algorithm>
 #include <graphics/vulkan/vkShader.h>
 
 namespace citrus::graphics {
 	struct QueueFamilyIndices {
-		std::optional<uint32_t> graphicsFamily;
-		std::optional<uint32_t> presentFamily;
+		std::experimental::optional<uint32_t> graphicsFamily;
+		std::experimental::optional<uint32_t> presentFamily;
 
 		bool isComplete() {
-			return graphicsFamily.has_value() && presentFamily.has_value();
+			return graphicsFamily && presentFamily;
 		}
 
 		QueueFamilyIndices(VkPhysicalDevice device, instance* inst) {
@@ -153,7 +160,7 @@ namespace citrus::graphics {
 		for(const char* extensionName : required) {
 			bool found = false;
 			for(const auto& extensionProperties : _availableExtensions)
-				if(strcmp(extensionName, extensionProperties.extensionName) == 0) {
+				if(string(extensionName) == string(extensionProperties.extensionName)) {
 					found = true;
 					break;
 				}
@@ -179,7 +186,7 @@ namespace citrus::graphics {
 		for(const char* layerName : getRequiredLayers()) {
 			bool found = false;
 			for(const auto& layerProperties : _availableLayers)
-				if(strcmp(layerName, layerProperties.layerName) == 0) {
+				if(string(layerName) == string(layerProperties.layerName)) {
 					found = true;
 					break;
 				}

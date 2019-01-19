@@ -8,6 +8,7 @@
 namespace citrus::graphics {
 	using std::string;
 	using std::vector;
+	class vkShader;
 
 	class instance {
 		friend class QueueFamilyIndices;

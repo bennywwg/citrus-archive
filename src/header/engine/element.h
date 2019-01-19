@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <typeindex>
 
-#include <nlohmann/json.hpp>
+#include <util/json.h>
 
 #include <engine/entityRef.h>
 
