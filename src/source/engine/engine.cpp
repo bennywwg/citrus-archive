@@ -166,6 +166,8 @@ namespace citrus {
 
 		engine::engine(double timeStep) : _timeStep(timeStep) {
 			ed = new editor::ctEditor();
+			_closed = false;
+			_renderState = render_halted
 			_engineStart = clock::now();
 			man = new manager(this);
 			Log("Engine Start");

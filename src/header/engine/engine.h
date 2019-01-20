@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <typeindex>
+#include <thread>
 #include <util/stdUtil.h>
 #include <engine/manager.h>
 #include <graphics/window/window.h>
@@ -12,6 +13,7 @@
 #include <memory>
 #include <highlevel/tilemapFont.h>
 #include <graphics/camera/camera.h>
+
 
 namespace citrus {
 	namespace graphics {
@@ -55,7 +57,7 @@ namespace citrus {
 			private:
 			graphics::window* _win;
 
-			std::atomic_bool _closed = false;
+			std::atomic_bool _closed;
 			const double _timeStep;
 
 			std::thread _renderThread;
@@ -74,7 +76,7 @@ namespace citrus {
 				render_halted,
 				render_finished
 			};
-			private: std::atomic<renderState> _renderState = render_halted;
+			private: std::atomic<renderState> _renderState;
 			private: void _runRender();
 
 

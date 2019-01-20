@@ -39,7 +39,7 @@ namespace citrus::engine {
 
 	template<class T>
 	void eleRef<T>::destroy() const {
-		if(!null()) _owner.eng()->man.destroy(_owner);
+		if(!null()) _owner.eng()->man->destroy(_owner);
 	}
 	
 	template<class T>

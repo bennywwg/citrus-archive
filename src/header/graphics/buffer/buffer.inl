@@ -73,5 +73,5 @@ namespace citrus::graphics {
 	template<typename T>
 	storageViewT<T>::storageViewT(buffer* buf, uint _start, uint _count, const T* data) : storageView(buf, _start, _count * sizeof(T), data, glslTypeTraits<T>::type) { }
 	template<typename T>
-	storageViewT<T>::storageViewT(buffer* buf, uint _start, const std::vector<T> data) : storageView(buf, _start, _count * sizeof(T), data, glslTypeTraits<T>::type) { }
+	storageViewT<T>::storageViewT(buffer* buf, uint _start, const std::vector<T> data) : storageView(buf, _start, data.size() * sizeof(T), data, glslTypeTraits<T>::type) { }
 }

@@ -9,6 +9,8 @@
 #include "rigidBody.h"
 
 namespace citrus::dynamics {
+	class sensor;
+
 	class /*za*/ world /*o*/ {
 		friend class rigidBody;
 		friend class sensor;

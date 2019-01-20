@@ -1,6 +1,5 @@
 #pragma once
 
-#include <engine/elementRef.h>
 #include <memory>
 #include <vector>
 #include <glm/ext.hpp>
@@ -12,6 +11,7 @@ namespace citrus::engine {
 
 	class entity;
 	class engine;
+	template<class T> class eleRef;
 
 	class entDereferenceException {
 		public:

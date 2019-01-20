@@ -2,9 +2,11 @@
 
 #include <type_traits>
 #include <string>
+#include <engine/entityRef.h>
 
 namespace citrus::engine {
 	class entityRef;
+	class element;
 
 	class eleDereferenceException {
 		public:
