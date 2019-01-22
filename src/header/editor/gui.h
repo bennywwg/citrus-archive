@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <memory>
 
 namespace citrus::editor {
 	using glm::vec2;

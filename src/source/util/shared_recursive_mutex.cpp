@@ -1,4 +1,6 @@
-#include <util\shared_recursive_mutex.h>
+#ifdef SHARED_RECURSIVE_MUTEX
+
+#include <util/shared_recursive_mutex.h>
 
 #include <mutex>
 
@@ -215,3 +217,5 @@ namespace citrus {
 		return m_write_recurses > 0 && m_write_thread == std::this_thread::get_id();
 	}
 }
+
+#endif

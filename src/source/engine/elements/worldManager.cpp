@@ -14,8 +14,8 @@ namespace citrus::engine {
 	void worldManager::enableDebugDraw() {
 		fbo = eng()->getAllOfType<renderManager>()[0]->meshFBO.get();
 		debugShader.reset(new graphics::shader(
-			util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\wireframe.vert"),
-			util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\wireframe.frag"))
+			util::loadEntireFile("/home/benny/Desktop/folder/citrus/res/shaders/wireframe.vert"),
+			util::loadEntireFile("/home/benny/Desktop/folder/citrus/res/shaders/wireframe.frag"))
 		);
 	}
 

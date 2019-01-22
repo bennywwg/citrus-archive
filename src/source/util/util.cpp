@@ -4,7 +4,8 @@
 #include <util/glmUtil.h>
 #include <util/stdUtil.h>
 
-#include <nativefiledialog-master/src/include/nfd.h>
+#include <nfd.h>
+#include <thread>
 
 namespace citrus {
 	namespace util {

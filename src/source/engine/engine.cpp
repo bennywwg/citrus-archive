@@ -1,7 +1,6 @@
-#include <filesystem>
 #include <typeindex>
 
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 
 #include <engine/engine.h>
 #include <graphics/window/window.h>
@@ -133,7 +132,7 @@ namespace citrus {
 		}
 
 		void engine::loadLevel(std::path levelPath) {
-			for(auto& it : std::experimental::filesystem::directory_iterator(levelPath)) {
+			/*for(auto& it : std::experimental::filesystem::directory_iterator(levelPath)) {
 				if(!std::experimental::filesystem::is_directory(it.path())) {
 					std::string path = it.path().string();
 					try {
@@ -146,7 +145,7 @@ namespace citrus {
 						Log("Couldn't load resource " + path + ", " + ex.what() + "\n");
 					}
 				}
-			}
+			}*/
 		}
 
 		void engine::setOrder(vector<std::type_index> order) {
@@ -167,7 +166,7 @@ namespace citrus {
 		engine::engine(double timeStep) : _timeStep(timeStep) {
 			ed = new editor::ctEditor();
 			_closed = false;
-			_renderState = render_halted
+			_renderState = render_halted;
 			_engineStart = clock::now();
 			man = new manager(this);
 			Log("Engine Start");

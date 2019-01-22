@@ -4,9 +4,9 @@
 
 #include <iomanip>
 
-#include "engine/engine.h"
-#include "engine/elements/freeCam.h"
-#include "engine/elements/renderManager.h"
+#include <engine/engine.h>
+#include <engine/elements/freeCam.h>
+#include <engine/elements/renderManager.h>
 #include <engine/elements/worldManager.h>
 #include <engine/elements/meshManager.h>
 #include <engine/elements/shaderManager.h>
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
 	initializeGLFW();
 
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	/*glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	auto win = glfwCreateWindow(640, 480, "test", nullptr, nullptr);
 
 	graphics::instance * inst = new graphics::instance("ctvk", win);
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
 
 	delete inst;
 
-	return 0;
+	return 0;*/
 	
 	{
 		util::scopedProfiler* prof = new util::scopedProfiler("Initializing Engine");
@@ -82,20 +82,22 @@ int main(int argc, char **argv) {
 			typeid(engine::meshFilter)
 		});
 
+		std::string resDir = "/home/benny/Desktop/folder/citrus/res/";
+
 		e.man->create("MeshTable", {
 			engine::eleInit<engine::meshManager>::run(
-				[](engine::meshManager& man) {
-					man.loadAnimation("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\run.cta", 0);
-					man.loadAnimation("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\idle.cta", 1);
+				[resDir](engine::meshManager& man) {
+					man.loadAnimation(resDir + "animations/run.cta", 0);
+					man.loadAnimation(resDir + "animations/idle.cta", 1);
 
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\natsuki.dae", 0);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\sphere.dae", 1);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\cube1x1x1.dae", 2);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\walker.dae", 3);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human.dae", 4);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\blast.dae", 5);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\icosphere.dae", 6);
-					man.loadMesh("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\arrow.dae", 7);
+					man.loadMesh(resDir + "meshes/natsuki.dae", 0);
+					man.loadMesh(resDir + "meshes/sphere.dae", 1);
+					man.loadMesh(resDir + "meshes/cube1x1x1.dae", 2);
+					man.loadMesh(resDir + "meshes/walker.dae", 3);
+					man.loadMesh(resDir + "meshes/human.dae", 4);
+					man.loadMesh(resDir + "meshes/blast.dae", 5);
+					man.loadMesh(resDir + "meshes/icosphere.dae", 6);
+					man.loadMesh(resDir + "meshes/arrow.dae", 7);
 
 					man.bindAllAvailableAnimations();
 				}
@@ -114,13 +116,13 @@ int main(int argc, char **argv) {
 
 		e.man->create("Renderer", {
 			engine::eleInit<engine::renderManager>::run(
-				[&cam2](engine::renderManager& man) {
+				[resDir,&cam2](engine::renderManager& man) {
 					man.camRef = cam2.getElement<engine::freeCam>();
 
-					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\Natsuki_COLOR.png", 0);
-					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\gridsmall.png", 1);
-					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\cement.png", 2);
-					man.loadPNG("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\consolas256x256.png", 3);
+					man.loadPNG(resDir + "textures/Natsuki_COLOR.png", 0);
+					man.loadPNG(resDir + "textures/gridsmall.png", 1);
+					man.loadPNG(resDir + "textures/cement.png", 2);
+					man.loadPNG(resDir + "textures/consolas256x256.png", 3);
 				}
 			)
 		}, util::nextID());
@@ -184,11 +186,11 @@ int main(int argc, char **argv) {
 		}, util::nextID());*/
 
 		/*geom::animesh::convertAnimationFromCollada(
-			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human_run.dae",
-			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\run.cta");
+			resDir + "meshes\\human_run.dae",
+			resDir + "animations\\run.cta");
 		geom::animesh::convertAnimationFromCollada(
-			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\meshes\\human_idle.dae",
-			"C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\animations\\idle.cta");*/
+			resDir + "meshes\\human_idle.dae",
+			resDir + "animations\\idle.cta");*/
 
 		e.start();
 

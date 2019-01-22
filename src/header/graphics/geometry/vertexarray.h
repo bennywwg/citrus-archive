@@ -44,7 +44,7 @@ namespace citrus {
 				if (_indexbuffer) {
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _indexbuffer->ptr());
 					size_t start = _indexbuffer->start();
-					glDrawElements(mode, (GLsizei)_indexbuffer->count(), _indexbuffer->glType(), (void*)_indexbuffer->start());
+					glDrawElements(mode, (GLsizei)_indexbuffer->count(), _indexbuffer->glType(), reinterpret_cast<void*>((size_t) _indexbuffer->start()));
 				} else {
 					glDrawArrays(mode, (GLint)_attributebuffers[0].buf->start(), (GLsizei)_attributebuffers[0].buf->count());
 				}
@@ -85,7 +85,7 @@ namespace citrus {
 							GL_FLOAT,
 							atc.normalized ? GL_TRUE : GL_FALSE,
 							0,
-							reinterpret_cast<GLvoid*>(atc.buf->start())
+							reinterpret_cast<GLvoid*>((size_t) atc.buf->start())
 						);
 					} else if(type == GL_DOUBLE) {
 						glVertexAttribLPointer(
@@ -93,7 +93,7 @@ namespace citrus {
 							atc.buf->typeComponents(),
 							GL_DOUBLE,
 							0,
-							reinterpret_cast<GLvoid*>(atc.buf->start())
+							reinterpret_cast<GLvoid*>((size_t) atc.buf->start())
 						);
 					} else {
 						glVertexAttribIPointer(
@@ -101,7 +101,7 @@ namespace citrus {
 							atc.buf->typeComponents(),
 							type,
 							0,
-							reinterpret_cast<GLvoid*>(atc.buf->start())
+							reinterpret_cast<GLvoid*>((size_t) atc.buf->start())
 						);
 					}
 

@@ -8,6 +8,7 @@
 
 #include <glm/ext.hpp>
 #include <iostream>
+#include <vector>
 
 struct GLFWwindow;
 

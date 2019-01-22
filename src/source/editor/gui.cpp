@@ -1,4 +1,5 @@
 #include <editor/gui.h>
+#include <algorithm>
 
 namespace citrus::editor {
 	void container::click(vec2 point, vector<view>& view) {

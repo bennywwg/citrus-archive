@@ -279,6 +279,7 @@ namespace citrus {
 				}
 				if(_log[_log.size() - 1] != '\n') _log += "\n";
 			}
+			std::cout << "Shader log: " << _log << "\n";
 		}
 
 		shader::shader(string vertSrc, string fragSrc) : shader() {

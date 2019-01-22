@@ -1,4 +1,5 @@
 #include <graphics/buffer/buffer.h>
+#include <stdexcept>
 
 namespace citrus::graphics {
 	GLuint buffer::ptr() const {

@@ -1,4 +1,4 @@
-#version 450
+#version 430
 in vec2 inter_uv;
 in float inter_weight;
 

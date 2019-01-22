@@ -45,10 +45,11 @@ namespace citrus::engine {
 
 		tex = std::make_unique<graphics::texture3b>(texImage);
 
+		std::string resDir = "/home/benny/Desktop/folder/citrus/res/";
 		sh = std::make_unique<graphics::shader>(
-			util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\font.vert"),
-			util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\font.geom"),
-			util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\font.frag")
+			util::loadEntireFile(resDir + "shaders/font.vert"),
+			util::loadEntireFile(resDir + "shaders/font.geom"),
+			util::loadEntireFile(resDir + "shaders/font.frag")
 		);
 
 		/*sh = std::make_unique<graphics::shader>(

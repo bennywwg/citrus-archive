@@ -246,7 +246,7 @@ namespace citrus {
 		}
 
 		renderManager::renderManager(entityRef ent) :
-			font("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\textures\\consolas256x256.png", 16, 16),
+			font("/home/benny/Desktop/folder/citrus/res/textures/consolas256x256.png", 16, 16),
 			element(ent, std::type_index(typeid(renderManager))) {
 
 			auto win = eng()->getWindow();
@@ -254,40 +254,42 @@ namespace citrus {
 			meshFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y);
 			textFBO = std::make_unique<graphics::simpleFrameBuffer>(size.x, size.y, true);
 
+			std::string resDir = "/home/benny/Desktop/folder/citrus/res/";
+
 			{
-				std::string simpleVert = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\simple.vert");
-				std::string simpleFrag = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\simple.frag");
+				std::string simpleVert = util::loadEntireFile(resDir + "shaders/simple.vert");
+				std::string simpleFrag = util::loadEntireFile(resDir + "shaders/simple.frag");
 				shaderInfo inf;
 				inf.sh = std::make_unique<graphics::shader>(simpleVert, simpleFrag);
 				drawable.push_back(std::move(inf));
 			}
 			{
-				std::string bonesVert = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.vert");
-				std::string bonesFrag = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\bones.frag");
+				std::string bonesVert = util::loadEntireFile(resDir + "shaders/bones.vert");
+				std::string bonesFrag = util::loadEntireFile(resDir + "shaders/bones.frag");
 				shaderInfo inf;
 				inf.sh = std::make_unique<graphics::shader>(bonesVert, bonesFrag);
 				drawable.push_back(std::move(inf));
 			}
 			{
-				std::string colorVert = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\color.vert");
-				std::string colorFrag = util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\color.frag");
+				std::string colorVert = util::loadEntireFile(resDir + "shaders/color.vert");
+				std::string colorFrag = util::loadEntireFile(resDir + "shaders/color.frag");
 				shaderInfo inf;
 				inf.sh = std::make_unique<graphics::shader>(colorVert, colorFrag);
 				drawable.push_back(std::move(inf));
 			}
 			
 			rectshader = std::make_unique<graphics::shader>(
-				util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\rect.vert"),
-				util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\rect.geom"),
-				util::loadEntireFile("C:\\Users\\benny\\OneDrive\\Desktop\\folder\\citrus\\res\\shaders\\rect.frag"));
+				util::loadEntireFile(resDir + "shaders/rect.vert"),
+				util::loadEntireFile(resDir + "shaders/rect.geom"),
+				util::loadEntireFile(resDir + "shaders/rect.frag"));
 
 			composite = std::make_unique<graphics::shader>(
-				"#version 450\n"
+				"#version 430\n"
 				""
 				"void main() {\n"
 				"  gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
 				"}\n",
-				"#version 450\n"
+				"#version 430\n"
 				""
 				"layout(points) in;\n"
 				"layout(triangle_strip, max_vertices = 6) out;\n"
@@ -317,7 +319,7 @@ namespace citrus {
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
 				"}\n",
-				"#version 450\n"
+				"#version 430\n"
 				"in vec2 fUV;\n"
 				"uniform sampler2D bottomColor;\n"
 				"uniform sampler2D bottomDepth;\n"
@@ -346,12 +348,12 @@ namespace citrus {
 				"}\n"
 			);
 			passthrough = std::make_unique<graphics::shader>(
-				"#version 450\n"
+				"#version 430\n"
 				""
 				"void main() {\n"
 				"  gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
 				"}\n",
-				"#version 450\n"
+				"#version 430\n"
 				""
 				"layout(points) in;\n"
 				"layout(triangle_strip, max_vertices = 6) out;\n"
@@ -381,7 +383,7 @@ namespace citrus {
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
 				"}\n",
-				"#version 450\n"
+				"#version 430\n"
 				"in vec2 fUV;\n"
 				"uniform sampler2D tex;\n"
 				"layout(location = 0) out vec4 color;\n"
@@ -390,13 +392,13 @@ namespace citrus {
 				"}\n"
 				);
 			transSh = std::make_unique<graphics::shader>(
-				"#version 450\n"
+				"#version 430\n"
 				""
 				"void main() {\n"
 				"  gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
 				"}\n",
 
-				"#version 450\n"
+				"#version 430\n"
 				""
 				"layout(points) in;\n"
 				"layout(line_strip, max_vertices = 6) out;\n"
@@ -432,7 +434,7 @@ namespace citrus {
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
 				"}\n",
-				"#version 450\n"
+				"#version 430\n"
 				"in vec3 inter_color;\n"
 				"out vec4 color;\n"
 				"void main() {\n"
