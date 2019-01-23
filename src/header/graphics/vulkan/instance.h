@@ -9,11 +9,43 @@ namespace citrus::graphics {
 	using std::string;
 	using std::vector;
 	class vkShader;
+	class vkBuffer;
+
+	class instance;
+
+	class fenceProc {
+		instance& _inst;
+		bool _done = false;
+
+		void _free();
+	public:
+		VkFence fence = VK_NULL_HANDLE;
+		VkCommandBuffer cbuff = VK_NULL_HANDLE;
+		VkBuffer sbuf = VK_NULL_HANDLE;
+		VkDeviceMemory smem = VK_NULL_HANDLE;
+
+		//checks if fence was signalled
+		bool done();
+
+		//blocks execution until the fence is signalled
+		void block();
+
+		//recreates a semaphore so this object can be reused
+		void reset();
+
+		//creates a fence
+		fenceProc(instance& inst);
+
+		//destroys everything that isn't NULL_HANDLE
+		~fenceProc();
+	};
 
 	class instance {
 		friend class QueueFamilyIndices;
 		friend class SwapChainSupportDetails;
 		friend class vkShader;
+		friend class vkBuffer;
+		friend class fenceProc;
 
 		const bool enableValidationLayers = true;
 
@@ -36,6 +68,9 @@ namespace citrus::graphics {
 		vector<VkImageView> _swapChainImageViews;
 		VkCommandPool _commandPool;
 		VkSemaphore _imgAvailableSemaphore, _renderFinishedSemaphore;
+		vector<VkDeviceMemory> _memories;
+		uint32_t _hostVisibleCoherent;
+		uint32_t _deviceLocal;
 
 		vkShader* _finalPass;
 
@@ -74,6 +109,13 @@ namespace citrus::graphics {
 
 		void initSemaphores();
 		void destroySemaphores();
+
+		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+		void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+		void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, uint64_t srcStart, uint64_t dstStart, fenceProc* proc = nullptr);
+		void fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, const void* data, fenceProc* proc = nullptr);
+		void fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, std::function<void(const void*)> fillFunc, fenceProc* proc = nullptr);
+
 
 	public:
 

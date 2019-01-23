@@ -1,6 +1,7 @@
 #include <util/util.h>
 
 #include <graphics/vulkan/instance.h>
+#include <graphics/vulkan/vkBuffer.h>
 
 #include <iomanip>
 
@@ -40,20 +41,30 @@ int main(int argc, char **argv) {
 
 	initializeGLFW();
 
-	/*glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	auto win = glfwCreateWindow(640, 480, "test", nullptr, nullptr);
 
 	graphics::instance * inst = new graphics::instance("ctvk", win);
+	graphics::vkBuffer* bu = new graphics::vkBuffer(*inst, 1024 * 1024);
 
+	graphics::fenceProc proc(*inst);
+
+	bu->bufferData(0, "string data", 10, &proc);
+	
+	proc.block();
+
+	
 	for (int i = 0; i < 1000; i++) {
 		inst->drawFrame();
 		glfwPollEvents();
 	}
 
+	std::cin.get();
 
+	delete bu;
 	delete inst;
 
-	return 0;*/
+	return 0;
 	
 	{
 		util::scopedProfiler* prof = new util::scopedProfiler("Initializing Engine");

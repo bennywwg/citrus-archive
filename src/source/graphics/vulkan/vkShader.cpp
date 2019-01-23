@@ -111,7 +111,7 @@ namespace citrus::graphics {
 
 		vector<VkPipelineShaderStageCreateInfo> stages = geomLoc.empty() ?
 			vector<VkPipelineShaderStageCreateInfo> {vertCreateInfo, fragCreateInfo } :
-			vector<VkPipelineShaderStageCreateInfo>{vertCreateInfo, geomCreateInfo, fragCreateInfo};
+			vector<VkPipelineShaderStageCreateInfo> {vertCreateInfo, geomCreateInfo, fragCreateInfo};
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
