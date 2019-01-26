@@ -6,7 +6,7 @@ Broken, vulkan is being implemented
 
 Roadmap as of 2019/01/26:
 
-(coming soon)
+![roadmap](https://raw.githubusercontent.com/bennywwg/citrus/master/roadmap.png "Roadmap")
 
 Credit to the following libraries (and all of their dependencies)used in citrus:
 * Bullet3D physics engine
