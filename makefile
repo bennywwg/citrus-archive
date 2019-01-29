@@ -1,19 +1,21 @@
+VULKAN_SDK_PATH = /home/benny/Desktop/vulkan/1.1.92.1/x86_64
+BULLET_BUILD_PATH = /home/benny/Desktop/bullet3build
+
 CC = g++
-MYINCLUDES = -I/home/benny/Desktop/folder/citrus/src/header
-EXTINCLUDES = -I/usr/include -I/usr/include/bullet -I/home/benny/Desktop/vulkan/1.1.92.1/x86_64/include -I/usr/include/libpng
+MYINCLUDES = -Isrc/header
+EXTINCLUDES = -I$(VULKAN_SDK_PATH)/include
 EXTLIBS = \
--L/home/benny/Desktop/vulkan/1.1.92.1/x86_64/lib \
--L/usr/lib/x86_64-linux-gnu \
--L/home/benny/Desktop/bullet3build/src/BulletCollision \
--L/home/benny/Desktop/bullet3build/src/BulletDynamics \
--L/home/benny/Desktop/bullet3build/src/LinearMath
+-L$(VULKAN_SDK_PATH)/lib \
+-L$(BULLET_BUILD_PATH)/src/BulletCollision \
+-L$(BULLET_BUILD_PATH)/src/BulletDynamics \
+-L$(BULLET_BUILD_PATH)/src/LinearMath
 DEFINES = -DBT_USE_DOUBLE_PRECISION
 FLAGS = -g
 LINKS = -lassimp -lGLEW -lGL -lglfw -lpthread -lX11 -ldl -std=c++17 -lvulkan -lpng -lBulletCollision -lBulletDynamics -lLinearMath -lnfd -lgtk-3 -lglib-2.0 -lgobject-2.0
 CCPARAM = $(MYINCLUDES) $(FLAGS) $(EXTINCLUDES) $(EXTLIBS) $(LINKS)
 
-SRC_DIR = /home/benny/Desktop/folder/citrus/src/source
-BUILD_DIR = ./build
+SRC_DIR = src/source
+BUILD_DIR = build
 OFILES_DIR = $(BUILD_DIR)/source
 EXECUTABLE = $(BUILD_DIR)/ctvk.exe
 
@@ -44,4 +46,4 @@ clean :
 	rm -rf $(BUILD_DIR)/*
 
 test : all
-	LD_LIBRARY_PATH=/home/benny/Desktop/vulkan/1.1.92.1/x86_64/lib VK_LAYER_PATH=/home/benny/Desktop/vulkan/1.1.92.1/x86_64/etc/explicit_layer.d $(EXECUTABLE)
+	LD_LIBRARY_PATH=$(VULKAN_SDK_PATH)/lib VK_LAYER_PATH=$(BULLET_SDK_PATH)/etc/explicit_layer.d $(EXECUTABLE)
