@@ -490,7 +490,7 @@ namespace citrus::geom {
 			for(int j = 0; j < pos.size(); j++) {
 				vertexBoneInfo info = bones.getInfo(j);
 				info.normalize();
-				bone0.push_back(info.primary);
+				bone0.push_back(in3o.primary);
 				bone1.push_back(info.secondary);
 				weight0.push_back(info.primaryWeight);
 				weight1.push_back(info.secondaryWeight);
