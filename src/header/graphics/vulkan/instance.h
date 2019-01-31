@@ -111,12 +111,22 @@ namespace citrus::graphics {
 		void destroySemaphores();
 
 		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+		
 		void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, uint64_t srcStart, uint64_t dstStart, fenceProc* proc = nullptr);
+		
 		void fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, const void* data, fenceProc* proc = nullptr);
 		void fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, std::function<void(const void*)> fillFunc, fenceProc* proc = nullptr);
 
+		void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& img, VkDeviceMemory& mem);
+		
+		void transitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, fenceProc* proc = nullptr);
 
+		//takes ownership of commandBuffer, blocks if proc == nullptr
+		void submitFenceProc(VkCommandBuffer commandBuffer, fenceProc* proc = nullptr);
+		
+		VkCommandBuffer createCommandBuffer();
+		
 	public:
 
 		void drawFrame();

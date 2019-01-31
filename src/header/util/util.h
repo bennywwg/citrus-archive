@@ -16,8 +16,10 @@
 
 namespace citrus {
 	namespace util {
+		bool loadPngImage(const char *name, int &outWidth, int &outHeight, bool &outHasAlpha, std::vector<unsigned char>& res)
+		
 		extern std::mutex _idMut;
-		extern int _currentID;
+		extern int _currentID;	
 
 		int nextID();
 
