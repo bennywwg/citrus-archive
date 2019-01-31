@@ -1,7 +1,7 @@
-#include <editor/editor.h>
+#include <citrus/editor/editor.h>
 
-#include <engine/elements/renderManager.h>
-#include <engine/elements/meshManager.h>
+#include <citrus/engine/renderManager.h>
+#include <citrus/engine/meshManager.h>
 
 namespace citrus::editor {
 

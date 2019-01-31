@@ -1,9 +1,12 @@
 VULKAN_SDK_PATH = /home/benny/Desktop/vulkan/1.1.92.1/x86_64
 BULLET_BUILD_PATH = /home/benny/Desktop/bullet3build
+BULLET_SOURCE_PATH = /home/benny/Desktop/bullet3
 
 CC = g++
-MYINCLUDES = -Isrc/header
-EXTINCLUDES = -I$(VULKAN_SDK_PATH)/include
+MYINCLUDES = -I./
+EXTINCLUDES = \
+-I$(VULKAN_SDK_PATH)/include \
+-I$(BULLET_SOURCE_PATH)/src
 EXTLIBS = \
 -L$(VULKAN_SDK_PATH)/lib \
 -L$(BULLET_BUILD_PATH)/src/BulletCollision \
@@ -14,9 +17,9 @@ FLAGS = -g
 LINKS = -lassimp -lGLEW -lGL -lglfw -lpthread -lX11 -ldl -std=c++17 -lvulkan -lpng -lBulletCollision -lBulletDynamics -lLinearMath -lnfd -lgtk-3 -lglib-2.0 -lgobject-2.0
 CCPARAM = $(MYINCLUDES) $(FLAGS) $(EXTINCLUDES) $(EXTLIBS) $(LINKS)
 
-SRC_DIR = src/source
+SRC_DIR = citrus
 BUILD_DIR = build
-OFILES_DIR = $(BUILD_DIR)/source
+OFILES_DIR = $(BUILD_DIR)
 EXECUTABLE = $(BUILD_DIR)/ctvk.exe
 
 $(shell rsync -a --include '*/' --exclude '*' "$(SRC_DIR)" "$(BUILD_DIR)")

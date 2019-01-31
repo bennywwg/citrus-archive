@@ -1,6 +1,6 @@
 #pragma once
 
-#include <util/glmUtil.h>
+#include <citrus/util.h>
 
 namespace citrus {
 	class transform {

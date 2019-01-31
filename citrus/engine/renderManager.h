@@ -3,12 +3,12 @@
 #ifndef RENDERMANAGERCOMPONENT_H
 #define RENDERMANAGERCOMPONENT_H
 
-#include <engine/elements/freeCam.h>
+#include <citrus/engine/freeCam.h>
 
-#include <graphics/framebuffer/standaloneFramebuffer.h>
-#include <graphics/geometry/vertexarray.h>
-#include <highlevel/tilemapFont.h>
-#include <engine/elements/meshFilter.h>
+#include <citrus/graphics/framebuffer/standaloneFramebuffer.h>
+#include <citrus/graphics/vertexarray.h>
+#include <citrus/graphics/tilemapFont.h>
+#include <citrus/engine/meshFilter.h>
 
 
 namespace citrus {

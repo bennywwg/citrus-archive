@@ -1,11 +1,7 @@
 #pragma once
 
-#include <memory>
-#include <vector>
-#include <glm/ext.hpp>
-#include <dynamics/transform.h>
-#include <mutex>
-#include <editor/gui.h>
+#include <citrus/util.h>
+#include <citrus/editor/gui.h>
 
 namespace citrus::engine {
 

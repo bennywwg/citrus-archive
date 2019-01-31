@@ -9,7 +9,7 @@
 #include <chrono>
 #include <experimental/filesystem>
 
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -20,7 +20,7 @@
 #include <btBulletDynamicsCommon.h>
 //#include <bullet/btBulletDynamicsCommon.h>
 
-#include <dynamics/transform.h>
+#include <citrus/dynamics/transform.h>
 
 
 #define NO_COPY(classname)\
