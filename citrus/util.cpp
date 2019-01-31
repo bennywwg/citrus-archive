@@ -178,7 +178,7 @@ namespace citrus::util {
 	}
 
 	quat btToGlm(btQuaternion quat) {
-		return glm::quat(quat.getW(), quat.getX(), quat.getY(), quat.getZ());
+		return quat(quat.getW(), quat.getX(), quat.getY(), quat.getZ());
 	}
 	btQuaternion glmToBt(quat quat) {
 		return btQuaternion(quat.x, quat.y, quat.z, quat.w);
@@ -196,6 +196,50 @@ namespace citrus::util {
 		return btVerts;
 	}
 
+
+
+	json save(vec2 vec) {
+		return json({
+			{"x", vec.x},
+			{"y", vec.y}
+			});
+	}
+	json save(vec3 vec) {
+		return json({
+			{"x", vec.x},
+			{"y", vec.y},
+			{"z", vec.z}
+			});
+	}
+	json save(vec4 vec) {
+		return json({
+			{"x", vec.x},
+			{"y", vec.y},
+			{"z", vec.z},
+			{"w", vec.w}
+			});
+	}
+	json save(quat q) {
+		return json({
+			{"x", q.x},
+			{"y", q.y},
+			{"z", q.z},
+			{"w", q.w}
+			});
+	}
+	vec2 loadVec2(json vec) {
+		return vec2(vec["x"].get<float>(), vec["y"].get<float>());
+	}
+	vec3 loadVec3(json vec) {
+		return vec3(vec["x"].get<float>(), vec["y"].get<float>(), vec["z"].get<float>());
+	}
+	vec4 loadVec4(json vec) {
+		return vec4(vec["x"].get<float>(), vec["y"].get<float>(), vec["z"].get<float>(), vec["w"].get<float>());
+	}
+	quat loadQuat(json q) {
+		return quat(q["w"].get<float>(), q["x"].get<float>(), q["y"].get<float>(), q["z"].get<float>());
+	}
+
 	bool isPowerOfTwo(unsigned int val) {
 		return (val != 0) && ((val & (val - 1)) == 0);
 	}
@@ -203,13 +247,32 @@ namespace citrus::util {
 	string loadEntireFile(string path) {
 		std::ifstream f(path, std::ios::binary);
 		if(!f.is_open()) throw std::runtime_error("Couldn't open file: " + path);
-		string res;	
+		string res;
 		f.seekg(0, std::ios::end);
 		res.reserve(size_t(f.tellg()));
 		f.seekg(0, std::ios::beg);
 		res.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
 		return res;
 	}
+
+	template<typename T>
+	T rmod(T val, T mod) {
+		static_assert(std::is_floating_point<T>::value, "can only rmod a floating point type");
+		return val - floor(val / mod) * mod;
+	}
+	template float rmod<float>(float val, float mod);
+	template double rmod<double>(double val, double mod);
+
+	template<typename T>
+	T wrap(T val, T min, T max) {
+		static_assert(std::is_floating_point<T>::value, "can only wrap a floating point type");
+		T dif = max - min;
+		T res = rmod(val - min, dif) + min;
+		if (res < min || res >= max) return min;
+		return res;
+	}
+	template float wrap<float>(float val, float min, float max);
+	template double wrap<double>(double val, double min, double max);
 
 	void sout(string text) {
 		std::lock_guard<mutex> lock(_soutMut);
@@ -220,10 +283,23 @@ namespace citrus::util {
 		while(!func()) std::this_thread::sleep_for(wait);
 	}
 
-	std::string keyString(int key, int scancode, int action, int mods) {
-		std::string res;
+	json save(transform trans) {
+		return json({
+			{"Position", save(trans.getPosition())},
+			{"Orientation", save(trans.getOrientation())}
+			});
+	}
+	transform loadTransform(json trans) {
+		return transform(
+			loadVec3(trans["Position"]),
+			loadQuat(trans["Orientation"])
+		);
+	}
+
+	string keyString(int key, int scancode, int action, int mods) {
+		string res;
 		if(key >= GLFW_KEY_A && key <= GLFW_KEY_Z) {
-			res = std::string(1, 'A' + key - GLFW_KEY_A);
+			res = string(1, 'A' + key - GLFW_KEY_A);
 		} else if(key == GLFW_KEY_LEFT_SHIFT) {
 			res = "LShift";
 		} else if(key == GLFW_KEY_RIGHT_SHIFT) {
@@ -243,7 +319,7 @@ namespace citrus::util {
 		} else if(key == GLFW_KEY_SPACE) {
 			res = "Space";
 		} else if(key >= GLFW_KEY_0 && key <= GLFW_KEY_9) {
-			res = std::string(1, '0' + key - GLFW_KEY_0);
+			res = string(1, '0' + key - GLFW_KEY_0);
 		} else if(key == GLFW_KEY_MINUS) {
 			res = "-";
 		} else if(key == GLFW_KEY_EQUAL) {
@@ -274,9 +350,20 @@ namespace citrus::util {
 		return res;
 	}
 
-	scopedProfiler::scopedProfiler(const std::string& name) : name(name), start(std::chrono::high_resolution_clock::now()) { }
+	string toString(vec3 vec, int precision) {
+		stringstream ss;
+		ss << std::fixed << std::setfill('0') << std::setw(8) << std::setprecision(3) << "<" << vec.x << ", " << vec.y << ", " << vec.z << ">";
+		return ss.str();
+	}
+	string toString(vec2 vec, int precision) {
+		stringstream ss;
+		ss << std::fixed << std::setfill('0') << std::setw(8) << std::setprecision(3) << "<" << vec.x << ", " << vec.y << ">";
+		return ss.str();
+	}
+
+	scopedProfiler::scopedProfiler(const string& name) : name(name), start(std::chrono::high_resolution_clock::now()) { }
 	scopedProfiler::~scopedProfiler() {
 		auto elapsed = std::chrono::high_resolution_clock::now() - start;
-		//util::sout(name + (name.size() < 32 ? std::string(32 - name.size(), ' ') : " ") + " took " + std::to_string(elapsed.count()) + "ns");
+		//util::sout(name + (name.size() < 32 ? string(32 - name.size(), ' ') : " ") + " took " + std::to_string(elapsed.count()) + "ns");
 	}
 }
