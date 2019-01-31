@@ -1,6 +1,0 @@
--make rigging work
--load animations
--interpolating between animations
--shadows
--copy toCreate list so entities can be created during toCreate phase
--
