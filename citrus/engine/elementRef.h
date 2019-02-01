@@ -2,7 +2,7 @@
 
 #include <type_traits>
 #include <string>
-#include <engine/entityRef.h>
+#include <citrus/engine/entityRef.h>
 
 namespace citrus::engine {
 	class entityRef;

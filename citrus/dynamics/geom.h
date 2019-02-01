@@ -3,7 +3,7 @@
 #ifndef GEOM_H
 #define GEOM_H
 
-#include <util/glmUtil.h>
+#include <citrus/util.h>
 #include <iostream>
 
 namespace citrus::geom {

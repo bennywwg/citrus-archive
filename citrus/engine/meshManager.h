@@ -1,8 +1,7 @@
 #pragma once
 
-#include <engine/engine.h>
-#include <engine/element.h>
-#include <graphics/geometry/animesh.h>
+#include <citrus/engine/engine.h>
+#include <citrus/engine/element.h>
 
 namespace citrus::engine {
 	class meshManager : public element {

@@ -1,4 +1,4 @@
-#include <graphics/vulkan/instance.h>
+#include <citrus/graphics/instance.h>
 #include <iostream>
 #include <cstring>
 
@@ -11,7 +11,7 @@
 #include <cstdlib>
 #include <set>
 #include <algorithm>
-#include <graphics/vulkan/vkShader.h>
+#include <citrus/graphics/vkShader.h>
 
 namespace citrus::graphics {
 	struct QueueFamilyIndices {

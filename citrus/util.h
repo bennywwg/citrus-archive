@@ -20,15 +20,14 @@
 #include <btBulletDynamicsCommon.h>
 //#include <bullet/btBulletDynamicsCommon.h>
 
-#include <citrus/dynamics/transform.h>
-
-
 #define NO_COPY(classname)\
 			private:\
 				classname(const classname&) = delete;\
 				classname& operator=(const classname&) = delete;\
 
 namespace citrus {
+	class transform;
+
 	using nlohmann::json;
 
 	using glm::quat;
@@ -49,9 +48,9 @@ namespace citrus {
 	using glm::toMat4;
 	using glm::toQuat;
 
-	using path = experimental::filesystem::path;
+	using path = std::experimental::filesystem::path;
 
-	using string;
+	using std::string;
 	using std::vector;
 	using std::map;
 
@@ -96,10 +95,10 @@ namespace citrus {
 		template<typename T> T wrap(T val, T min, T max);
 
 		json save(vec2 vec);
-		json save(vec3 vec)
+		json save(vec3 vec);
 		json save(vec4 vec);
 		json save(quat q);
-		vec2 loadVec2(json vec)l
+		vec2 loadVec2(json vec);
 		vec3 loadVec3(json vec);
 		vec4 loadVec4(json vec);
 		quat loadQuat(json q);
@@ -131,3 +130,5 @@ namespace citrus {
 		btQuaternion glmToBt(quat quat);
 	}
 }
+
+#include <citrus/dynamics/transform.h>

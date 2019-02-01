@@ -14,7 +14,7 @@ EXTLIBS = \
 -L$(BULLET_BUILD_PATH)/src/LinearMath
 DEFINES = -DBT_USE_DOUBLE_PRECISION
 FLAGS = -g
-LINKS = -lassimp -lGLEW -lGL -lglfw -lpthread -lX11 -ldl -std=c++17 -lvulkan -lpng -lBulletCollision -lBulletDynamics -lLinearMath -lnfd -lgtk-3 -lglib-2.0 -lgobject-2.0
+LINKS = -lassimp -lglfw -lpthread -lX11 -ldl -std=c++17 -lvulkan -lpng -lBulletCollision -lBulletDynamics -lLinearMath -lnfd -lgtk-3 -lglib-2.0 -lgobject-2.0
 CCPARAM = $(MYINCLUDES) $(FLAGS) $(EXTINCLUDES) $(EXTLIBS) $(LINKS)
 
 SRC_DIR = citrus

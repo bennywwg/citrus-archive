@@ -3,7 +3,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <util/stdUtil.h>
+#include <citrus/util.h>
 
 namespace citrus::graphics {
 	using std::string;

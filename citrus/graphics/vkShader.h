@@ -1,6 +1,6 @@
 #pragma once
 
-#include <graphics/vulkan/instance.h>
+#include <citrus/graphics/instance.h>
 
 namespace citrus::graphics {
 	class vkShader {

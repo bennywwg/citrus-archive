@@ -1,12 +1,7 @@
 #pragma once
 
-#include <engine/element.h>
-#include <graphics/geometry/vertexarray.h>
-#include <graphics/texture/colorTexture.h>
-#include <graphics/shader/shader.h>
-#include <engine/engine.h>
-
-#include <graphics/geometry/animesh.h>
+#include <citrus/engine/element.h>
+#include <citrus/engine/engine.h>
 
 namespace citrus::engine {
 	class meshFilter : public element {
