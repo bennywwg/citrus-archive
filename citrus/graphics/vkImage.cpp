@@ -15,7 +15,11 @@ namespace citrus::graphics {
 	
 	template<typename P>
 	vkImageT::vkImageT(instance& inst, const imageT<P>& img) {
-		
+		inst.createImage(img.width(), img.height(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _image, _memory);
+		_inst.pipelineBarrierLayoutChange(_image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		VkBuffer buf;
+		_inst.createBuffer(
+		_inst.copyBufferToImage(_
 	}
 	
 	template class vkImageT<pixel1<unsigned char>>;

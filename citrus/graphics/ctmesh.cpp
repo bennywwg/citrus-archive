@@ -349,7 +349,42 @@ namespace citrus::graphics {
 	uint64_t ctmesh::requiredMemory() const {
 		return pos.size() * vertSizeWithoutPadding();
 	}
-	void ctmesh::construct(void* vdata) const {
+	void ctmesh::constructContinuous(void* vdata) const {
+		uint8_t* data = (uint8_t*)vdata;
+		uint64_t offset = 0;
+		memccpy(vdata + offset, pos.data(), pos.size() * sizeof(vec3));
+		offset += pos.size() * sizeof(vec3);
+		if(hasColor()) {
+			memcpy(vdata + offset, color.data(), color.size() * sizeof(vec3));
+			offset += color.size() * sizeof(vec3);
+		}
+		if(hasNorm()) {
+			memcpy(vdata + offset, norm.data(), norm.size() * sizeof(vec3));
+			offset += norm.size() * sizeof(vec3);
+		}
+		if(hasTangent()) {
+			memcpy(vdata + offset, tangent.data(), tangent.size() * sizeof(vec3));
+			offset += tangent.size() * sizeof(vec3);
+		}
+		if(hasUV()) {
+			memcpy(vdata + offset, uv.data(), uv.size() * sizeof(vec2));
+			offset += uv.size() * sizeof(vec2);
+		}
+		if(hasBones()) {
+			memcpy(vdata + offset, bone0.data(), bone0.size() * sizeof(int32_t));
+			offset += bone0.size() * sizeof(int32_t);
+			
+			memcpy(vdata + offset, bone1.data(), bone1.size() * sizeof(int32_t));
+			offset += bone1.size() * sizeof(int32_t);
+			
+			memcpy(vdata + offset, weight0.data(), weight0.size() * sizeof(float));
+			offset += weight0.size() * sizeof(float);
+			
+			memcpy(vdata + offset, weight1.data(), weight1.size() * sizeof(int32_t));
+			offset += weight1.size() * sizeof(int32_t);
+		}
+	}
+	void ctmesh::constructInterleaved(void* vdata) const {
 		uint8_t* data = (uint8_t*)vdata;
 		uint64_t stride = vertSizeWithoutPadding();
 		uint64_t voffset = 0;
@@ -403,8 +438,246 @@ namespace citrus::graphics {
 			voffset += sizeof(float);
 		}
 	}
+	meshDescription ctmesh::getAttribDescriptions() const {
+		meshDescription res;
+		vector<VkVertexInputAttributeDescription>& attribs = res.attribs;
+		vector<VkVertexInputBindingDescription>& bindings = res.bindings;
+		{
+			VkVertexInputAttributeDescription attrib = { };
+			attrib.binding = 0;
+			attrib.location = 0;
+			attrib.format = VK_FORMAT_R32G32B32_SFLOAT;
+			attrib.offset = 0;
+			attribs.push_back(attrib);
+			
+			VkVertexInputBindingDescription binding = { };
+			binding.binding = 0;
+			binding.stride = sizeof(vec3);
+			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			bindings.push_back(binding);
+		}
+		if(hasColor()) {
+			VkVertexInputAttributeDescription attrib = { };
+			attrib.binding = 1;
+			attrib.location = 1;
+			attrib.format = VK_FORMAT_R32G32B32_SFLOAT;
+			attrib.offset = 1;
+			attribs.push_back(attrib);
+			
+			VkVertexInputBindingDescription binding = { };
+			binding.binding = 0;
+			binding.stride = sizeof(vec3);
+			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			bindings.push_back(binding);
+		}
+		if(hasNorm()) {
+			VkVertexInputAttributeDescription attrib = { };
+			attrib.binding = 2;
+			attrib.location = 2;
+			attrib.format = VK_FORMAT_R32G32B32_SFLOAT;
+			attrib.offset = 0;
+			attribs.push_back(attrib);
+			
+			VkVertexInputBindingDescription binding = { };
+			binding.binding = 2;
+			binding.stride = sizeof(vec3);
+			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			bindings.push_back(binding);
+		}
+		if(hasTangent()) {
+			VkVertexInputAttributeDescription attrib = { };
+			attrib.binding = 3;
+			attrib.location = 3;
+			attrib.format = VK_FORMAT_R32G32B32_SFLOAT;
+			attrib.offset = 0;
+			attribs.push_back(attrib);
+			
+			VkVertexInputBindingDescription binding = { };
+			binding.binding = 3;
+			binding.stride = sizeof(vec3);
+			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			bindings.push_back(binding);
+		}
+		if(hasUV()) {
+			VkVertexInputAttributeDescription attrib = { };
+			attrib.binding = 4;
+			attrib.location = 4;
+			attrib.format = VK_FORMAT_R32G32_SFLOAT;
+			attrib.offset = 0;
+			attribs.push_back(attrib);
+			
+			VkVertexInputBindingDescription binding = { };
+			binding.binding = 4;
+			binding.stride = sizeof(vec3);
+			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			bindings.push_back(binding);
+		}
+		if(hasBones()) {
+			for(int i = 0; i < 4; i++) {
+				VkVertexInputAttributeDescription attrib = { };
+				attrib.binding = 5 + i;
+				attrib.location = 5 + i;
+				attrib.format = (i < 2) ? VK_FORMAT_R32_SINT : VK_FORMAT_R32_SFLOAT;
+				attrib.offset = 0;
+				attribs.push_back(attrib);
+				
+				VkVertexInputBindingDescription binding = { };
+				binding.binding = 5 + i;
+				binding.stride = (i < 2) ? sizeof(int32_t) : sizeof(float);
+				binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+				bindings.push_back(binding);
+			}
+		}
+		return res;
+	}
+	uint64_t ctMesh::getAttribDescriptionCode() const {
+		uint64_t res = 0;
+		if(hasColor())		res |= (1 << 0);
+		if(hasNorm())		res |= (1 << 1);
+		if(hasTangent())	res |= (1 << 2);
+		if(hasUV()) 		res |= (1 << 3);
+		if(hasBones())		res |= (1 << 4);
+		return res;
+	}
 
+	void ctesh::calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4>& data, double time, behavior mode) const {
+		const animationBinding& ani = animations[animationIndex];
+
+		//localTransforms[i] corresponds to bones.bones[i]
+		std::vector<glm::mat4> localTransforms(nodes.nodes.size());
+		std::vector<glm::mat4> globalTransforms(nodes.nodes.size());
+
+		//initialize initial local transforms
+		for(int i = 0; i < nodes.nodes.size(); i++) {
+			localTransforms[i] = nodes.nodes[i].transform;
+		}
+
+		//for each node that has an animation channel generate the correct transform
+		if(mode == repeat) time = util::wrap(time, ani.ani->begin, ani.ani->end);
+		for(int i = 0; i < ani.ani->channels.size(); i++) {
+			const animation::channel& ch = ani.ani->channels[i];
+			glm::vec3 translation = ch.getPosition(time);
+			glm::quat orientation = ch.getOrientation(time);
+			glm::vec3 scaling = ch.getScaling(time);
+			localTransforms[ani.nodes[i]] = glm::translate(translation) * glm::toMat4(orientation) * glm::scale(scaling);
+		}
+
+		//generate subspace transforms using the hierarchy
+		globalTransforms[0] = localTransforms[0]; //root node = node.nodes[0], node has no parent so global transform is local transform
+		for(int i = 1; i < nodes.nodes.size(); i++) {
+			globalTransforms[i] = globalTransforms[nodes.nodes[i].parent] * localTransforms[i];
+		}
+
+		//use the node transforms to generate the final bone transform
+		for(int i = 0; i < bones.bones.size(); i++) {
+			data[i] = globalTransforms[bones.bones[i].node] * bones.bones[i].offset;
+		}
+	}
+	void ctesh::loadMesh(const aiScene* scene, aiMesh* mesh) {
+		for(size_t j = 0; j < mesh->mNumVertices; j++) {
+			pos.push_back(glm::vec3(
+				mesh->mVertices[j].x,
+				(tr == xyz) ? mesh->mVertices[j].y : mesh->mVertices[j].z,
+				(tr == xyz) ? mesh->mVertices[j].z : mesh->mVertices[j].y
+			));
+		}
+
+		if(mesh->HasTextureCoords(0)) {
+			for(size_t j = 0; j < mesh->mNumVertices; j++) {
+				uv.push_back(glm::vec2(
+					mesh->mTextureCoords[0][j].x,
+					-mesh->mTextureCoords[0][j].y
+				));
+			}
+		}
+
+		for(size_t j = 0; j < mesh->mNumFaces; j++) {
+			const aiFace& face = mesh->mFaces[j];
+
+			for(size_t k = 0; k < face.mNumIndices; k++) {
+				index.push_back(face.mIndices[k]);
+			}
+		}
+	}
+	void ctesh::loadNodes(const aiScene* scene, aiMesh* mesh) {
+		nodes.loadAllNodes(scene);
+	}
+	void ctMesh::loadBones(const aiScene* scene, aiMesh* mesh) {
+		bones.loadAllBones(scene, nodes);
+
+		for(int j = 0; j < pos.size(); j++) {
+			vertexBoneInfo info = bones.getInfo(j);
+			info.normalize();
+			bone0.push_back(in3o.primary);
+			bone1.push_back(info.secondary);
+			weight0.push_back(info.primaryWeight);
+			weight1.push_back(info.secondaryWeight);
+		}
+	}
+	
+	bool ctMesh::bindAnimation(const animation& ani) {
+			animationBinding binding;
+			binding.ani = &ani;
+			binding.nodes.resize(ani.channels.size());
+			for(int i = 0; i < ani.channels.size(); i++) {
+				const auto& it = nodes.nameMap.find(ani.channels[i].nodeName);
+				if(it == nodes.nameMap.end()) return false;
+				binding.nodes[i] = it->second;
+			}
+			animations.emplace_back(std::move(binding));
+			return true;
+		}
+	
+	static void ctMesh::convertAnimationFromCollada(std::string location, std::string outLocation) {
+			Assimp::Importer imp;
+			//imp.SetExtraVerbose(true);
+
+			const aiScene* scene = imp.ReadFile(location,
+				aiProcess_CalcTangentSpace |
+				aiProcess_Triangulate |
+				aiProcess_JoinIdenticalVertices |
+				aiProcess_SortByPType);
+			if(!scene) {
+				util::sout(imp.GetErrorString());
+				throw std::runtime_error(("Failed to load model " + location).c_str());
+			}
+
+			animationContainer rawAnimation;
+			rawAnimation.loadAllAnimations(scene);
+
+			if(rawAnimation.animations.size() != 1) {
+				throw std::runtime_error("Must be only one animation in collada file");
+			}
+			std::ofstream output(outLocation);
+			rawAnimation.animations[0].write(output);
+		}
+	
 	ctmesh ctmesh::loadCOLLADA(std::string path) {
+		Assimp::Importer imp;
+		//imp.SetExtraVerbose(true);
 
+		const aiScene* scene = imp.ReadFile(location,
+			aiProcess_CalcTangentSpace |
+			aiProcess_Triangulate |
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_SortByPType);
+		if(!scene) {
+			util::sout(imp.GetErrorString());
+			throw std::runtime_error(("Failed to load model " + location).c_str());
+		}
+
+		size_t numMeshes = scene->mNumMeshes;
+		if(numMeshes != 1) throw std::runtime_error("Error, multiple meshes in collada file");
+
+		aiMesh* mesh = scene->mMeshes[0];
+		std::string meshname(mesh->mName.C_Str());
+
+		loadMesh(scene, mesh, tr);
+
+		loadNodes(scene, mesh, tr);
+
+		loadBones(scene, mesh);
+
+		imp.FreeScene();
 	}
 }

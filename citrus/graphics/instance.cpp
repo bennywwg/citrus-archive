@@ -524,6 +524,91 @@ namespace citrus::graphics {
 		vkQueuePresentKHR(_presentQueue, &presentInfo);
 		vkQueueWaitIdle(_presentQueue);
 	}
+	
+	
+	uint64_t instance::allocator::alloc(uint64_t size) {
+		uint64_t addr = 0;
+		for(int i = 0; i < blocks.size(); i++) {
+			if(addr + size <= blocks[i].addr && addr + size <= this->size) {
+				blocks.insert(blocks.begin() + i, { addr, size });
+				return addr;
+			}
+			addr += blocks[i].size();
+		}
+		throw std::runtime_error("out of vulkan memory");
+	}
+	void instance::allocator::free(int64_t addr) {
+		uint64_t addr = 0;
+		for(int i = 0; i < blocks.size(); i++) {
+			if(addr == blocks[i].addr) {
+				blocks.erase(blocks.begin() + i);
+				return;
+			}
+			addr += blocks[i].size();
+		}
+		throw std::runtime_error("can't find block to free");
+	}
+	
+	vkBuf instance::dlCreateBuffer(uint64_t size, VkBufferUsageFlags usage) {
+		VkBuffer buf;
+		VkBufferCreateInfo bufferInfo = {};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = size;
+		bufferInfo.usage = usage;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(_device, &bufferInfo, nullptr, &buf) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create buffer!");
+		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(_device, buffer, &memRequirements);
+		uint64_t start = _dlMem.alloc(memRequirements.size);
+
+		vkBindBufferMemory(_device, buffer, _dlMemory, start);
+		
+		vkBuf res = { };
+		res.buf = buf;
+		res.start = start;
+		return res;
+	}
+	void instance::dlFreeBuffer(vkBuf buf) {
+		vkDestroyBuffer(_device, buf.buf, nullptr);
+		_dlMem.free(buf.start);
+	}
+	vkBuf instance::hvCreateBuffer(uint64_t size, VkBufferUsageFlags usage) {
+		VkBuffer buf;
+		VkBufferCreateInfo bufferInfo = {};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = size;
+		bufferInfo.usage = usage;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(_device, &bufferInfo, nullptr, &buf) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create buffer!");
+		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(_device, buffer, &memRequirements);
+		uint64_t start = _hvMem.alloc(memRequirements.size);
+
+		vkBindBufferMemory(_device, buffer, _hvMemory, start);
+		
+		vkBuf res = { };
+		res.buf = buf;
+		res.start = start;
+		return res;
+	}
+	void instance::hvFreeBuffer(vkBuf buff) {
+		vkDestroyBuffer(_device, buf.buf, nullptr);
+		_hvMem.free(buf.start);
+	}
+	image instance::createImage(uint64_t size) {
+		
+	}
+	void instance::freeImage(image buff) {
+		
+	}
 
 	uint32_t instance::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
 		VkPhysicalDeviceMemoryProperties memProperties;
@@ -537,41 +622,9 @@ namespace citrus::graphics {
 
 		throw std::runtime_error("failed to find suitable memory type!");
 	}
-	void instance::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
-		VkBufferCreateInfo bufferInfo = {};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = size;
-		bufferInfo.usage = usage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		if (vkCreateBuffer(_device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create buffer!");
-		}
-
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(_device, buffer, &memRequirements);
-
-		VkMemoryAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-		if (vkAllocateMemory(_device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate buffer memory!");
-		}
-
-		vkBindBufferMemory(_device, buffer, bufferMemory, 0);
-	}
-	void instance::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, uint64_t srcStart, uint64_t dstStart, fenceProc* proc) {
-		VkCommandBufferAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = _commandPool;
-		allocInfo.commandBufferCount = 1;
-
-		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(_device, &allocInfo, &commandBuffer);
-
+	void instance::copyBuffer(vkBuf srcBuffer, vkBuf dstBuffer, VkDeviceSize size, uint64_t srcStart, uint64_t dstStart, fenceProc* proc) {
+		VkCommandBuffer commandBuffer = createCommandBuffer();
+		
 		VkCommandBufferBeginInfo beginInfo = {};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -582,56 +635,48 @@ namespace citrus::graphics {
 		copyRegion.srcOffset = srcStart;
 		copyRegion.dstOffset = dstStart;
 		copyRegion.size = size;
-		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+		vkCmdCopyBuffer(commandBuffer, srcBuffer.buf, dstBuffer.buf, 1, &copyRegion);
 
 		vkEndCommandBuffer(commandBuffer);
 		
 		submitFenceProc(commandBuffer, proc);
 	}
 	
-	void instance::fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, const void* data, fenceProc* proc) {
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingMemory;
-		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingMemory);
+	void instance::fill_dlBuffer(vkBuf ;, uint64_t size, uint64_t start, const void* data, fenceProc* proc) {
+		vkBuf stagingBuffer = hvCreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 		
 		void* scratch;
-		vkMapMemory(_device, stagingMemory, start, size, 0, &scratch);
+		vkMapMemory(_device, stagingBuffer.mem, stagingBuffer.start + start, size, 0, &scratch);
 		memcpy(scratch, data, size);
-		vkUnmapMemory(_device, stagingMemory);
+		vkUnmapMemory(_device, stagingBuffer.mem);
 
 		if(proc) {
 			if(proc->sbuf != VK_NULL_HANDLE || proc->smem != VK_NULL_HANDLE) throw std::runtime_error("proc already contains staging buffer or staging memory");
-			proc->sbuf = stagingBuffer;
-			proc->smem = stagingMemory;
+			proc->hvbuf = stagingBuffer;
 			copyBuffer(stagingBuffer, dstBuffer, size, 0, start, proc);
 		} else {
 			copyBuffer(stagingBuffer, dstBuffer, size, 0, start, nullptr); //this will block because proc is nullptr
-			vkDestroyBuffer(_device, stagingBuffer, nullptr);
-			vkFreeMemory(_device, stagingMemory, nullptr);
+			hvFreeBuffer(stagingBuffer);
 		}
 	}
-	void instance::fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, std::function<void(const void*)> fillFunc, fenceProc* proc) {
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingMemory;
-		createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingMemory);
+	void instance::fill_dlBuffer(vkBuf dstBuffer, uint64_t size, uint64_t start, std::function<void(const void*)> fillFunc, fenceProc* proc) {
+		vkBuf stagingBuffer = hvCreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 		
 		void* scratch;
-		vkMapMemory(_device, stagingMemory, start, size, 0, &scratch);
+		vkMapMemory(_device, stagingBuffer.mem, start + stagingBuffer.start, size, 0, &scratch);
 		fillFunc(scratch);
-		vkUnmapMemory(_device, stagingMemory);
+		vkUnmapMemory(_device, stagingBuffer.mem);
 
 		if(proc) {
 			if(proc->sbuf != VK_NULL_HANDLE || proc->smem != VK_NULL_HANDLE) throw std::runtime_error("proc already contains staging buffer or staging memory");
-			proc->sbuf = stagingBuffer;
-			proc->smem = stagingMemory;
+			proc->hvbuf = stagingBuffer;
 			copyBuffer(stagingBuffer, dstBuffer, size, 0, start, proc);
 		} else {
 			copyBuffer(stagingBuffer, dstBuffer, size, 0, start, nullptr); //this will block because proc is nullptr
-			vkDestroyBuffer(_device, stagingBuffer, nullptr);
-			vkFreeMemory(_device, stagingMemory, nullptr);
+			hvFreeBuffer(stagingBuffer);
 		}
 	}
-	void instance::transitionImageLayout(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, fenceProc* proc) {
+	void instance::pipelineBarrierLayoutChange(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, fenceProc* proc) {
 		VkCommandBuffer commandBuffer = createCommandBuffer();
 
         VkImageMemoryBarrier barrier = {};
@@ -835,12 +880,11 @@ namespace citrus::graphics {
 		if(!_done) throw std::runtime_error("buffer process destroyed before fence signaled (or before done was ever checked)");
 		if(fence != VK_NULL_HANDLE) vkDestroyFence(_inst._device, fence, nullptr);
 		if(cbuff != VK_NULL_HANDLE) vkFreeCommandBuffers(_inst._device, _inst._commandPool, 1, &cbuff);
-		if(sbuf != VK_NULL_HANDLE) vkDestroyBuffer(_inst._device, sbuf, nullptr);
-		if(smem != VK_NULL_HANDLE) vkFreeMemory(_inst._device, smem, nullptr);
+		if(hvbuf.buf != VK_NULL_HANDLE) _inst.hvFreeBuffer(hvbuf);
 		fence = VK_NULL_HANDLE;
 		cbuff = VK_NULL_HANDLE;
-		sbuf = VK_NULL_HANDLE;
-		smem = VK_NULL_HANDLE;
+		hvbuf.buf = VK_NULL_HANDLE;
+		hvbuf.start = -1;
 	}
 
 	bool fenceProc::done() {

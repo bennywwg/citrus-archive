@@ -42,7 +42,7 @@ namespace citrus::graphics {
 			}
 		}
 	}
-	vkShader::vkShader(instance& inst, vector<VkImageView> fbos, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc) : _inst(inst) {
+	vkShader::vkShader(instance& inst, meshDescription const& desc, vector<VkImageView> fbos, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc) : _inst(inst) {
 
 		VkShaderModule vertModule = VK_NULL_HANDLE;
 		VkShaderModule geomModule = VK_NULL_HANDLE;
@@ -112,11 +112,13 @@ namespace citrus::graphics {
 		vector<VkPipelineShaderStageCreateInfo> stages = geomLoc.empty() ?
 			vector<VkPipelineShaderStageCreateInfo> {vertCreateInfo, fragCreateInfo } :
 			vector<VkPipelineShaderStageCreateInfo> {vertCreateInfo, geomCreateInfo, fragCreateInfo};
-
+			
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
+		vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(desc.bindings.size());
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(desc.attribs.size());
+		vertexInputInfo.pVertexBindingDescriptions = desc.bindings.data();
+		vertexInputInfo.pVertexAttributeDescriptions = desc.attribs.data();
 		
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

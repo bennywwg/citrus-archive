@@ -88,6 +88,7 @@ namespace citrus::graphics {
 	//nodes[i] corresponds to ani->channels[i]
 	struct animationBinding {
 		const animation* ani;
+		const nodeContainer* nodeCont;
 		std::vector<int> nodes;
 	};
 
@@ -97,6 +98,11 @@ namespace citrus::graphics {
 
 		void loadAllAnimations(const aiScene* scene);
 	};
+	
+	struct meshDescription {
+		vector<VkVertexInputAttributeDescription> attribs;
+		vector<VkVertexInputBindingDescription> bindings;
+	};
 
 	class ctmesh {
 	public:
@@ -105,10 +111,12 @@ namespace citrus::graphics {
 		vector<vec3> norm;
 		vector<vec3> tangent;
 		vector<vec2> uv;
-		vector<int> bone0;
-		vector<int> bone1;
+		vector<int32_t> bone0;
+		vector<int32_t> bone1;
 		vector<float> weight0;
 		vector<float> weight1;
+		
+		std::vector<animationBinding> animations;
 
 		bool valid() const;
 
@@ -124,8 +132,24 @@ namespace citrus::graphics {
 
 		uint64_t vertSizeWithoutPadding() const;
 		uint64_t requiredMemory() const;
-		void construct(void* data) const;
+		void constructContinuous(void* data) const;
+		void constructInterleaved(void* data) const;
+		
+		//used for constructing constructing shaders and such
+		meshDescription getAttribDescriptions() const;
+		
+		//used to check if meshes and shaders share the same attributes
+		uint64_t getAttribDescriptionCode() const;
+		
+		void calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4>& data, double time, behavior mode) const;
+		bool bindAnimation(const animation& ani);
+		
+		void loadMesh(const aiScene* scene, aiMesh* mesh);
+		void loadNodes(const aiScene* scene, aiMesh* mesh);
+		void loadBones(const aiScene* scene, aiMesh* mesh);
 
-		static ctmesh loadCOLLADA(std::string path);
+		static void convertAnimationFromCollada(std::string location, std::string outLocation);
+
+		ctmesh(std::string path);
 	};
 }

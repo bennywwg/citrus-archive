@@ -20,7 +20,7 @@ namespace citrus::graphics {
 		void drawAll(int verts);
 		void endAll();
 
-		vkShader(instance& inst, vector<VkImageView> fbos, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc);
+		vkShader(instance& inst, meshDescription const& desc, vector<VkImageView> fbos, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc);
 		~vkShader();
 	};
 }

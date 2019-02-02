@@ -11,8 +11,9 @@ namespace citrus::graphics {
 	class vkImageT {
 		friend class vkTexture;
 		
-		instance& _inst
+		instance& _inst;
 		VkImage _image;
+		VkDeviceMemory _memory;
 		
 	public:
 		void transferLayout(VkImageLayout pre, VkImageLayout post, fenceProc *proc = nullptr);
