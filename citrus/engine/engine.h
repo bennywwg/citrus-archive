@@ -100,7 +100,7 @@ namespace citrus {
 
 			void setOrder(std::vector<std::type_index> order);
 
-			void loadLevel(std::path levelPath);
+			void loadLevel(citrus::path levelPath);
 
 			//lifetiem events
 			void start();

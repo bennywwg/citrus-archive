@@ -1,11 +1,13 @@
 #include <GLFW/glfw3.h>
 
-#include <util/util.h>
-#include <util/glmUtil.h>
-#include <util/stdUtil.h>
+#include <citrus/util.h>
 
 #include <nfd.h>
 #include <thread>
+#include <sstream>
+#include <fstream>
+
+#include <png.h>
 
 namespace citrus::util {
 	bool loadPngImage(const char *name, int &outWidth, int &outHeight, bool &outHasAlpha, std::vector<unsigned char>& res) {
@@ -177,8 +179,8 @@ namespace citrus::util {
 		return transform(btToGlm(tr.getOrigin()), btToGlm(tr.getRotation()));
 	}
 
-	quat btToGlm(btQuaternion quat) {
-		return quat(quat.getW(), quat.getX(), quat.getY(), quat.getZ());
+	quat btToGlm(btQuaternion ori) {
+		return quat(ori.getW(), ori.getX(), ori.getY(), ori.getZ());
 	}
 	btQuaternion glmToBt(quat quat) {
 		return btQuaternion(quat.x, quat.y, quat.z, quat.w);
@@ -351,12 +353,12 @@ namespace citrus::util {
 	}
 
 	string toString(vec3 vec, int precision) {
-		stringstream ss;
+		std::stringstream ss;
 		ss << std::fixed << std::setfill('0') << std::setw(8) << std::setprecision(3) << "<" << vec.x << ", " << vec.y << ", " << vec.z << ">";
 		return ss.str();
 	}
 	string toString(vec2 vec, int precision) {
-		stringstream ss;
+		std::stringstream ss;
 		ss << std::fixed << std::setfill('0') << std::setw(8) << std::setprecision(3) << "<" << vec.x << ", " << vec.y << ">";
 		return ss.str();
 	}

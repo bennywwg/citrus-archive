@@ -1,7 +1,5 @@
-#include <engine/manager.h>
-#include <engine/elements/renderManager.h>
-#include <engine/elements/freeCam.h>
-#include <engine/elementRef.inl>
+#include <citrus/engine/manager.h>
+#include <citrus/engine/elementRef.inl>
 
 namespace citrus {
 	namespace engine {

@@ -1,9 +1,7 @@
-#include <graphics/window/window.h>
-#include <util/graphics_h.h>
-
-#include <glm/ext.hpp>
-#include <GLFW/glfw3.h>
+#include <citrus/graphics/window.h>
+#include <citrus/util.h>
 #include <map>
+#include <GLFW/glfw3.h>
 
 namespace citrus::graphics {
 	//hardcoded icon
@@ -236,10 +234,7 @@ namespace citrus::graphics {
 		return _adapter;
 	}
 	window::window(unsigned int width, unsigned int height, std::string title) {
-		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		_win = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
 		std::cout << _win << "\n";
 		GLFWimage img;
@@ -254,18 +249,7 @@ namespace citrus::graphics {
 		glfwSetCursorPosCallback(_win, cursorCallback);
 		setCursorCallback([](double, double) { });
 
-		glfwMakeContextCurrent(_win);
-
-		GLenum error = glGetError();
-
-		glewExperimental = true;
-		GLenum code = glewInit();
-
-		glfwSwapInterval(0);
-
 		memset(_buttonStates, 0, sizeof(_buttonStates));
-
-		_adapter = std::string((char*)glGetString(GL_RENDERER));
 	}
 	window::~window() {
 		glfwDestroyWindow(_win);

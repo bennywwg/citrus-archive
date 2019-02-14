@@ -1,7 +1,6 @@
 #pragma once
 
-#include <util/stdUtil.h>
-#include <util/glmUtil.h>
+#include <citrus/util.h>
 
 namespace citrus {
 	namespace dynamics {

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <engine/element.h>
-#include <engine/engine.h>
-#include <engine/elements/freeCam.h>
-#include <engine/elements/rigidBodyComponent.h>
-#include <engine/elements/meshFilter.h>
+#include <citrus/engine/element.h>
+#include <citrus/engine/engine.h>
+#include <citrus/engine/freeCam.h>
+#include <citrus/engine/rigidBodyComponent.h>
+#include <citrus/engine/meshFilter.h>
 
 namespace citrus::engine {
 	using namespace graphics::windowInput;

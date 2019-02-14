@@ -1,8 +1,8 @@
-#include <engine/elements/rigidBodyComponent.h>
-#include <engine/engine.h>
-#include <engine/manager.inl>
-#include <engine/elementRef.inl>
-#include <engine/elements/worldManager.h>
+#include <citrus/engine/rigidBodyComponent.h>
+#include <citrus/engine/engine.h>
+#include <citrus/engine/manager.inl>
+#include <citrus/engine/elementRef.inl>
+#include <citrus/engine/worldManager.h>
 
 namespace citrus::engine {
 	bool rigidBodyComponent::isSphere() {

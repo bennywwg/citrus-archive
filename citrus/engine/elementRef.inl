@@ -1,7 +1,8 @@
 #pragma once
 
-#include <engine/elementRef.h>
-#include <engine/entityRef.h>
+#include <citrus/engine/elementRef.h>
+#include <citrus/engine/entityRef.h>
+#include <citrus/engine/engine.h>
 
 namespace citrus::engine {
 

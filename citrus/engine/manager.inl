@@ -1,4 +1,4 @@
-#include <engine/manager.h>
+#include <citrus/engine/manager.h>
 
 namespace citrus::engine {
 	template<class T> inline void manager::registerType(string name, bool active) {

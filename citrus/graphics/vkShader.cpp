@@ -1,6 +1,6 @@
-#include <util/stdUtil.h>
+#include <citrus/util.h>
 
-#include <graphics/vulkan/vkShader.h>
+#include <citrus/graphics/vkShader.h>
 
 namespace citrus::graphics {
 	void vkShader::beginAll() {
@@ -42,7 +42,61 @@ namespace citrus::graphics {
 			}
 		}
 	}
-	vkShader::vkShader(instance& inst, meshDescription const& desc, vector<VkImageView> fbos, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc) : _inst(inst) {
+	vkFBO vkShader::createFBO(VkImageView view) {
+		VkImageView attachments[] = {
+			view
+		};
+
+		VkFramebufferCreateInfo framebufferInfo = {};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = _renderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = _width;
+		framebufferInfo.height = _height;
+		framebufferInfo.layers = 1;
+
+		VkFramebuffer fbo;
+		if(vkCreateFramebuffer(_inst._device, &framebufferInfo, nullptr, &fbo) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create framebuffer!");
+		}
+		_framebuffers.push_back(fbo);
+		
+		VkCommandBuffer buf;
+		VkCommandBufferAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = _inst._commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = 1;
+
+		if(vkAllocateCommandBuffers(_inst._device, &allocInfo, &buf) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate command buffers!");
+		}
+		_buffers.push_back(buf);
+		
+		vkFBO res = { };
+		res.fbo = fbo;
+		res.cbf = buf;
+		
+		return res;
+	}
+	void vkShader::freeFBO(vkFBO fbo) {
+		for(int i = 0; i < _framebuffers.size(); i++) {
+			if(_framebuffers[i] == fbo.fbo) {
+				_framebuffers.erase(_framebuffers.begin() + i);
+				vkDestroyFramebuffer(_inst._device, fbo.fbo, nullptr);
+				break;
+			}
+		}
+		for(int i = 0; i < _buffers.size(); i++) {
+			if(_buffers[i] == fbo.cbf) {
+				_buffers.erase(_buffers.begin() + i);
+				vkFreeCommandBuffers(_inst._device, _inst._commandPool, 1, &fbo.cbf);
+				break;
+			}
+		}
+	}
+	vkShader::vkShader(instance& inst, meshDescription const& desc, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc) : _inst(inst), _width(width), _height(height) {
 
 		VkShaderModule vertModule = VK_NULL_HANDLE;
 		VkShaderModule geomModule = VK_NULL_HANDLE;
@@ -271,40 +325,6 @@ namespace citrus::graphics {
 		if(vertModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, vertModule, nullptr);
 		if(geomModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, geomModule, nullptr);
 		if(fragModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, fragModule, nullptr);
-
-		for(size_t i = 0; i < fbos.size(); i++) {
-			VkImageView attachments[] = {
-				fbos[i]
-			};
-
-			VkFramebufferCreateInfo framebufferInfo = {};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = _renderPass;
-			framebufferInfo.attachmentCount = 1;
-			framebufferInfo.pAttachments = attachments;
-			framebufferInfo.width = width;
-			framebufferInfo.height = height;
-			framebufferInfo.layers = 1;
-
-			VkFramebuffer buf;
-			if(vkCreateFramebuffer(_inst._device, &framebufferInfo, nullptr, &buf) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create framebuffer!");
-			}
-
-			_framebuffers.push_back(buf);
-		}
-
-		_buffers.resize(_framebuffers.size());
-
-		VkCommandBufferAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = _inst._commandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = (uint32_t)_buffers.size();
-
-		if(vkAllocateCommandBuffers(_inst._device, &allocInfo, _buffers.data()) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate command buffers!");
-		}
 	}
 	vkShader::~vkShader() {
 		vkFreeCommandBuffers(_inst._device, _inst._commandPool, static_cast<uint32_t>(_buffers.size()), _buffers.data());

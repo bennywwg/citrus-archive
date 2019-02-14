@@ -1,15 +1,10 @@
 #pragma once
 
-#include <memory>
-
 #include <btBulletCollisionCommon.h>
 #include <btBulletDynamicsCommon.h>
 
-#include <glm/ext.hpp>
-
-#include <util/util.h>
-#include <dynamics/transform.h>
-#include <dynamics/physics/collisionObject.h>
+#include <citrus/util.h>
+#include <citrus/dynamics/collisionObject.h>
 
 namespace citrus {
 	namespace dynamics {

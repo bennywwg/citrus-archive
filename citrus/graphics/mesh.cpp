@@ -1,7 +1,15 @@
-#include <graphics/vulkan/ctmesh.h>
+#include <citrus/graphics/mesh.h>
+
+#include <citrus/graphics/instance.h>
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+#include <fstream>
 
 namespace citrus::graphics {
-	static glm::mat4 node::convertMat(const aiMatrix4x4& m) {
+	static inline glm::mat4 convertMat(const aiMatrix4x4& m) {
 		/*return glm::mat4(
 		m.a1, m.a2, m.a3, m.a4,
 		m.b1, m.b2, m.b3, m.b4,
@@ -14,12 +22,12 @@ namespace citrus::graphics {
 			m.a4, m.b4, m.c4, m.d4);
 	}
 
-	void nodeContainer::addNodes(const aiNode* n, int parent) {
+	int nodeContainer::addNodes(const aiNode* n, int parent) {
 		int ci = nodes.size();
 		nodes.emplace_back();
 		nodes[ci].name = n->mName.C_Str();
 		nodes[ci].parent = parent;
-		nodes[ci].transform = node::convertMat(n->mTransformation);
+		nodes[ci].transform = convertMat(n->mTransformation);
 		nodes[ci].children.resize(n->mNumChildren);
 		for(int i = 0; i < n->mNumChildren; i++) {
 			int childIndex = addNodes(n->mChildren[i], ci);
@@ -27,7 +35,7 @@ namespace citrus::graphics {
 		}
 		return ci;
 	}
-	nodeContainer::nodeContainer(const aiScene* scene) {
+	void nodeContainer::loadAllNodes(const aiScene* scene) {
 		addNodes(scene->mRootNode);
 		for(int i = 0; i < nodes.size(); i++) {
 			nameMap[nodes[i].name] = i;
@@ -81,7 +89,7 @@ namespace citrus::graphics {
 			bones.emplace_back();
 			bone& bone = bones.back();
 			bone.node = nodeIndexIt->second;
-			bone.offset = node::convertMat(inBone.mOffsetMatrix);
+			bone.offset = convertMat(inBone.mOffsetMatrix);
 			weights.emplace_back(scene->mMeshes[0]->mNumVertices, -1.0f);
 			for (size_t k = 0; k < inBone.mNumWeights; k++) {
 				weights[j][inBone.mWeights[k].mVertexId] = inBone.mWeights[k].mWeight;
@@ -92,7 +100,7 @@ namespace citrus::graphics {
 	}
 
 	template<typename T>
-	static T animation::key<T>::mix(const double& time, const key<T>& l, const key<T>& r) {
+	T animation::key<T>::mix(const double& time, const key<T>& l, const key<T>& r) {
 		return glm::mix(l.val, r.val, (float)((time - l.time) / (r.time - l.time)));
 	}
 	template<typename T>
@@ -304,11 +312,10 @@ namespace citrus::graphics {
 		}
 	}
 
-	bool ctmesh::valid() const {
+	bool mesh::valid() const {
 		auto const psize = pos.size();
-		if(!color.empty() && color.size() != psize) return false;
 		if(!norm.empty() && norm.size() != psize) return false;
-		if(!tangnet.empty() && tangnet.size() != psize) return false;
+		if(!tangent.empty() && tangent.size() != psize) return false;
 		if(!uv.empty() && uv.size() != psize) return false;
 		if(bone0.empty()) {
 			if(!(bone0.empty() && bone1.empty() && weight0.empty() && weight1.empty())) return false;
@@ -322,82 +329,68 @@ namespace citrus::graphics {
 
 		return true;
 	}
-	bool ctmesh::hasColor() const {
-		return !color.empty();
-	}
-	bool ctmesh::hasNorm() const {
+	bool mesh::hasNorm() const {
 		return !norm.empty();
 	}
-	bool ctmesh::hasTangent() const {
+	bool mesh::hasTangent() const {
 		return !tangent.empty();
 	}
-	bool ctmesh::hasUV() const {
+	bool mesh::hasUV() const {
 		return !uv.empty();
 	}
-	bool ctmesh::hasBones() const {
+	bool mesh::hasBones() const {
 		return !bone0.empty();
 	}
-	uint64_t ctmesh::vertSizeWithoutPadding() const {
+	uint64_t mesh::vertSizeWithoutPadding() const {
 		uint64_t vertSize = sizeof(vec3);
-		if(hasColor()) vertSize += sizeof(vec3);
 		if(hasNorm()) vertSize += sizeof(vec3);
 		if(hasTangent()) vertSize += sizeof(vec3);
 		if(hasUV()) vertSize += sizeof(vec2);
 		if(hasBones()) vertSize += (sizeof(int) + sizeof(int) + sizeof(float) + sizeof(float));
 		return vertSize;
 	}
-	uint64_t ctmesh::requiredMemory() const {
+	uint64_t mesh::requiredMemory() const {
 		return pos.size() * vertSizeWithoutPadding();
 	}
-	void ctmesh::constructContinuous(void* vdata) const {
+	void mesh::constructContinuous(void* vdata) const {
 		uint8_t* data = (uint8_t*)vdata;
 		uint64_t offset = 0;
-		memccpy(vdata + offset, pos.data(), pos.size() * sizeof(vec3));
+		memcpy(data + offset, pos.data(), pos.size() * sizeof(vec3));
 		offset += pos.size() * sizeof(vec3);
-		if(hasColor()) {
-			memcpy(vdata + offset, color.data(), color.size() * sizeof(vec3));
-			offset += color.size() * sizeof(vec3);
-		}
 		if(hasNorm()) {
-			memcpy(vdata + offset, norm.data(), norm.size() * sizeof(vec3));
+			memcpy(data + offset, norm.data(), norm.size() * sizeof(vec3));
 			offset += norm.size() * sizeof(vec3);
 		}
 		if(hasTangent()) {
-			memcpy(vdata + offset, tangent.data(), tangent.size() * sizeof(vec3));
+			memcpy(data + offset, tangent.data(), tangent.size() * sizeof(vec3));
 			offset += tangent.size() * sizeof(vec3);
 		}
 		if(hasUV()) {
-			memcpy(vdata + offset, uv.data(), uv.size() * sizeof(vec2));
+			memcpy(data + offset, uv.data(), uv.size() * sizeof(vec2));
 			offset += uv.size() * sizeof(vec2);
 		}
 		if(hasBones()) {
-			memcpy(vdata + offset, bone0.data(), bone0.size() * sizeof(int32_t));
+			memcpy(data + offset, bone0.data(), bone0.size() * sizeof(int32_t));
 			offset += bone0.size() * sizeof(int32_t);
 			
-			memcpy(vdata + offset, bone1.data(), bone1.size() * sizeof(int32_t));
+			memcpy(data + offset, bone1.data(), bone1.size() * sizeof(int32_t));
 			offset += bone1.size() * sizeof(int32_t);
 			
-			memcpy(vdata + offset, weight0.data(), weight0.size() * sizeof(float));
+			memcpy(data + offset, weight0.data(), weight0.size() * sizeof(float));
 			offset += weight0.size() * sizeof(float);
 			
-			memcpy(vdata + offset, weight1.data(), weight1.size() * sizeof(int32_t));
-			offset += weight1.size() * sizeof(int32_t);
+			memcpy(data + offset, weight1.data(), weight1.size() * sizeof(int32_t));
+			offset += weight1.size() * sizeof(float);
 		}
 	}
-	void ctmesh::constructInterleaved(void* vdata) const {
+	void mesh::constructInterleaved(void* vdata) const {
 		uint8_t* data = (uint8_t*)vdata;
 		uint64_t stride = vertSizeWithoutPadding();
 		uint64_t voffset = 0;
 		for(int i = 0; i < pos.size(); i++)
 			*(vec3*)(data + i * stride) = pos[i];
 		voffset += sizeof(vec3);
-
-		if(hasColor()) {
-			for(int i = 0; i < pos.size(); i++)
-				*(vec3*)(data + i * stride + voffset) = color[i];
-			voffset += sizeof(vec3);
-		}
-
+		
 		if(hasNorm()) {
 			for(int i = 0; i < pos.size(); i++)
 				*(vec3*)(data + i * stride + voffset) = norm[i];
@@ -438,7 +431,41 @@ namespace citrus::graphics {
 			voffset += sizeof(float);
 		}
 	}
-	meshDescription ctmesh::getAttribDescriptions() const {
+	vector<uint64_t> mesh::offsets() const {
+		vector<uint64_t> res;
+		
+		uint64_t offset = 0;
+		res.push_back(offset);
+		
+		offset += pos.size() * sizeof(vec3);
+		if(hasNorm()) {
+			res.push_back(offset);
+			offset += norm.size() * sizeof(vec3);
+		}
+		if(hasTangent()) {
+			res.push_back(offset);
+			offset += tangent.size() * sizeof(vec3);
+		}
+		if(hasUV()) {
+			res.push_back(offset);
+			offset += uv.size() * sizeof(vec2);
+		}
+		if(hasBones()) {
+			res.push_back(offset);
+			offset += bone0.size() * sizeof(int32_t);
+			
+			res.push_back(offset);
+			offset += bone1.size() * sizeof(int32_t);
+			
+			res.push_back(offset);
+			offset += weight0.size() * sizeof(float);
+			
+			res.push_back(offset);
+			offset += weight1.size() * sizeof(float);
+		}
+	}
+	
+	meshDescription mesh::getDescription() const {
 		meshDescription res;
 		vector<VkVertexInputAttributeDescription>& attribs = res.attribs;
 		vector<VkVertexInputBindingDescription>& bindings = res.bindings;
@@ -456,21 +483,21 @@ namespace citrus::graphics {
 			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 			bindings.push_back(binding);
 		}
-		if(hasColor()) {
+		if(hasNorm()) {
 			VkVertexInputAttributeDescription attrib = { };
 			attrib.binding = 1;
 			attrib.location = 1;
 			attrib.format = VK_FORMAT_R32G32B32_SFLOAT;
-			attrib.offset = 1;
+			attrib.offset = 0;
 			attribs.push_back(attrib);
 			
 			VkVertexInputBindingDescription binding = { };
-			binding.binding = 0;
+			binding.binding = 1;
 			binding.stride = sizeof(vec3);
 			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 			bindings.push_back(binding);
 		}
-		if(hasNorm()) {
+		if(hasTangent()) {
 			VkVertexInputAttributeDescription attrib = { };
 			attrib.binding = 2;
 			attrib.location = 2;
@@ -484,11 +511,11 @@ namespace citrus::graphics {
 			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 			bindings.push_back(binding);
 		}
-		if(hasTangent()) {
+		if(hasUV()) {
 			VkVertexInputAttributeDescription attrib = { };
 			attrib.binding = 3;
 			attrib.location = 3;
-			attrib.format = VK_FORMAT_R32G32B32_SFLOAT;
+			attrib.format = VK_FORMAT_R32G32_SFLOAT;
 			attrib.offset = 0;
 			attribs.push_back(attrib);
 			
@@ -498,31 +525,17 @@ namespace citrus::graphics {
 			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 			bindings.push_back(binding);
 		}
-		if(hasUV()) {
-			VkVertexInputAttributeDescription attrib = { };
-			attrib.binding = 4;
-			attrib.location = 4;
-			attrib.format = VK_FORMAT_R32G32_SFLOAT;
-			attrib.offset = 0;
-			attribs.push_back(attrib);
-			
-			VkVertexInputBindingDescription binding = { };
-			binding.binding = 4;
-			binding.stride = sizeof(vec3);
-			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			bindings.push_back(binding);
-		}
 		if(hasBones()) {
 			for(int i = 0; i < 4; i++) {
 				VkVertexInputAttributeDescription attrib = { };
-				attrib.binding = 5 + i;
-				attrib.location = 5 + i;
+				attrib.binding = 4 + i;
+				attrib.location = 4 + i;
 				attrib.format = (i < 2) ? VK_FORMAT_R32_SINT : VK_FORMAT_R32_SFLOAT;
 				attrib.offset = 0;
 				attribs.push_back(attrib);
 				
 				VkVertexInputBindingDescription binding = { };
-				binding.binding = 5 + i;
+				binding.binding = 4 + i;
 				binding.stride = (i < 2) ? sizeof(int32_t) : sizeof(float);
 				binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 				bindings.push_back(binding);
@@ -530,9 +543,8 @@ namespace citrus::graphics {
 		}
 		return res;
 	}
-	uint64_t ctMesh::getAttribDescriptionCode() const {
+	uint64_t mesh::getDescriptionCode() const {
 		uint64_t res = 0;
-		if(hasColor())		res |= (1 << 0);
 		if(hasNorm())		res |= (1 << 1);
 		if(hasTangent())	res |= (1 << 2);
 		if(hasUV()) 		res |= (1 << 3);
@@ -540,7 +552,7 @@ namespace citrus::graphics {
 		return res;
 	}
 
-	void ctesh::calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4>& data, double time, behavior mode) const {
+	void mesh::calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4>& data, double time, behavior mode) const {
 		const animationBinding& ani = animations[animationIndex];
 
 		//localTransforms[i] corresponds to bones.bones[i]
@@ -553,7 +565,7 @@ namespace citrus::graphics {
 		}
 
 		//for each node that has an animation channel generate the correct transform
-		if(mode == repeat) time = util::wrap(time, ani.ani->begin, ani.ani->end);
+		if(mode == behavior::repeat) time = util::wrap(time, ani.ani->begin, ani.ani->end);
 		for(int i = 0; i < ani.ani->channels.size(); i++) {
 			const animation::channel& ch = ani.ani->channels[i];
 			glm::vec3 translation = ch.getPosition(time);
@@ -573,12 +585,12 @@ namespace citrus::graphics {
 			data[i] = globalTransforms[bones.bones[i].node] * bones.bones[i].offset;
 		}
 	}
-	void ctesh::loadMesh(const aiScene* scene, aiMesh* mesh) {
+	void mesh::loadMesh(const aiScene* scene, aiMesh* mesh) {
 		for(size_t j = 0; j < mesh->mNumVertices; j++) {
 			pos.push_back(glm::vec3(
 				mesh->mVertices[j].x,
-				(tr == xyz) ? mesh->mVertices[j].y : mesh->mVertices[j].z,
-				(tr == xyz) ? mesh->mVertices[j].z : mesh->mVertices[j].y
+				mesh->mVertices[j].y,
+				mesh->mVertices[j].z
 			));
 		}
 
@@ -599,23 +611,23 @@ namespace citrus::graphics {
 			}
 		}
 	}
-	void ctesh::loadNodes(const aiScene* scene, aiMesh* mesh) {
+	void mesh::loadNodes(const aiScene* scene, aiMesh* mesh) {
 		nodes.loadAllNodes(scene);
 	}
-	void ctMesh::loadBones(const aiScene* scene, aiMesh* mesh) {
+	void mesh::loadBones(const aiScene* scene, aiMesh* mesh) {
 		bones.loadAllBones(scene, nodes);
 
 		for(int j = 0; j < pos.size(); j++) {
 			vertexBoneInfo info = bones.getInfo(j);
 			info.normalize();
-			bone0.push_back(in3o.primary);
+			bone0.push_back(info.primary);
 			bone1.push_back(info.secondary);
 			weight0.push_back(info.primaryWeight);
 			weight1.push_back(info.secondaryWeight);
 		}
 	}
 	
-	bool ctMesh::bindAnimation(const animation& ani) {
+	bool mesh::bindAnimation(const animation& ani) {
 			animationBinding binding;
 			binding.ani = &ani;
 			binding.nodes.resize(ani.channels.size());
@@ -628,31 +640,7 @@ namespace citrus::graphics {
 			return true;
 		}
 	
-	static void ctMesh::convertAnimationFromCollada(std::string location, std::string outLocation) {
-			Assimp::Importer imp;
-			//imp.SetExtraVerbose(true);
-
-			const aiScene* scene = imp.ReadFile(location,
-				aiProcess_CalcTangentSpace |
-				aiProcess_Triangulate |
-				aiProcess_JoinIdenticalVertices |
-				aiProcess_SortByPType);
-			if(!scene) {
-				util::sout(imp.GetErrorString());
-				throw std::runtime_error(("Failed to load model " + location).c_str());
-			}
-
-			animationContainer rawAnimation;
-			rawAnimation.loadAllAnimations(scene);
-
-			if(rawAnimation.animations.size() != 1) {
-				throw std::runtime_error("Must be only one animation in collada file");
-			}
-			std::ofstream output(outLocation);
-			rawAnimation.animations[0].write(output);
-		}
-	
-	ctmesh ctmesh::loadCOLLADA(std::string path) {
+	void mesh::convertAnimationFromCollada(std::string location, std::string outLocation) {
 		Assimp::Importer imp;
 		//imp.SetExtraVerbose(true);
 
@@ -666,15 +654,40 @@ namespace citrus::graphics {
 			throw std::runtime_error(("Failed to load model " + location).c_str());
 		}
 
+		animationContainer rawAnimation;
+		rawAnimation.loadAllAnimations(scene);
+
+		if(rawAnimation.animations.size() != 1) {
+			throw std::runtime_error("Must be only one animation in collada file");
+		}
+		std::ofstream output(outLocation);
+		rawAnimation.animations[0].write(output);
+	}
+	
+	mesh::mesh(std::string path) {
+		Assimp::Importer imp;
+		//imp.SetExtraVerbose(true);
+
+		const aiScene* scene = imp.ReadFile(path,
+			aiProcess_CalcTangentSpace |
+			aiProcess_Triangulate |
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_SortByPType |
+			aiProcess_CalcTangentSpace);
+		if(!scene) {
+			util::sout(imp.GetErrorString());
+			throw std::runtime_error(("Failed to load model " + path).c_str());
+		}
+
 		size_t numMeshes = scene->mNumMeshes;
 		if(numMeshes != 1) throw std::runtime_error("Error, multiple meshes in collada file");
 
 		aiMesh* mesh = scene->mMeshes[0];
 		std::string meshname(mesh->mName.C_Str());
 
-		loadMesh(scene, mesh, tr);
+		loadMesh(scene, mesh);
 
-		loadNodes(scene, mesh, tr);
+		loadNodes(scene, mesh);
 
 		loadBones(scene, mesh);
 

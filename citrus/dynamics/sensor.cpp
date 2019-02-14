@@ -1,10 +1,9 @@
-#include <dynamics/physics/sensor.h>
-#include <dynamics/physics/collisionShape.h>
+#include <citrus/dynamics/sensor.h>
+#include <citrus/dynamics/collisionShape.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
-#include <dynamics/transform.h>
-#include <dynamics/physics/rigidBody.h>
-#include <util/util.h>
-#include <dynamics/physics/world.h>
+#include <citrus/dynamics/rigidBody.h>
+#include <citrus/util.h>
+#include <citrus/dynamics/world.h>
 
 namespace citrus::dynamics {
 	btGhostObject* sensor::ptr() const {

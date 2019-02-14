@@ -5,15 +5,16 @@
 
 #include <string>
 #include <memory>
+#include <citrus/util.h>
 
 namespace citrus {
 	namespace engine {
 		class tilemapFont {
 			public:
 
-			void streamText(std::string text, glm::ivec2 loc, glm::vec3 drawColor, float depth, glm::ivec2 screen);
+			void streamText(string text, ivec2 loc, vec3 drawColor, float depth, ivec2 screen);
 
-			tilemapFont(std::string imagePath, int columns, int row);
+			tilemapFont(string imagePath, int columns, int row);
 		};
 	}
 }

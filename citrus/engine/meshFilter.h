@@ -2,6 +2,7 @@
 
 #include <citrus/engine/element.h>
 #include <citrus/engine/engine.h>
+#include <citrus/graphics/mesh.h>
 
 namespace citrus::engine {
 	class meshFilter : public element {
@@ -10,7 +11,7 @@ namespace citrus::engine {
 		int _tex = -1;
 		int _sh = -1;
 		int _ani = -1;
-		geom::behavior _mode;
+		graphics::behavior _mode;
 		double _aniStart = 0.0;
 
 	public:
@@ -22,9 +23,9 @@ namespace citrus::engine {
 		int tex() const;
 		int sh() const;
 		int ani() const;
-		geom::behavior mode() const;
+		graphics::behavior mode() const;
 		double aniTime() const;
-		void startAnimation(int ani, geom::behavior mode = geom::nearest);
+		void startAnimation(int ani, graphics::behavior mode = graphics::behavior::nearest);
 
 		std::unique_ptr<editor::gui> renderGUI();
 

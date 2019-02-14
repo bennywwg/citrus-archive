@@ -14,12 +14,12 @@ EXTLIBS = \
 -L$(BULLET_BUILD_PATH)/src/LinearMath
 DEFINES = -DBT_USE_DOUBLE_PRECISION
 FLAGS = -g
-LINKS = -lassimp -lglfw -lpthread -lX11 -ldl -std=c++17 -lvulkan -lpng -lBulletCollision -lBulletDynamics -lLinearMath -lnfd -lgtk-3 -lglib-2.0 -lgobject-2.0
-CCPARAM = $(MYINCLUDES) $(FLAGS) $(EXTINCLUDES) $(EXTLIBS) $(LINKS)
+LINKS = -lassimp -lglfw -lpthread -lX11 -ldl -std=c++17 -lvulkan -lpng -lBulletDynamics -lBulletCollision -lLinearMath -lnfd -lgtk-3 -lglib-2.0 -lgobject-2.0
+CCPARAM = $(DEFINES) $(MYINCLUDES) $(FLAGS) $(EXTINCLUDES) $(EXTLIBS) $(LINKS)
 
 SRC_DIR = citrus
 BUILD_DIR = build
-OFILES_DIR = $(BUILD_DIR)
+OFILES_DIR = $(BUILD_DIR)/$(SRC_DIR)
 EXECUTABLE = $(BUILD_DIR)/ctvk.exe
 
 $(shell rsync -a --include '*/' --exclude '*' "$(SRC_DIR)" "$(BUILD_DIR)")

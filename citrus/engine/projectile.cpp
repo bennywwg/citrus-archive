@@ -1,7 +1,7 @@
-#include <engine/elements/projectile.h>
-#include <engine/elements/sensorEle.h>
-#include <engine/entityRef.inl>
-#include <engine/elementRef.inl>
+#include <citrus/engine/projectile.h>
+#include <citrus/engine/sensorEle.h>
+#include <citrus/engine/entityRef.inl>
+#include <citrus/engine/elementRef.inl>
 
 namespace citrus::engine {
 	void projectile::preRender() {

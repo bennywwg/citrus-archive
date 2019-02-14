@@ -1,6 +1,6 @@
-#include <graphics/camera/camera.h>
+#include <citrus/graphics/camera.h>
 
-#include <util/glmUtil.h>
+#include <citrus/util.h>
 
 namespace citrus {
 	namespace engine {

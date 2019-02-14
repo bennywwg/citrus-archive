@@ -1,27 +1,24 @@
-#include <util/util.h>
+#include <citrus/util.h>
 
-#include <graphics/vulkan/instance.h>
-#include <graphics/vulkan/vkBuffer.h>
+#include <citrus/graphics/instance.h>
 
 #include <iomanip>
 
-#include <engine/engine.h>
-#include <engine/elements/freeCam.h>
-#include <engine/elements/renderManager.h>
-#include <engine/elements/worldManager.h>
-#include <engine/elements/meshManager.h>
-#include <engine/elements/shaderManager.h>
-#include <engine/elements/meshFilter.h>
-#include <engine/elements/rigidBodyComponent.h>
-#include <engine/elements/playerController.h>
-#include <engine/elements/worldManager.h>
-#include <engine/elements/rigidBodyComponent.h>
-#include <engine/elements/projectile.h>
-#include <engine/elements/sensorEle.h>
+#include <citrus/engine/engine.h>
+#include <citrus/engine/freeCam.h>
+#include <citrus/engine/renderManager.h>
+#include <citrus/engine/worldManager.h>
+#include <citrus/engine/meshFilter.h>
+#include <citrus/engine/rigidBodyComponent.h>
+#include <citrus/engine/playerController.h>
+#include <citrus/engine/worldManager.h>
+#include <citrus/engine/rigidBodyComponent.h>
+#include <citrus/engine/projectile.h>
+#include <citrus/engine/sensorEle.h>
 
-#include <engine/entityRef.inl>
-#include <engine/elementRef.inl>
-#include <engine/manager.inl>
+#include <citrus/engine/entityRef.inl>
+#include <citrus/engine/elementRef.inl>
+#include <citrus/engine/manager.inl>
 using citrus::engine::entityRef;
 
 #include <sstream>
@@ -45,14 +42,6 @@ int main(int argc, char **argv) {
 	auto win = glfwCreateWindow(640, 480, "test", nullptr, nullptr);
 
 	graphics::instance * inst = new graphics::instance("ctvk", win);
-	graphics::vkBuffer* bu = new graphics::vkBuffer(*inst, 1024 * 1024);
-
-	graphics::fenceProc proc(*inst);
-
-	bu->bufferData(0, "string data", 10, &proc);
-	
-	proc.block();
-
 	
 	for (int i = 0; i < 1000; i++) {
 		inst->drawFrame();
@@ -61,13 +50,11 @@ int main(int argc, char **argv) {
 
 	std::cin.get();
 
-	delete bu;
 	delete inst;
 
 	return 0;
 	
-	{
-		util::scopedProfiler* prof = new util::scopedProfiler("Initializing Engine");
+	/*{
 		engine::engine e(1.0 / 100.0);
 		
 		e.man->registerType<engine::renderManager>("Render Manager", true);
@@ -154,7 +141,7 @@ int main(int argc, char **argv) {
 		auto playerModel = e.man->create("Player Model", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
 				filt.setState(4, 3, 1);
-				filt.startAnimation(0, geom::repeat);
+				filt.startAnimation(0, graphics::behavior::repeat);
 			})
 		}, util::nextID());
 		playerModel.setParent(ent2);
@@ -166,7 +153,7 @@ int main(int argc, char **argv) {
 		e.man->create("Walker Test", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
 				filt.setState(4, 1, 1);
-				filt.startAnimation(0, geom::repeat);
+				filt.startAnimation(0, graphics::behavior::repeat);
 			})
 		}, util::nextID());
 
@@ -186,45 +173,10 @@ int main(int argc, char **argv) {
 				}, util::nextID());
 			}
 		}
-		
-
-
-		/*auto world = e.man->create("World", {engine::eleInit<engine::worldManager>({})}, util::nextID());
-		e.man->create("Object", {
-			engine::eleInit<engine::rigidBodyComponent>(nlohmann::json({
-				{"world", e.man->referenceElement<engine::worldManager>(world)}
-			}))
-		}, util::nextID());*/
-
-		/*geom::animesh::convertAnimationFromCollada(
-			resDir + "meshes\\human_run.dae",
-			resDir + "animations\\run.cta");
-		geom::animesh::convertAnimationFromCollada(
-			resDir + "meshes\\human_idle.dae",
-			resDir + "animations\\idle.cta");*/
 
 		e.start();
 
 		util::spin_until([&e]() { return e.getRenderState() == engine::engine::render_doingRender; });
-			     
-		delete prof; prof = nullptr;
-
-		/*graphics::image4b img("C:\\Users\\benny\\OneDrive\\Desktop\\citrus\\index.png");
-
-		std::ofstream fo("C:\\Users\\benny\\OneDrive\\Desktop\\citrus\\output.txt");
-
-		for(int x = 0; x < img.width(); x++) {
-			for(int y = img.height() - 1; y >= 0; y--) {
-				auto px = img.at(x, y);
-				int val = px.b << 24 | px.g << 16 | px.r << 8 | px.a;
-				fo << val << ",";
-			}
-			fo << "\n";
-		}
-
-		fo.close();
-*/
-		//e.man->loadPrefabUnsafe(savedJS);
 
 		bool exited = true;
 
@@ -264,12 +216,9 @@ int main(int argc, char **argv) {
 	
 	terminateGLFW();
 
-	
-
 	util::sout("Done\n");
 
-	return 0;
-
+	return 0; */
 
 
 

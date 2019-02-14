@@ -1,25 +1,24 @@
-#include <engine/elements/meshFilter.h>
+#include <citrus/engine/meshFilter.h>
 
-#include <engine/elements/renderManager.h>
-#include <engine/elements/meshManager.h>
+#include <citrus/engine/renderManager.h>
 
-#include <engine/manager.inl>
+#include <citrus/engine/manager.inl>
 
-#include <engine/elementRef.inl>
+#include <citrus/engine/elementRef.inl>
 
 namespace citrus::engine {
 	void meshFilter::setState(int m, int t, int s, int a) {
 		auto g = eng()->getAllOfType<renderManager>()[0];
 		if(s != -1) {
-			g->addDrawable(eleRef<meshFilter>(this), m, t, s);
+			g->addItem(eleRef<meshFilter>(this), m, t, s);
 		} else {
-			g->removeDrawable(eleRef<meshFilter>(this), _model, _tex, _sh);
+			g->removeItem(eleRef<meshFilter>(this), _model, _tex, _sh);
 		}
 		_model = m;
 		_tex = t;
 		_sh = s;
 		_ani = a;
-		if(a != -1) _mode = geom::repeat;
+		if(a != -1) _mode = graphics::behavior::repeat;
 	}
 	int meshFilter::model() const {
 		return _model;
@@ -33,14 +32,14 @@ namespace citrus::engine {
 	int meshFilter::ani() const {
 		return _ani;
 	}
-	geom::behavior meshFilter::mode() const {
+	graphics::behavior meshFilter::mode() const {
 		return _mode;
 	}
 	double meshFilter::aniTime() const {
 		return eng()->time() - _aniStart;
 	}
 
-	void meshFilter::startAnimation(int ani, geom::behavior mode) {
+	void meshFilter::startAnimation(int ani, graphics::behavior mode) {
 		_aniStart = eng()->time();
 		_ani = ani;
 		_mode = mode;
@@ -51,7 +50,8 @@ namespace citrus::engine {
 
 		{
 			editor::button* b = new editor::button();
-			b->info = "Mesh: " + ((_model == -1) ? string("(None)") : eng()->getAllOfType<meshManager>()[0]->getMesh(_model).name);
+			b->info = "Broken";
+			//b->info = "Mesh: " + ((_model == -1) ? string("(None)") : eng()->getAllOfType<meshManager>()[0]->getMesh(_model).name);
 			c->items.emplace_back(b);
 		}
 
@@ -65,7 +65,7 @@ namespace citrus::engine {
 	meshFilter::~meshFilter() {
 		if(_sh != -1) {
 			auto g = eng()->getAllOfType<renderManager>()[0];
-			g->removeDrawable(eleRef<meshFilter>(this), _model, _tex, _sh);
+			g->removeItem(eleRef<meshFilter>(this), _model, _tex, _sh);
 		}
 	}
 }

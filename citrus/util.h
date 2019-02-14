@@ -67,7 +67,7 @@ namespace citrus {
 		extern mutex _soutMut;
 		void sout(string text);
 
-		bool loadPngImage(const char *name, int &outWidth, int &outHeight, bool &outHasAlpha, std::vector<unsigned char>& res)
+		bool loadPngImage(const char *name, int &outWidth, int &outHeight, bool &outHasAlpha, std::vector<unsigned char>& res);
 		
 		extern std::mutex _idMut;
 		extern int _currentID;

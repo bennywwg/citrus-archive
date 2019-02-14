@@ -1,8 +1,9 @@
-#include <highlevel/tilemapFont.h>
+#include <citrus/graphics/tilemapFont.h>
+#include <citrus/util.h>
 
 namespace citrus::engine {
 	void tilemapFont::streamText(std::string text, glm::ivec2 loc, glm::vec3 drawColor, float depth, glm::ivec2 screen) {
-		std:vector<glm::ivec2> positions;
+		/*std:vector<glm::ivec2> positions;
 		std::vector<glm::vec2> tiles;
 		positions.reserve(text.size());
 		tiles.reserve(text.size());
@@ -11,7 +12,7 @@ namespace citrus::engine {
 		for(uint32_t i = 0; i < text.size(); i++) {
 			if(text[i] == '\n') {
 				row++;
-				column = 0;
+				column = 0;	
 			} else {
 				positions.push_back(loc + glm::ivec2(column * 8, row * 16));
 				tiles.push_back(glm::vec2((((unsigned char)text[i]) % 16 + 0.5f) / 16.0f, -(((unsigned char)text[i]) / 16 + 0.5f) / 16.0f));
@@ -36,10 +37,10 @@ namespace citrus::engine {
 
 		vao.drawAll(GL_POINTS);
 
-		sh->unuse();
+		sh->unuse();*/
 	}
 	tilemapFont::tilemapFont(std::string imagePath, int columns, int row) {
-		graphics::image3b texImage(imagePath);
+		/*graphics::image3b texImage(imagePath);
 
 		buf = std::make_unique<graphics::buffer>(1024 * 1024);
 
@@ -50,7 +51,7 @@ namespace citrus::engine {
 			util::loadEntireFile(resDir + "shaders/font.vert"),
 			util::loadEntireFile(resDir + "shaders/font.geom"),
 			util::loadEntireFile(resDir + "shaders/font.frag")
-		);
+		);*/
 
 		/*sh = std::make_unique<graphics::shader>(
 			"#version 450\n"

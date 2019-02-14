@@ -9,20 +9,8 @@ namespace citrus::graphics {
 	using std::string;
 	using std::vector;
 	class vkShader;
-	class vkBuffer;
 
 	class instance;
-	
-	struct vkBuf {
-		VkBuffer buf = VK_NULL_HANDLE;
-		VkDeviceMemory mem = VK_NULL_HANDLE;
-		uint64_t start = -1;
-	}
-	struct vkImg {
-		VkImage img = VK_NULL_HANDLE;
-		VkDeviceMemory mem = VK_NULL_HANDLE;
-		uint64_t start = -1;
-	}
 
 	class fenceProc {
 		instance& _inst;
@@ -32,7 +20,7 @@ namespace citrus::graphics {
 	public:
 		VkFence fence = VK_NULL_HANDLE;
 		VkCommandBuffer cbuff = VK_NULL_HANDLE;
-		vkBuf hvbuf;
+		uint64_t stagingBuf;
 
 		//checks if fence was signalled
 		bool done();
@@ -123,39 +111,39 @@ namespace citrus::graphics {
 		
 		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		
+		void initMemory();
+	public:
 		struct allocator {
 			struct allocBlock {
 				uint64_t addr;
 				uint64_t size;
 			};
+			
+			instance& inst;
+			VkDeviceMemory mem;
+			VkBuffer buf;
 			uint64_t size;
+			uint64_t alignment;
 			vector<allocBlock> blocks;
+			
 			uint64_t alloc(uint64_t size);
 			void free(uint64_t addr);
-		}
+			void initBuffer(uint64_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+			void initImage(uint64_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+			
+			allocator(instance& inst);
+		};
 		
-		VkDeviceMemory _dlMemory;
-		VkDeviceMemory _hvMemory;
-		VkDeviceMemory _imMemory;
+		allocator vertexMem;
+		allocator indexMem;
+		allocator uniformMem;
+		allocator textureMem;
+		allocator stagingMem;
 		
-		allocator _dlMem;
-		allocator _hvMem;
-		allocator _imMem;
-		
-	public:
-		vkBuf dlCreateBuffer(uint64_t size, VkBufferUsageFlags usage);
-		void dlFreeBuffer(vkBuf buff);
-		vkBuf hvCreateBuffer(uint64_t size, VkBufferUsageFlags usage);
-		void hvFreeBuffer(vkBuf buff);
-		vkImg createImage(uint64_t size);
-		void freeImage(vkImg buff);
-		
-		void fillBuffer(vkBuf dstBuffer, uint64_t size, uint64_t start, const void* data, fenceProc* proc = nullptr);
-		void fillBuffer(vkBuf dstBuffer, uint64_t size, uint64_t start, std::function<void(const void*)> fillFunc, fenceProc* proc = nullptr);
-		void copyBuffer(vkBuf srcBuffer, vkBuf dstBuffer, VkDeviceSize size, uint64_t srcStart, uint64_t dstStart, fenceProc* proc = nullptr);
-
-		void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& img, VkDeviceMemory& mem);
-		void copyBufferToImage(VkBuffer stagingBuf, VkImage image, uint32_t width, uint32_t height);
+		void fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, void* data, fenceProc* proc = nullptr);
+		void fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, std::function<void(void*)> fillFunc, fenceProc* proc = nullptr);
+		void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, uint64_t size, uint64_t srcStart, uint64_t dstStart, fenceProc* proc = nullptr);
+		void copyBufferToImage(VkBuffer stagingBuf, VkImage image, uint32_t width, uint32_t height, fenceProc* proc = nullptr);
 		void pipelineBarrierLayoutChange(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, fenceProc* proc = nullptr);
 
 		//takes ownership of commandBuffer, blocks if proc == nullptr

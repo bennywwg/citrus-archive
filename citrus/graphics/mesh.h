@@ -2,13 +2,16 @@
 
 #include <memory>
 #include <vector>
-#include <util/glmUtil.h>
+#include <citrus/util.h>
 
-using std::vector;
+#include <citrus/graphics/instance.h>
+
+class aiNode;
+class aiScene;
+class aiMesh;
 
 namespace citrus::graphics {
 	struct node {
-		static glm::mat4 convertMat(const aiMatrix4x4& m);
 		std::string name;
 		glm::mat4 transform;
 		int parent;
@@ -34,7 +37,7 @@ namespace citrus::graphics {
 	struct vertexBoneInfo {
 		int primary = -1, secondary = -1;
 		float primaryWeight = 0.0f, secondaryWeight = 0.0f;
-		void normalize()
+		void normalize();
 	};
 
 	struct boneContainer {
@@ -47,13 +50,20 @@ namespace citrus::graphics {
 		void loadAllBones(const aiScene* scene, const nodeContainer& nodes);
 	};
 
+	enum class behavior {
+		base = 0,
+		nearest = 1,
+		repeat = 3,
+		linear = 2
+	};
+	
 	struct animation {
 		template<typename T>
 		struct key {
 			double time;
 			T val;
 			static T mix(const double& time, const key<T>& l, const key<T>& r);
-			key(const double& time, const T& val) : time(time), val(val) { }
+			key(const double& time, const T& val);
 		};
 
 		struct channel {
@@ -72,7 +82,7 @@ namespace citrus::graphics {
 
 			void write(std::ostream& s) const;
 			void read(std::istream& s);
-		}
+		};
 
 		string name;
 		double begin, end;
@@ -104,10 +114,10 @@ namespace citrus::graphics {
 		vector<VkVertexInputBindingDescription> bindings;
 	};
 
-	class ctmesh {
+	class mesh {
 	public:
+		vector<uint16_t> index;
 		vector<vec3> pos;
-		vector<vec3> color;
 		vector<vec3> norm;
 		vector<vec3> tangent;
 		vector<vec2> uv;
@@ -116,30 +126,28 @@ namespace citrus::graphics {
 		vector<float> weight0;
 		vector<float> weight1;
 		
+		nodeContainer nodes;
+		boneContainer bones;
 		std::vector<animationBinding> animations;
 
 		bool valid() const;
 
-		bool hasColor() const;
 		bool hasNorm() const;
 		bool hasTangent() const;
 		bool hasUV() const;
 		bool hasBones() const;
 
-		bool hasNodes() const;
-		bool hasBones() const;
-		bool hasAnimations() const;
-
 		uint64_t vertSizeWithoutPadding() const;
 		uint64_t requiredMemory() const;
 		void constructContinuous(void* data) const;
 		void constructInterleaved(void* data) const;
+		vector<uint64_t> offsets() const;
 		
 		//used for constructing constructing shaders and such
-		meshDescription getAttribDescriptions() const;
+		meshDescription getDescription() const;
 		
 		//used to check if meshes and shaders share the same attributes
-		uint64_t getAttribDescriptionCode() const;
+		uint64_t getDescriptionCode() const;
 		
 		void calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4>& data, double time, behavior mode) const;
 		bool bindAnimation(const animation& ani);
@@ -150,6 +158,6 @@ namespace citrus::graphics {
 
 		static void convertAnimationFromCollada(std::string location, std::string outLocation);
 
-		ctmesh(std::string path);
+		mesh(std::string path);
 	};
 }

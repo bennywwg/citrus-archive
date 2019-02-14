@@ -3,8 +3,8 @@
 //#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 class btGhostObject;
 
-#include <dynamics/physics/collisionObject.h>
-#include <util/glmUtil.h>
+#include <citrus/dynamics/collisionObject.h>
+#include <citrus/util.h>
 #include <vector>
 
 namespace citrus {

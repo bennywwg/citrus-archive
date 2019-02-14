@@ -1,9 +1,9 @@
 #pragma once
 
-#include <engine/element.h>
-#include <dynamics/physics/rigidBody.h>
-#include <dynamics/physics/collisionShape.h>
-#include <dynamics/transform.h>
+#include <citrus/engine/element.h>
+#include <citrus/dynamics/rigidBody.h>
+#include <citrus/dynamics/collisionShape.h>
+#include <citrus/dynamics/transform.h>
 
 namespace citrus::engine {
 	class rigidBodyComponent : public element {

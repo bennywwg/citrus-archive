@@ -1,9 +1,9 @@
-#include <engine/elements/freeCam.h>
-#include <engine/engine.h>
-#include <engine/elements/renderManager.h>
-#include <graphics/window/window.h>
+#include <citrus/engine/freeCam.h>
+#include <citrus/engine/engine.h>
+#include <citrus/engine/renderManager.h>
+#include <citrus/graphics/window.h>
 
-#include <util/glmUtil.h>
+#include <citrus/util.h>
 
 namespace citrus::engine {
 	using namespace graphics;

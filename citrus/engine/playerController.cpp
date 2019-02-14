@@ -1,12 +1,14 @@
-#include <engine/elements/playerController.h>
+#include <citrus/engine/playerController.h>
 
-#include <engine/elements/projectile.h>
-#include <engine/elements/meshFilter.h>
-#include <engine/elements/sensorEle.h>
+#include <citrus/engine/projectile.h>
+#include <citrus/engine/meshFilter.h>
+#include <citrus/engine/sensorEle.h>
 
-#include <engine/manager.inl>
-#include <engine/elementRef.inl>
-#include <engine/entityRef.inl>
+#include <citrus/engine/manager.inl>
+#include <citrus/engine/elementRef.inl>
+#include <citrus/engine/entityRef.inl>
+
+#include <citrus/graphics/mesh.h>
 
 namespace citrus::engine {
 	void playerController::cameraStuff() {
@@ -45,12 +47,12 @@ namespace citrus::engine {
 
 			if(!walking) {
 				walking = true;
-				m->startAnimation(0, geom::repeat);
+				m->startAnimation(0, graphics::behavior::repeat);
 			}
 		} else {
 			if(walking) {
 				walking = false;
-				m->startAnimation(1, geom::repeat);
+				m->startAnimation(1, graphics::behavior::repeat);
 			}
 		}
 	}

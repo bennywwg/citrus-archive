@@ -1,35 +1,33 @@
-#include <engine/elements/worldManager.h>
-#include <engine/elements/rigidBodyComponent.h>
-#include <engine/elements/sensorEle.h>
-#include <engine/engine.h>
-#include <engine/manager.inl>
-#include <engine/elementRef.inl>
+#include <citrus/engine/worldManager.h>
+#include <citrus/engine/rigidBodyComponent.h>
+#include <citrus/engine/sensorEle.h>
+#include <citrus/engine/engine.h>
+#include <citrus/engine/manager.inl>
+#include <citrus/engine/elementRef.inl>
 
-#include <graphics/framebuffer/standaloneFramebuffer.h>
-#include <engine/elements/renderManager.h>
-#include <engine/elements/meshManager.h>
+#include <citrus/engine/renderManager.h>
 #include <memory>
 
 namespace citrus::engine {
-	void worldManager::enableDebugDraw() {
+	/*void worldManager::enableDebugDraw() {
 		fbo = eng()->getAllOfType<renderManager>()[0]->meshFBO.get();
 		debugShader.reset(new graphics::shader(
 			util::loadEntireFile("/home/benny/Desktop/folder/citrus/res/shaders/wireframe.vert"),
 			util::loadEntireFile("/home/benny/Desktop/folder/citrus/res/shaders/wireframe.frag"))
 		);
-	}
+	}*/
 
-	void worldManager::disableDebugDraw() {
+	/*void worldManager::disableDebugDraw() {
 		fbo = nullptr;
-	}
+	}*/
 
 	void worldManager::preRender() {
 		if(eng()->getKey(graphics::windowInput::equals)) {
-			if(fbo == nullptr) enableDebugDraw();
+			//if(fbo == nullptr) enableDebugDraw();
 		}
 
 		if(eng()->getKey(graphics::windowInput::minus)) {
-			disableDebugDraw();
+			//disableDebugDraw();
 		}
 
 
@@ -52,7 +50,7 @@ namespace citrus::engine {
 		}
 	}
 	void worldManager::render() {
-		if(fbo != nullptr) {
+		/*if(fbo != nullptr) {
 			auto man = eng()->getAllOfType<renderManager>()[0];
 			const auto& sphere = eng()->getAllOfType<meshManager>()[0]->getModel(1);
 			const auto& cube = eng()->getAllOfType<meshManager>()[0]->getModel(2);
@@ -96,6 +94,8 @@ namespace citrus::engine {
 			}
 
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		}
+		}*/
 	}
+	
+	worldManager::worldManager(entityRef e) : element(e, typeid(worldManager)), w(new dynamics::world()) { }
 }

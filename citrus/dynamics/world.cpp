@@ -1,8 +1,7 @@
-#include <dynamics/physics/world.h>
-#include <util/util.h>
-#include <dynamics/physics/collisionShape.h>
-#include <dynamics/physics/sensor.h>
-#include <iostream>
+#include <citrus/dynamics/world.h>
+#include <citrus/util.h>
+#include <citrus/dynamics/collisionShape.h>
+#include <citrus/dynamics/sensor.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 
 namespace citrus {
