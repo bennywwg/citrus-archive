@@ -5,11 +5,6 @@
 
 namespace citrus::graphics {
 	
-	struct vkFBO {
-		VkFramebuffer fbo;
-		VkCommandBuffer cbf;
-	};
-	
 	class vkShader {
 		friend class instance;
 
@@ -19,15 +14,12 @@ namespace citrus::graphics {
 		VkPipeline _pipeline;
 		
 		uint32_t _width, _height;
-
-		vector<VkFramebuffer> _framebuffers;
-		vector<VkCommandBuffer> _buffers;
 		
 	public:
 
-		void beginAll();
-		void drawAll(int verts);
-		void endAll();
+		void beginBufferAndRenderPass(vkFBO fbo);
+		void bindPipelineAndDraw(vkFBO fbo);
+		void endRenderPassAndBuffer(vkFBO fbo);
 		
 		vkFBO createFBO(VkImageView view);
 		void freeFBO(vkFBO fbo);

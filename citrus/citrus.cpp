@@ -19,6 +19,7 @@
 #include <citrus/engine/entityRef.inl>
 #include <citrus/engine/elementRef.inl>
 #include <citrus/engine/manager.inl>
+#include <citrus/graphics/vkShader.h>
 using citrus::engine::entityRef;
 
 #include <sstream>
@@ -34,21 +35,48 @@ void terminateGLFW() {
 }
 
 int main(int argc, char **argv) {
-	util::sout("Citrus 0.0.0 - PRIVATE DEVELOPMENT BUILD - DO NOT DISTRIBUTE\n");
+	util::sout("Citrus 0.0.0 - DO NOT DISTRIBUTE\n");
 
 	initializeGLFW();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	auto win = glfwCreateWindow(640, 480, "test", nullptr, nullptr);
 
-	graphics::instance * inst = new graphics::instance("ctvk", win);
-	
-	for (int i = 0; i < 1000; i++) {
-		inst->drawFrame();
-		glfwPollEvents();
+	graphics::meshDescription desc;
+	{
+		graphics::mesh m;
+		m.pos.push_back(vec3(0,0,0));
+		m.norm.push_back(vec3(0,0,0));
+		m.tangent.push_back(vec3(0,0,0));
+		m.uv.push_back(vec2(0,0));
+		m.bone0.push_back(0);
+		m.bone1.push_back(0);
+		m.weight0.push_back(0.0f);
+		m.weight1.push_back(0.0f);
+		desc = m.getDescription();
 	}
 
-	std::cin.get();
+	graphics::instance * inst = new graphics::instance("ctvk", win);
+
+	graphics::mesh me("res/meshes/human.dae");
+
+	graphics::model *mo = new graphics::model(*inst, me);
+
+	graphics::vkShader *sh = new graphics::vkShader(*inst, desc, 640, 480,
+		"res/shaders/standard.vert.spv",
+		"",
+		"res/shaders/standard.frag.spv");
+
+	for(int i = 0; i < 100; i++) {
+		inst->drawFrame();
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	}
+
+	//std::cin.get();
+
+	delete sh;
+	
+	delete mo;
 
 	delete inst;
 

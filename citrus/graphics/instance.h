@@ -12,6 +12,11 @@ namespace citrus::graphics {
 
 	class instance;
 
+	struct vkFBO {
+		VkFramebuffer fbo;
+		VkCommandBuffer cbf;
+	};
+
 	class fenceProc {
 		instance& _inst;
 		bool _done = false;
@@ -67,9 +72,7 @@ namespace citrus::graphics {
 		vector<VkImageView> _swapChainImageViews;
 		VkCommandPool _commandPool;
 		VkSemaphore _imgAvailableSemaphore, _renderFinishedSemaphore;
-		vector<VkDeviceMemory> _memories;
-		uint32_t _hostVisibleCoherent;
-		uint32_t _deviceLocal;
+		vector<vkFBO> _finalPassFbos;
 
 		vkShader* _finalPass;
 
@@ -119,6 +122,7 @@ namespace citrus::graphics {
 				uint64_t size;
 			};
 			
+			string name;
 			instance& inst;
 			VkDeviceMemory mem;
 			VkBuffer buf;
@@ -130,7 +134,8 @@ namespace citrus::graphics {
 			void free(uint64_t addr);
 			void initBuffer(uint64_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 			void initImage(uint64_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
-			
+			void freeResources();
+
 			allocator(instance& inst);
 		};
 		

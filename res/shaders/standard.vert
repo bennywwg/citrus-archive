@@ -17,5 +17,6 @@ layout(location = 2) out vec2 frag_uv;
 void main() {
     gl_Position	= vec4(vert_pos, 1.0);
     frag_norm	= vert_norm;
+	frag_tangent= vert_tangent;
 	frag_uv		= vert_uv;
 }

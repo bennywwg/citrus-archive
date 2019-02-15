@@ -3,43 +3,37 @@
 #include <citrus/graphics/vkShader.h>
 
 namespace citrus::graphics {
-	void vkShader::beginAll() {
-		for (int i = 0; i < _buffers.size(); i++) {
-			VkCommandBufferBeginInfo beginInfo = {};
-			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	void vkShader::beginBufferAndRenderPass(vkFBO fbo) {
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-			if (vkBeginCommandBuffer(_buffers[i], &beginInfo) != VK_SUCCESS) {
-				throw std::runtime_error("failed to begin recording command buffer!");
-			}
-
-			VkRenderPassBeginInfo renderPassInfo = {};
-			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderPassInfo.renderPass = _renderPass;
-			renderPassInfo.framebuffer = _framebuffers[i];
-
-			renderPassInfo.renderArea.offset = { 0, 0 };
-			renderPassInfo.renderArea.extent = _inst._extent;
-
-			VkClearValue clearColor = { 1.0f, 0.0f, 1.0f, 1.0f };
-			renderPassInfo.clearValueCount = 1;
-			renderPassInfo.pClearValues = &clearColor;
-
-			vkCmdBeginRenderPass(_buffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		if (vkBeginCommandBuffer(fbo.cbf, &beginInfo) != VK_SUCCESS) {
+			throw std::runtime_error("failed to begin recording command buffer!");
 		}
+
+		VkRenderPassBeginInfo renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = _renderPass;
+		renderPassInfo.framebuffer = fbo.fbo;
+
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = _inst._extent;
+
+		VkClearValue clearColor = { 1.0f, 0.0f, 0.0f, 1.0f };
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clearColor;
+
+		vkCmdBeginRenderPass(fbo.cbf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	}
-	void vkShader::drawAll(int verts) {
-		for (int i = 0; i < _buffers.size(); i++) {
-			vkCmdBindPipeline(_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-			vkCmdDraw(_buffers[i], verts, 1, 0, 0);
-		}
+	void vkShader::bindPipelineAndDraw(vkFBO fbo) {
+		vkCmdBindPipeline(fbo.cbf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+		vkCmdDraw(fbo.cbf, 3, 1, 0, 0);
 	}
-	void vkShader::endAll() {
-		for (int i = 0; i < _buffers.size(); i++) {
-			vkCmdEndRenderPass(_buffers[i]);
-			if (vkEndCommandBuffer(_buffers[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to record command buffer!");
-			}
+	void vkShader::endRenderPassAndBuffer(vkFBO fbo) {
+		vkCmdEndRenderPass(fbo.cbf);
+		if (vkEndCommandBuffer(fbo.cbf) != VK_SUCCESS) {
+			throw std::runtime_error("failed to record command buffer!");
 		}
 	}
 	vkFBO vkShader::createFBO(VkImageView view) {
@@ -60,7 +54,6 @@ namespace citrus::graphics {
 		if(vkCreateFramebuffer(_inst._device, &framebufferInfo, nullptr, &fbo) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create framebuffer!");
 		}
-		_framebuffers.push_back(fbo);
 		
 		VkCommandBuffer buf;
 		VkCommandBufferAllocateInfo allocInfo = {};
@@ -72,7 +65,6 @@ namespace citrus::graphics {
 		if(vkAllocateCommandBuffers(_inst._device, &allocInfo, &buf) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate command buffers!");
 		}
-		_buffers.push_back(buf);
 		
 		vkFBO res = { };
 		res.fbo = fbo;
@@ -81,20 +73,8 @@ namespace citrus::graphics {
 		return res;
 	}
 	void vkShader::freeFBO(vkFBO fbo) {
-		for(int i = 0; i < _framebuffers.size(); i++) {
-			if(_framebuffers[i] == fbo.fbo) {
-				_framebuffers.erase(_framebuffers.begin() + i);
-				vkDestroyFramebuffer(_inst._device, fbo.fbo, nullptr);
-				break;
-			}
-		}
-		for(int i = 0; i < _buffers.size(); i++) {
-			if(_buffers[i] == fbo.cbf) {
-				_buffers.erase(_buffers.begin() + i);
-				vkFreeCommandBuffers(_inst._device, _inst._commandPool, 1, &fbo.cbf);
-				break;
-			}
-		}
+		vkDestroyFramebuffer(_inst._device, fbo.fbo, nullptr);
+		vkFreeCommandBuffers(_inst._device, _inst._commandPool, 1, &fbo.cbf);
 	}
 	vkShader::vkShader(instance& inst, meshDescription const& desc, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc) : _inst(inst), _width(width), _height(height) {
 
@@ -166,7 +146,7 @@ namespace citrus::graphics {
 		vector<VkPipelineShaderStageCreateInfo> stages = geomLoc.empty() ?
 			vector<VkPipelineShaderStageCreateInfo> {vertCreateInfo, fragCreateInfo } :
 			vector<VkPipelineShaderStageCreateInfo> {vertCreateInfo, geomCreateInfo, fragCreateInfo};
-			
+
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(desc.bindings.size());
@@ -327,8 +307,6 @@ namespace citrus::graphics {
 		if(fragModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, fragModule, nullptr);
 	}
 	vkShader::~vkShader() {
-		vkFreeCommandBuffers(_inst._device, _inst._commandPool, static_cast<uint32_t>(_buffers.size()), _buffers.data());
-		for(auto fb : _framebuffers) vkDestroyFramebuffer(_inst._device, fb, nullptr);
 		if(_pipeline != VK_NULL_HANDLE) vkDestroyPipeline(_inst._device, _pipeline, nullptr);
 		if(_renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(_inst._device, _renderPass, nullptr);
 		if(_pipelineLayout != VK_NULL_HANDLE) vkDestroyPipelineLayout(_inst._device, _pipelineLayout, nullptr);

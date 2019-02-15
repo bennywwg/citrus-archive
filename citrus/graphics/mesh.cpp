@@ -463,6 +463,8 @@ namespace citrus::graphics {
 			res.push_back(offset);
 			offset += weight1.size() * sizeof(float);
 		}
+
+		return res;
 	}
 	
 	meshDescription mesh::getDescription() const {
@@ -663,7 +665,9 @@ namespace citrus::graphics {
 		std::ofstream output(outLocation);
 		rawAnimation.animations[0].write(output);
 	}
-	
+
+	mesh::mesh() {
+	}
 	mesh::mesh(std::string path) {
 		Assimp::Importer imp;
 		//imp.SetExtraVerbose(true);

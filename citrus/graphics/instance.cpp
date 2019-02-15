@@ -500,7 +500,7 @@ namespace citrus::graphics {
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &_finalPass->_buffers[imageIndex];
+		submitInfo.pCommandBuffers = &_finalPassFbos[imageIndex].cbf;
 		VkSemaphore signalSemaphores[] = { _renderFinishedSemaphore };
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
@@ -519,41 +519,38 @@ namespace citrus::graphics {
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &imageIndex;
-		presentInfo.pResults = nullptr; // Optional
 
 		vkQueuePresentKHR(_presentQueue, &presentInfo);
 		vkQueueWaitIdle(_presentQueue);
 	}
 	
-	
 	void instance::initMemory() {
 		vertexMem.initBuffer(256 * 1024 * 1024,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		vertexMem.name = "vertex";
 		indexMem.initBuffer(64 * 1024 * 1024,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		indexMem.name = "index";
 		uniformMem.initBuffer(16 * 1024 * 1024,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		uniformMem.name = "uniform";
 		textureMem.initImage(512 * 1024 * 1024,
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		textureMem.name = "texture";
 		stagingMem.initBuffer(16 * 1024 * 1024,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		stagingMem.name = "staging";
 	}
 	
 	uint64_t instance::allocator::alloc(uint64_t size) {
-		if(blocks.size() == 0 && size <= this->size) {
-			blocks.push_back({ 0, size });
-			return 0;
-		}
-		uint64_t addr = 0;
-		for(int i = 0; i < blocks.size(); i++) {
-			if(addr + size <= blocks[i].addr && addr + size <= this->size) {
-				blocks.insert(blocks.begin() + i, { addr, size });
+		for(int i = 0; i <= blocks.size(); i++) {
+			uint64_t addr = (i == 0) ? 0 : blocks[i - 1].addr + blocks[i - 1].size;
+			if(addr + size <= this->size) {
+				blocks.push_back({addr, size});
 				return addr;
 			}
-			addr += blocks[i].size;
-			if(alignment && addr % alignment != 0) addr += (addr % alignment);
 		}
-		throw std::runtime_error("out of vulkan memory");
+		throw std::runtime_error(("out of " + name + " memory").c_str());
 	}
 	void instance::allocator::free(uint64_t addr) {
 		for(int i = 0; i < blocks.size(); i++) {
@@ -619,6 +616,10 @@ namespace citrus::graphics {
 		//
 		//vkBindBufferMemory(inst._device, buf, mem, 0);
 	}
+	void instance::allocator::freeResources() {
+		vkDestroyBuffer(inst._device, buf, nullptr);
+		vkFreeMemory(inst._device, mem, nullptr);
+	}
 	instance::allocator::allocator(instance& inst) : inst(inst) { }
 	
 	/*img instance::createImg(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties) {
@@ -670,7 +671,7 @@ namespace citrus::graphics {
 
 		throw std::runtime_error("failed to find suitable memory type!");
 	}
-	void instance::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, uint64_t srcStart, uint64_t dstStart, fenceProc* proc) {
+	void instance::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, uint64_t size, uint64_t srcStart, uint64_t dstStart, fenceProc* proc) {
 		VkCommandBuffer commandBuffer = createCommandBuffer();
 		
 		VkCommandBufferBeginInfo beginInfo = {};
@@ -868,15 +869,32 @@ namespace citrus::graphics {
 		initSwapChain();
 		initCommandPool();
 		initSemaphores();
-		/*_finalPass = new vkShader(*this,
-			_swapChainImageViews,
+		_finalPass = new vkShader(*this,
+			meshDescription(),
 			640, 480,
-			"/home/benny/Desktop/folder/citrus/res/shaders/standard.vert.spv",
+			"res/shaders/finalpass.vert.spv",
 			"",
-			"/home/benny/Desktop/folder/citrus/res/shaders/standard.frag.spv");*/
+			"res/shaders/finalpass.frag.spv");
+		for(int i = 0; i < _swapChainImageViews.size(); i++) {
+			auto fpfbo = _finalPass->createFBO(_swapChainImageViews[i]);
+			_finalPassFbos.push_back(fpfbo);
+			_finalPass->beginBufferAndRenderPass(fpfbo);
+			_finalPass->bindPipelineAndDraw(fpfbo);
+			_finalPass->endRenderPassAndBuffer(fpfbo);
+		}
 		initMemory();
 	}
 	instance::~instance() {
+		vertexMem.freeResources();
+		indexMem.freeResources();
+		uniformMem.freeResources();
+		textureMem.freeResources();
+		stagingMem.freeResources();
+
+		for(int i = 0; i < _finalPassFbos.size(); i++) {
+			_finalPass->freeFBO(_finalPassFbos[i]);
+		}
+
 		delete _finalPass;
 		destroySemaphores();
 		destroyCommandPool();

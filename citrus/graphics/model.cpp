@@ -21,20 +21,11 @@ namespace citrus::graphics {
 		uint64_t memSize = me.requiredMemory();
 		uint64_t indexMemSize = me.index.size() * sizeof(uint16_t);
 		
-		uint64_t stagingMem = inst.stagingMem.alloc(memSize);
-		uint64_t indexStagingMem = inst.indexMem.alloc(indexMemSize);
-		
 		vertexMem = inst.vertexMem.alloc(memSize);
 		indexMem = inst.indexMem.alloc(indexMemSize);
-		
-		inst.fillBuffer(inst.stagingMem.buf, memSize, stagingMem, std::function<void(void*)>([&me](void* data){ me.constructContinuous(data); }));
-		inst.fillBuffer(inst.stagingMem.buf, memSize, indexStagingMem, me.index.data());
-		
-		inst.copyBuffer(inst.stagingMem.buf, inst.vertexMem.buf, memSize, stagingMem, vertexMem);
-		inst.copyBuffer(inst.stagingMem.buf, inst.indexMem.buf, indexMemSize, indexStagingMem, indexMem);
-		
-		inst.stagingMem.free(stagingMem);
-		inst.stagingMem.free(indexStagingMem);
+
+		inst.fillBuffer(inst.vertexMem.buf, memSize, vertexMem, [&me](void* data){ me.constructContinuous(data); });
+		inst.fillBuffer(inst.indexMem.buf, indexMemSize, indexMem, me.index.data());
 		
 		vector<uint64_t> meshOffsets = me.offsets();
 		numOffsets = meshOffsets.size();

@@ -158,6 +158,7 @@ namespace citrus::graphics {
 
 		static void convertAnimationFromCollada(std::string location, std::string outLocation);
 
+		mesh();
 		mesh(std::string path);
 	};
 }
