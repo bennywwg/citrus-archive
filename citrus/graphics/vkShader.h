@@ -12,19 +12,21 @@ namespace citrus::graphics {
 		VkPipelineLayout _pipelineLayout;
 		VkRenderPass _renderPass;
 		VkPipeline _pipeline;
+		VkDescriptorSetLayout _descriptorSetLayout;
+		VkDescriptorPool _descriptorPool;
 		
 		uint32_t _width, _height;
 		
 	public:
-
-		void beginBufferAndRenderPass(vkFBO fbo);
-		void bindPipelineAndDraw(vkFBO fbo);
-		void endRenderPassAndBuffer(vkFBO fbo);
 		
-		vkFBO createFBO(VkImageView view);
-		void freeFBO(vkFBO fbo);
+		//these are terrible
+		void beginBufferAndRenderPass(ctFBO fbo);
+		void bindPipelineAndDraw(ctFBO fbo);
+		void endRenderPassAndBuffer(ctFBO fbo);
+		
+		vector<ctFBO> targets;
 
-		vkShader(instance& inst, meshDescription const& desc, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc);
+		vkShader(instance& inst, meshDescription const& desc, vector<VkImageView> views, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc);
 		~vkShader();
 	};
 }

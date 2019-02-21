@@ -20,6 +20,7 @@
 #include <citrus/engine/elementRef.inl>
 #include <citrus/engine/manager.inl>
 #include <citrus/graphics/vkShader.h>
+#include <citrus/graphics/image.h>
 using citrus::engine::entityRef;
 
 #include <sstream>
@@ -62,19 +63,21 @@ int main(int argc, char **argv) {
 
 	graphics::model *mo = new graphics::model(*inst, me);
 
-	graphics::vkShader *sh = new graphics::vkShader(*inst, desc, 640, 480,
-		"res/shaders/standard.vert.spv",
-		"",
-		"res/shaders/standard.frag.spv");
+	//graphics::vkShader *sh = new graphics::vkShader(*inst, desc, {}, 640, 480,
+	//	"res/shaders/standard.vert.spv",
+	//	"",
+	//	"res/shaders/standard.frag.spv");
 
-	for(int i = 0; i < 100; i++) {
+	graphics::image3b img("res/textures/grid.png");
+
+	for(int i = 0; i < 10000; i++) {
 		inst->drawFrame();
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 
-	//std::cin.get();
+	std::cin.get();
 
-	delete sh;
+	//delete sh;
 	
 	delete mo;
 

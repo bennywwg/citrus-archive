@@ -670,7 +670,7 @@ namespace citrus::graphics {
 	}
 	mesh::mesh(std::string path) {
 		Assimp::Importer imp;
-		//imp.SetExtraVerbose(true);
+		imp.SetExtraVerbose(true);
 
 		const aiScene* scene = imp.ReadFile(path,
 			aiProcess_CalcTangentSpace |

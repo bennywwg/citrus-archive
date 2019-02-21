@@ -12,11 +12,13 @@ namespace citrus::graphics {
 
 	class instance;
 
-	struct vkFBO {
-		VkFramebuffer fbo;
-		VkCommandBuffer cbf;
+	struct ctFBO {
+		VkFramebuffer		fbo;
+		VkCommandBuffer		cbf;
+		VkDescriptorSet		set;
+		uint64_t			off;
 	};
-
+	
 	class fenceProc {
 		instance& _inst;
 		bool _done = false;
@@ -72,7 +74,6 @@ namespace citrus::graphics {
 		vector<VkImageView> _swapChainImageViews;
 		VkCommandPool _commandPool;
 		VkSemaphore _imgAvailableSemaphore, _renderFinishedSemaphore;
-		vector<vkFBO> _finalPassFbos;
 
 		vkShader* _finalPass;
 
@@ -145,6 +146,7 @@ namespace citrus::graphics {
 		allocator textureMem;
 		allocator stagingMem;
 		
+		void mapUnmapMemory(VkDeviceMemory dstMemory, uint64_t size, uint64_t start, void* data);
 		void fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, void* data, fenceProc* proc = nullptr);
 		void fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, std::function<void(void*)> fillFunc, fenceProc* proc = nullptr);
 		void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, uint64_t size, uint64_t srcStart, uint64_t dstStart, fenceProc* proc = nullptr);

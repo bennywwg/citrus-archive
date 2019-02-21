@@ -487,6 +487,8 @@ namespace citrus::graphics {
 		vkDestroySemaphore(_device, _renderFinishedSemaphore, nullptr);
 	}
 
+	int num = 0;
+
 	void instance::drawFrame() {
 		uint32_t imageIndex;
 		vkAcquireNextImageKHR(_device, _swapChain, std::numeric_limits<uint64_t>::max(), _imgAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
@@ -500,10 +502,15 @@ namespace citrus::graphics {
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &_finalPassFbos[imageIndex].cbf;
+		submitInfo.pCommandBuffers = &_finalPass->targets[imageIndex].cbf;
 		VkSemaphore signalSemaphores[] = { _renderFinishedSemaphore };
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		//set some data for testing purposes only
+		mat4 m = glm::translate(glm::vec3(sin(((float)num)*0.01f), 0.0f, 0.0f));
+		mapUnmapMemory(uniformMem.mem, sizeof(mat4), _finalPass->targets[imageIndex].off, &m);
+		num++;
 
 		if(vkQueueSubmit(_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
@@ -691,6 +698,12 @@ namespace citrus::graphics {
 		submitFenceProc(commandBuffer, proc);
 	}
 	
+	void instance::mapUnmapMemory(VkDeviceMemory dstMemory, uint64_t size, uint64_t start, void* data) {
+		void* scratch;
+		vkMapMemory(_device, dstMemory, start, size, 0, &scratch);
+		memcpy(scratch, data, size);
+		vkUnmapMemory(_device, dstMemory);
+	}
 	void instance::fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, void* data, fenceProc* proc) {
 		uint64_t stagingBuffer = stagingMem.alloc(size);
 		
@@ -869,20 +882,22 @@ namespace citrus::graphics {
 		initSwapChain();
 		initCommandPool();
 		initSemaphores();
+		initMemory();
 		_finalPass = new vkShader(*this,
 			meshDescription(),
+			_swapChainImageViews,
 			640, 480,
 			"res/shaders/finalpass.vert.spv",
 			"",
 			"res/shaders/finalpass.frag.spv");
-		for(int i = 0; i < _swapChainImageViews.size(); i++) {
-			auto fpfbo = _finalPass->createFBO(_swapChainImageViews[i]);
-			_finalPassFbos.push_back(fpfbo);
+			
+		for(int i = 0; i < _finalPass->targets.size(); i++) {
+			auto fpfbo = _finalPass->targets[i];
 			_finalPass->beginBufferAndRenderPass(fpfbo);
 			_finalPass->bindPipelineAndDraw(fpfbo);
 			_finalPass->endRenderPassAndBuffer(fpfbo);
 		}
-		initMemory();
+		
 	}
 	instance::~instance() {
 		vertexMem.freeResources();
@@ -890,10 +905,6 @@ namespace citrus::graphics {
 		uniformMem.freeResources();
 		textureMem.freeResources();
 		stagingMem.freeResources();
-
-		for(int i = 0; i < _finalPassFbos.size(); i++) {
-			_finalPass->freeFBO(_finalPassFbos[i]);
-		}
 
 		delete _finalPass;
 		destroySemaphores();
