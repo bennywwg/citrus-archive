@@ -29,7 +29,7 @@ using citrus::engine::entityRef;
 using namespace citrus;
 
 void initializeGLFW() {
-	if (!glfwInit()) throw std::runtime_error("Unable to create OpenGL context");
+	if (!glfwInit()) throw std::runtime_error("Unable to glfwInit()");
 }
 void terminateGLFW() {
 	glfwTerminate();
@@ -69,7 +69,21 @@ int main(int argc, char **argv) {
 	//	"res/shaders/standard.frag.spv");
 
 	graphics::image3b img("res/textures/grid.png");
+	
+	graphics::ctTexture tex = inst->createTexture3b(img.width(), img.height(), img.data());
+	
+	return 1;
 
+	for(int i = 0; i < inst->_finalPass->targets.size(); i++) {
+		auto fpfbo = inst->_finalPass->targets[i];
+		inst->_finalPass->bindTexture(i, tex);
+		inst->_finalPass->beginBufferAndRenderPass(fpfbo);
+		inst->_finalPass->bindPipelineAndDraw(fpfbo);
+		inst->_finalPass->endRenderPassAndBuffer(fpfbo);
+	}
+	
+	
+	if(false)
 	for(int i = 0; i < 10000; i++) {
 		inst->drawFrame();
 		//std::this_thread::sleep_for(std::chrono::milliseconds(1));

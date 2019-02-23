@@ -37,6 +37,24 @@ namespace citrus::graphics {
 			throw std::runtime_error("failed to record command buffer!");
 		}
 	}
+	void vkShader::bindTexture(uint32_t target, ctTexture const& tex) {
+		VkDescriptorImageInfo imageInfo = { };
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = tex.view;
+		imageInfo.sampler = tex.samp;
+		
+		VkWriteDescriptorSet descriptorWrite = { };
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = targets[target].set;
+		descriptorWrite.dstBinding = 1;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pImageInfo = &imageInfo;
+
+		vkUpdateDescriptorSets(_inst._device, 1, &descriptorWrite, 0, nullptr);
+	}
+	
 	vkShader::vkShader(instance& inst, meshDescription const& desc, vector<VkImageView> views, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc) : _inst(inst), _width(width), _height(height) {
 
 		VkShaderModule vertModule = VK_NULL_HANDLE;
@@ -161,7 +179,7 @@ namespace citrus::graphics {
 		multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
 		multisampling.alphaToOneEnable = VK_FALSE; // Optional
 
-		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+		VkPipelineColorBlendAttachmentState colorBlendAttachment = { };
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		colorBlendAttachment.blendEnable = VK_FALSE;
 		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
@@ -178,7 +196,7 @@ namespace citrus::graphics {
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;*/
 
-		VkPipelineColorBlendStateCreateInfo colorBlending = {};
+		VkPipelineColorBlendStateCreateInfo colorBlending = { };
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		colorBlending.logicOpEnable = VK_FALSE;
 		colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
@@ -189,23 +207,30 @@ namespace citrus::graphics {
 		colorBlending.blendConstants[2] = 0.0f; // Optional
 		colorBlending.blendConstants[3] = 0.0f; // Optional
 		
-		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+		VkDescriptorSetLayoutBinding uboLayoutBinding = { };
 		uboLayoutBinding.binding = 0;
 		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uboLayoutBinding.descriptorCount = 1;
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+		
+		VkDescriptorSetLayoutBinding texLayoutBinding = { };
+		texLayoutBinding.binding = 1;
+		texLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		texLayoutBinding.descriptorCount = 1;
+		texLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		
+		std::array<VkDescriptorSetLayoutBinding, 2> layoutBindings = { uboLayoutBinding, texLayoutBinding };
 		
 		VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo = {};
 		descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorLayoutInfo.bindingCount = 1;
-		descriptorLayoutInfo.pBindings = &uboLayoutBinding;
+		descriptorLayoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+		descriptorLayoutInfo.pBindings = layoutBindings.data();
 
 		if (vkCreateDescriptorSetLayout(_inst._device, &descriptorLayoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor set layout!");
 		}
 
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo = { };
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
@@ -216,7 +241,7 @@ namespace citrus::graphics {
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
 
-		VkAttachmentDescription colorAttachment = {};
+		VkAttachmentDescription colorAttachment = { };
 		colorAttachment.format = _inst._surfaceFormat.format;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -283,14 +308,16 @@ namespace citrus::graphics {
 		if(geomModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, geomModule, nullptr);
 		if(fragModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, fragModule, nullptr);
 		
-		VkDescriptorPoolSize poolSize = { };
-		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = static_cast<uint32_t>(_inst._swapChainImageViews.size());
+		std::array<VkDescriptorPoolSize, 2> poolSizes = { };
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(_inst._swapChainImageViews.size());
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(_inst._swapChainImageViews.size());
 		
 		VkDescriptorPoolCreateInfo poolInfo = { };
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = 1;
-		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(views.size());
 		
 		if (vkCreateDescriptorPool(_inst._device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS) {
@@ -364,7 +391,7 @@ namespace citrus::graphics {
 			res.fbo = fbo;
 			res.cbf = buf;
 			res.set = descriptorHandles[i];
-			res.off = off;
+			res.uboOff = off;
 
 			targets.push_back(res);
 		}
@@ -372,7 +399,8 @@ namespace citrus::graphics {
 	vkShader::~vkShader() {
 		if(_descriptorSetLayout != VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(_inst._device, _descriptorSetLayout, nullptr);
 		if(_descriptorPool != VK_NULL_HANDLE) vkDestroyDescriptorPool(_inst._device, _descriptorPool, nullptr);
-		for(int i = 0; i < targets.size(); i++) {			
+		for(int i = 0; i < targets.size(); i++) {
+			_inst.uniformMem.free(targets[i].uboOff);
 			vkDestroyFramebuffer(_inst._device, targets[i].fbo, nullptr);
 			vkFreeCommandBuffers(_inst._device, _inst._commandPool, 1, &targets[i].cbf);
 		}

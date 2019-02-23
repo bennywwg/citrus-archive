@@ -24,6 +24,8 @@ namespace citrus::graphics {
 		void bindPipelineAndDraw(ctFBO fbo);
 		void endRenderPassAndBuffer(ctFBO fbo);
 		
+		void bindTexture(uint32_t target, ctTexture const& tex);
+		
 		vector<ctFBO> targets;
 
 		vkShader(instance& inst, meshDescription const& desc, vector<VkImageView> views, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc);

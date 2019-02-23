@@ -3,6 +3,8 @@
 
 layout(location = 0) out vec4 color;
 
+layout(binding = 1) uniform sampler2D colorTex;
+
 void main() {
-	color = vec4(1, 1, 1, 1);
+	color = texture(colorTex, gl_FragCoord.xy);
 }

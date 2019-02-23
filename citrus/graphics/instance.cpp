@@ -509,7 +509,7 @@ namespace citrus::graphics {
 
 		//set some data for testing purposes only
 		mat4 m = glm::translate(glm::vec3(sin(((float)num)*0.01f), 0.0f, 0.0f));
-		mapUnmapMemory(uniformMem.mem, sizeof(mat4), _finalPass->targets[imageIndex].off, &m);
+		mapUnmapMemory(uniformMem.mem, sizeof(mat4), _finalPass->targets[imageIndex].uboOff, &m);
 		num++;
 
 		if(vkQueueSubmit(_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
@@ -550,10 +550,11 @@ namespace citrus::graphics {
 	}
 	
 	uint64_t instance::allocator::alloc(uint64_t size) {
+		util::sout(name + " allocating " + std::to_string(size) + " bytes\n");
 		for(int i = 0; i <= blocks.size(); i++) {
-			uint64_t addr = (i == 0) ? 0 : blocks[i - 1].addr + blocks[i - 1].size;
-			if(addr + size <= this->size) {
-				blocks.push_back({addr, size});
+			uint64_t addr = (i == 0) ? 0 : (blocks[i - 1].addr + blocks[i - 1].size);
+			if(addr + size <= ((i == blocks.size()) ? this->size : blocks[i].addr)) {
+				blocks.push_back({ addr, size });
 				return addr;
 			}
 		}
@@ -590,38 +591,48 @@ namespace citrus::graphics {
 		allocInfo.memoryTypeIndex = inst.findMemoryType(memRequirements.memoryTypeBits, properties);
 		
 		if (vkAllocateMemory(inst._device, &allocInfo, nullptr, &mem) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate vertex buffer memory!");
+			throw std::runtime_error("failed to allocate buffer memory!");
 		}
 		
 		vkBindBufferMemory(inst._device, buf, mem, 0);
 	}
 	void instance::allocator::initImage(uint64_t size, VkImageUsageFlags usage, VkMemoryPropertyFlags properties) {
-		//this->inst = inst;
-		//this->size = size;
-		//
-		//VkBufferCreateInfo bufferInfo = {};
-		//bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		//bufferInfo.size = size;
-		//bufferInfo.usage = usage;
-		//bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		//
-		//if (vkCreateBuffer(inst._device, &bufferInfo, nullptr, &buf) != VK_SUCCESS) {
-		//	throw std::runtime_error("failed to create memory buffer!");
-		//}
-		//
-		//VkMemoryRequirements memRequirements;
-		//vkGetBufferMemoryRequirements(inst._device, buf, &memRequirements);
-		//
-		//VkMemoryAllocateInfo allocInfo = {};
-		//allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		//allocInfo.allocationSize = memRequirements.size;
-		//allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-		//
-		//if (vkAllocateMemory(inst._device, &allocInfo, nullptr, &mem) != VK_SUCCESS) {
-		//	throw std::runtime_error("failed to allocate vertex buffer memory!");
-		//}
-		//
-		//vkBindBufferMemory(inst._device, buf, mem, 0);
+		this->size = size;
+
+		VkImage tmpImage;
+
+		VkImageCreateInfo imageInfo = {};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.extent.width = 1;
+        imageInfo.extent.height = 1;
+        imageInfo.extent.depth = 1;
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = 1;
+        imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.usage = usage;
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        if (vkCreateImage(inst._device, &imageInfo, nullptr, &tmpImage) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create image!");
+        }
+
+		VkMemoryRequirements memRequirements;
+        vkGetImageMemoryRequirements(inst._device, tmpImage, &memRequirements);
+
+		vkDestroyImage(inst._device, tmpImage, nullptr);
+		
+		VkMemoryAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = inst.findMemoryType(memRequirements.memoryTypeBits, properties);
+		
+		if (vkAllocateMemory(inst._device, &allocInfo, nullptr, &mem) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate image memory!");
+		}
 	}
 	void instance::allocator::freeResources() {
 		vkDestroyBuffer(inst._device, buf, nullptr);
@@ -739,7 +750,7 @@ namespace citrus::graphics {
 		}
 	}
 	
-	void instance::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, fenceProc* proc) {
+	void instance::copyBufferToImage(VkBuffer buffer, uint64_t start, VkImage image, uint32_t width, uint32_t height, fenceProc* proc) {
 		VkCommandBuffer commandBuffer = createCommandBuffer();
 		
 		VkBufferImageCopy region = { };
@@ -827,6 +838,90 @@ namespace citrus::graphics {
 		submitFenceProc(commandBuffer, proc);
 	}
 	
+	ctTexture instance::createTexture3b(uint32_t width, uint32_t height, void *data) {
+		VkImageCreateInfo imageInfo = { };
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.extent.width = static_cast<uint32_t>(width);
+		imageInfo.extent.height = static_cast<uint32_t>(height);
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;	
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		
+		VkImage img;
+		VkImageView view;
+		VkSampler samp;
+		
+		if (vkCreateImage(_device, &imageInfo, nullptr, &img) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create image!");
+		}
+		
+		VkMemoryRequirements memRequirements;
+		vkGetImageMemoryRequirements(_device, img, &memRequirements);
+		
+		uint64_t off = textureMem.alloc(memRequirements.size);
+		uint64_t tmp = stagingMem.alloc(memRequirements.size);
+		
+		vkBindImageMemory(_device, img, textureMem.mem, off);
+		mapUnmapMemory(stagingMem.mem, tmp, memRequirements.size, data);
+		pipelineBarrierLayoutChange(img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, nullptr);
+		copyBufferToImage(stagingMem.buf, tmp, img, width, height, nullptr);
+		pipelineBarrierLayoutChange(img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, nullptr);
+		stagingMem.free(tmp);
+		
+		VkImageViewCreateInfo viewInfo = { };
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = img;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+		
+		if (vkCreateImageView(_device, &viewInfo, nullptr, &view) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create texture image view!");
+		}
+		
+		VkSamplerCreateInfo samplerInfo = { };
+		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerInfo.magFilter = VK_FILTER_LINEAR;
+		samplerInfo.minFilter = VK_FILTER_LINEAR;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.anisotropyEnable = VK_FALSE;
+		samplerInfo.maxAnisotropy = 1;
+		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerInfo.unnormalizedCoordinates = VK_FALSE;
+		samplerInfo.compareEnable = VK_FALSE;
+		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.mipLodBias = 0.0f;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = 0.0f;
+		
+		
+		if (vkCreateSampler(_device, &samplerInfo, nullptr, &samp) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create texture sampler!");
+		}
+		
+		ctTexture res = { };
+		res.img = img;
+		res.view = view;
+		res.samp = samp;
+		res.off = off;
+		
+		return res;
+	}
+	
 	void instance::submitFenceProc(VkCommandBuffer commandBuffer, fenceProc* proc) {
 		if(proc && (proc->fence != VK_NULL_HANDLE  || proc->cbuff != VK_NULL_HANDLE)) std::runtime_error("proc already contains a fence or command buffer");
 		
@@ -883,6 +978,7 @@ namespace citrus::graphics {
 		initCommandPool();
 		initSemaphores();
 		initMemory();
+		return;
 		_finalPass = new vkShader(*this,
 			meshDescription(),
 			_swapChainImageViews,
@@ -890,14 +986,6 @@ namespace citrus::graphics {
 			"res/shaders/finalpass.vert.spv",
 			"",
 			"res/shaders/finalpass.frag.spv");
-			
-		for(int i = 0; i < _finalPass->targets.size(); i++) {
-			auto fpfbo = _finalPass->targets[i];
-			_finalPass->beginBufferAndRenderPass(fpfbo);
-			_finalPass->bindPipelineAndDraw(fpfbo);
-			_finalPass->endRenderPassAndBuffer(fpfbo);
-		}
-		
 	}
 	instance::~instance() {
 		vertexMem.freeResources();
