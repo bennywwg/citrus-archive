@@ -20,7 +20,7 @@ CCPARAM = $(DEFINES) $(MYINCLUDES) $(FLAGS) $(EXTINCLUDES) $(EXTLIBS) $(LINKS)
 SRC_DIR = citrus
 BUILD_DIR = build
 OFILES_DIR = $(BUILD_DIR)/$(SRC_DIR)
-EXECUTABLE = $(BUILD_DIR)/ctvk.exe
+EXECUTABLE = $(BUILD_DIR)/ctvk
 
 $(shell rsync -a --include '*/' --exclude '*' "$(SRC_DIR)" "$(BUILD_DIR)")
 
@@ -49,4 +49,5 @@ clean :
 	rm -rf $(BUILD_DIR)/*
 
 test : all
-	LD_LIBRARY_PATH=$(VULKAN_SDK_PATH)/lib VK_LAYER_PATH=$(VULKAN_SDK_PATH)/etc/explicit_layer.d $(EXECUTABLE)
+	$(EXECUTABLE)
+	#LD_LIBRARY_PATH=$(VULKAN_SDK_PATH)/lib VK_LAYER_PATH=$(VULKAN_SDK_PATH)/etc/explicit_layer.d $(EXECUTABLE)

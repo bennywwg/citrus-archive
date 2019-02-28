@@ -550,11 +550,15 @@ namespace citrus::graphics {
 	}
 	
 	uint64_t instance::allocator::alloc(uint64_t size) {
-		util::sout(name + " allocating " + std::to_string(size) + " bytes\n");
+		//util::sout(name + " allocating " + std::to_string(size) + " bytes... \n");
+		//util::sout("#blocks = " + std::to_string(blocks.size()) + "\n");
 		for(int i = 0; i <= blocks.size(); i++) {
 			uint64_t addr = (i == 0) ? 0 : (blocks[i - 1].addr + blocks[i - 1].size);
-			if(addr + size <= ((i == blocks.size()) ? this->size : blocks[i].addr)) {
+			uint64_t nend = (i == blocks.size()) ? this->size : blocks[i].addr;
+			//util::sout("\tscan: addr = " + std::to_string(addr) + ", nend = " + std::to_string(nend) + "\n");
+			if(addr + size <= nend) {
 				blocks.push_back({ addr, size });
+				//util::sout("got " + std::to_string(addr) + "\n");
 				return addr;
 			}
 		}
@@ -609,7 +613,7 @@ namespace citrus::graphics {
         imageInfo.extent.depth = 1;
         imageInfo.mipLevels = 1;
         imageInfo.arrayLayers = 1;
-        imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imageInfo.format = VK_FORMAT_R8G8B8_UNORM;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         imageInfo.usage = usage;
@@ -627,7 +631,7 @@ namespace citrus::graphics {
 		
 		VkMemoryAllocateInfo allocInfo = {};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.allocationSize = size;
 		allocInfo.memoryTypeIndex = inst.findMemoryType(memRequirements.memoryTypeBits, properties);
 		
 		if (vkAllocateMemory(inst._device, &allocInfo, nullptr, &mem) != VK_SUCCESS) {
@@ -754,7 +758,7 @@ namespace citrus::graphics {
 		VkCommandBuffer commandBuffer = createCommandBuffer();
 		
 		VkBufferImageCopy region = { };
-		region.bufferOffset = 0;
+		region.bufferOffset = start;
 		region.bufferRowLength = 0;
 		region.bufferImageHeight = 0;
 
@@ -780,6 +784,8 @@ namespace citrus::graphics {
 			1,
 			&region
 		);
+        
+        vkEndCommandBuffer(commandBuffer);
 		
 		submitFenceProc(commandBuffer, proc);
 	}
@@ -847,8 +853,8 @@ namespace citrus::graphics {
 		imageInfo.extent.depth = 1;
 		imageInfo.mipLevels = 1;
 		imageInfo.arrayLayers = 1;
-		imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;	
+		imageInfo.format = VK_FORMAT_R8G8B8_UNORM;
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -864,12 +870,13 @@ namespace citrus::graphics {
 		
 		VkMemoryRequirements memRequirements;
 		vkGetImageMemoryRequirements(_device, img, &memRequirements);
-		
+
+
 		uint64_t off = textureMem.alloc(memRequirements.size);
-		uint64_t tmp = stagingMem.alloc(memRequirements.size);
-		
+		uint64_t tmp = stagingMem.alloc(width * height * 3);
+
 		vkBindImageMemory(_device, img, textureMem.mem, off);
-		mapUnmapMemory(stagingMem.mem, tmp, memRequirements.size, data);
+		mapUnmapMemory(stagingMem.mem, width * height * 3, tmp, data);
 		pipelineBarrierLayoutChange(img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, nullptr);
 		copyBufferToImage(stagingMem.buf, tmp, img, width, height, nullptr);
 		pipelineBarrierLayoutChange(img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, nullptr);
@@ -879,7 +886,7 @@ namespace citrus::graphics {
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewInfo.image = img;
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		viewInfo.format = VK_FORMAT_R8G8B8_UNORM;
 		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = 1;
@@ -978,7 +985,6 @@ namespace citrus::graphics {
 		initCommandPool();
 		initSemaphores();
 		initMemory();
-		return;
 		_finalPass = new vkShader(*this,
 			meshDescription(),
 			_swapChainImageViews,

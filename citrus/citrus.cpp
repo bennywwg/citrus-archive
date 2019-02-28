@@ -72,8 +72,6 @@ int main(int argc, char **argv) {
 	
 	graphics::ctTexture tex = inst->createTexture3b(img.width(), img.height(), img.data());
 	
-	return 1;
-
 	for(int i = 0; i < inst->_finalPass->targets.size(); i++) {
 		auto fpfbo = inst->_finalPass->targets[i];
 		inst->_finalPass->bindTexture(i, tex);
@@ -83,10 +81,9 @@ int main(int argc, char **argv) {
 	}
 	
 	
-	if(false)
 	for(int i = 0; i < 10000; i++) {
 		inst->drawFrame();
-		//std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
 	std::cin.get();
