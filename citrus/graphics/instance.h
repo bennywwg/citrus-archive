@@ -143,8 +143,8 @@ namespace citrus::graphics {
 			
 			uint64_t alloc(uint64_t size);
 			void free(uint64_t addr);
-			void initBuffer(uint64_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
-			void initImage(uint64_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+			void initBuffer(uint64_t size, uint64_t align, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+			void initImage(uint64_t size, uint64_t align, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 			void freeResources();
 
 			allocator(instance& inst);
@@ -164,7 +164,7 @@ namespace citrus::graphics {
 		void pipelineBarrierLayoutChange(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, fenceProc* proc = nullptr);
 
 		
-		ctTexture createTexture3b(uint32_t width, uint32_t height, void* data);
+		ctTexture createTexture4b(uint32_t width, uint32_t height, void* data);
 
 		//takes ownership of commandBuffer, blocks if proc == nullptr
 		void submitFenceProc(VkCommandBuffer commandBuffer, fenceProc* proc = nullptr);

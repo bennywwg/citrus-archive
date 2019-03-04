@@ -102,7 +102,7 @@ namespace citrus::util {
 					 &interlace_type, NULL, NULL);
 		outWidth = int(width);
 		outHeight = int(height);
-		outHasAlpha = color_type | PNG_COLOR_MASK_ALPHA;
+		outHasAlpha = color_type & PNG_COLOR_MASK_ALPHA;
 	 
 		unsigned int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 		res.resize(outHeight * row_bytes);

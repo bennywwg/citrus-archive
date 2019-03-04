@@ -38,6 +38,8 @@ void terminateGLFW() {
 int main(int argc, char **argv) {
 	util::sout("Citrus 0.0.0 - DO NOT DISTRIBUTE\n");
 
+	graphics::image4b img("res/textures/grid.png");
+
 	initializeGLFW();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -56,21 +58,25 @@ int main(int argc, char **argv) {
 		m.weight1.push_back(0.0f);
 		desc = m.getDescription();
 	}
+	
+	
 
 	graphics::instance * inst = new graphics::instance("ctvk", win);
+    
 
 	graphics::mesh me("res/meshes/human.dae");
+    
 
 	graphics::model *mo = new graphics::model(*inst, me);
+    
 
 	//graphics::vkShader *sh = new graphics::vkShader(*inst, desc, {}, 640, 480,
 	//	"res/shaders/standard.vert.spv",
 	//	"",
 	//	"res/shaders/standard.frag.spv");
-
-	graphics::image3b img("res/textures/grid.png");
 	
-	graphics::ctTexture tex = inst->createTexture3b(img.width(), img.height(), img.data());
+	graphics::ctTexture tex = inst->createTexture4b(img.width(), img.height(), img.data());
+    
 	
 	for(int i = 0; i < inst->_finalPass->targets.size(); i++) {
 		auto fpfbo = inst->_finalPass->targets[i];
