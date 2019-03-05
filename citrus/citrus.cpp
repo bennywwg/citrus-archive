@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
 	}
 	
 	
-	for(int i = 0; i < 10000; i++) {
+	for(int i = 0; i < 10; i++) {
 		inst->drawFrame();
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
