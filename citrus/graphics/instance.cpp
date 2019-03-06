@@ -607,6 +607,7 @@ namespace citrus::graphics {
 	void instance::allocator::initImage(uint64_t size, uint64_t align, VkImageUsageFlags usage, VkMemoryPropertyFlags properties) {
 		this->size = size;
         this->alignment = align;
+		this->buf = VK_NULL_HANDLE;
 
 		VkImage tmpImage;
 
@@ -644,7 +645,7 @@ namespace citrus::graphics {
 		}
 	}
 	void instance::allocator::freeResources() {
-		vkDestroyBuffer(inst._device, buf, nullptr);
+		if(buf != VK_NULL_HANDLE) vkDestroyBuffer(inst._device, buf, nullptr);
 		vkFreeMemory(inst._device, mem, nullptr);
 	}
 	instance::allocator::allocator(instance& inst) : inst(inst) { }
@@ -932,6 +933,11 @@ namespace citrus::graphics {
 		res.off = off;
 		
 		return res;
+	}
+	void instance::destroyTexture(ctTexture tex) {
+		vkDestroySampler(_device, tex.samp, nullptr);
+		vkDestroyImageView(_device, tex.view, nullptr);
+		vkDestroyImage(_device, tex.img, nullptr);
 	}
 	
 	void instance::submitFenceProc(VkCommandBuffer commandBuffer, fenceProc* proc) {

@@ -96,6 +96,8 @@ int main(int argc, char **argv) {
 
 	//delete sh;
 	
+	inst->destroyTexture(tex);
+		
 	delete mo;
 
 	delete inst;

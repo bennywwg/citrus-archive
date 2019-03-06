@@ -165,7 +165,8 @@ namespace citrus::graphics {
 
 		
 		ctTexture createTexture4b(uint32_t width, uint32_t height, void* data);
-
+		void destroyTexture(ctTexture tex);
+		
 		//takes ownership of commandBuffer, blocks if proc == nullptr
 		void submitFenceProc(VkCommandBuffer commandBuffer, fenceProc* proc = nullptr);
 		
