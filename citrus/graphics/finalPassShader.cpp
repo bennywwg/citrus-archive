@@ -1,71 +1,89 @@
-#include "citrus/util.h"
-
-#include "citrus/graphics/vkShader.h"
-
-#include <iostream>
+#include "citrus/graphics/finalPassShader.h"
 
 namespace citrus::graphics {
-	void vkShader::beginBufferAndRenderPass(ctFBO fbo) {
-		VkCommandBufferBeginInfo beginInfo = {};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	
+	void finalPassShader::buildAllCommandBuffers() {
+        for(ctFBO const& target : targets) {
+            VkCommandBufferBeginInfo beginInfo = {};
+            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-		if (vkBeginCommandBuffer(fbo.cbf, &beginInfo) != VK_SUCCESS) {
-			throw std::runtime_error("failed to begin recording command buffer!");
-		}
+            if (vkBeginCommandBuffer(target.cbf, &beginInfo) != VK_SUCCESS) {
+                throw std::runtime_error("failed to begin recording command buffer!");
+            }
 
-		VkRenderPassBeginInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = _renderPass;
-		renderPassInfo.framebuffer = fbo.fbo;
+            VkRenderPassBeginInfo renderPassInfo = {};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = _renderPass;
+            renderPassInfo.framebuffer = target.fbo;
 
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = _inst._extent;
+            renderPassInfo.renderArea.offset = { 0, 0 };
+            renderPassInfo.renderArea.extent = { _width, _height };
 
-		VkClearValue clearColor = { 1.0f, 0.0f, 0.0f, 1.0f };
-		renderPassInfo.clearValueCount = 1;
-		renderPassInfo.pClearValues = &clearColor;
+            VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+            renderPassInfo.clearValueCount = 1;
+            renderPassInfo.pClearValues = &clearColor;
 
-		vkCmdBeginRenderPass(fbo.cbf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	}
-	void vkShader::bindPipelineAndDraw(ctFBO fbo) {
-		vkCmdBindPipeline(fbo.cbf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-		vkCmdBindDescriptorSets(fbo.cbf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &fbo.set, 0, nullptr);
-		vkCmdDraw(fbo.cbf, 3, 1, 0, 0);
-	}
-	void vkShader::endRenderPassAndBuffer(ctFBO fbo) {
-		vkCmdEndRenderPass(fbo.cbf);
-		if (vkEndCommandBuffer(fbo.cbf) != VK_SUCCESS) {
-			throw std::runtime_error("failed to record command buffer!");
-		}
-	}
-	void vkShader::bindTexture(uint32_t target, ctTexture const& tex) {
-		VkDescriptorImageInfo imageInfo = { };
+            vkCmdBeginRenderPass(target.cbf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+            
+            vkCmdBindPipeline(target.cbf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+            vkCmdBindDescriptorSets(target.cbf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &target.set, 0, nullptr);
+            vkCmdDraw(target.cbf, 6, 1, 0, 0);
+            
+            vkCmdEndRenderPass(target.cbf);
+            if (vkEndCommandBuffer(target.cbf) != VK_SUCCESS) {
+                throw std::runtime_error("failed to record command buffer!");
+            }
+        }
+    }
+	
+	void finalPassShader::submit(uint32_t index, VkSemaphore wait, VkSemaphore signal) {
+        VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &targets[index].cbf;
+        
+        
+		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &wait;
+		submitInfo.pWaitDstStageMask = &waitStage;
+        
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &signal;
+        
+        vkQueueSubmit(_inst._graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    }
+	
+	void finalPassShader::setTexture0(ctTexture const& tex) {
+        VkDescriptorImageInfo imageInfo = { };
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageInfo.imageView = tex.view;
 		imageInfo.sampler = tex.samp;
 		
-		VkWriteDescriptorSet descriptorWrite = { };
-		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet = targets[target].set;
-		descriptorWrite.dstBinding = 1;
-		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pImageInfo = &imageInfo;
+        for(auto const& target : targets) {
+            VkWriteDescriptorSet descriptorWrite = { };
+            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrite.dstSet = target.set;
+            descriptorWrite.dstBinding = 1;
+            descriptorWrite.dstArrayElement = 0;
+            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrite.descriptorCount = 1;
+            descriptorWrite.pImageInfo = &imageInfo;
 
-		vkUpdateDescriptorSets(_inst._device, 1, &descriptorWrite, 0, nullptr);
-	}
+            vkUpdateDescriptorSets(_inst._device, 1, &descriptorWrite, 0, nullptr);
+        }
+		
+    }
 	
-	vkShader::vkShader(instance& inst, meshDescription const& desc,
-        vector<VkImageView> views, uint32_t width, uint32_t height, bool useDepth,
-        string vertLoc, string geomLoc, string fragLoc) : _inst(inst), _width(width), _height(height) {
+	finalPassShader::finalPassShader(instance& inst,
+        vector<VkImageView> views, uint32_t width, uint32_t height,
+        string vertLoc, string fragLoc) : _inst(inst), _width(width), _height(height) {
+        _good = false;
 
 		VkShaderModule vertModule = VK_NULL_HANDLE;
-		VkShaderModule geomModule = VK_NULL_HANDLE;
 		VkShaderModule fragModule = VK_NULL_HANDLE;
 		VkPipelineShaderStageCreateInfo vertCreateInfo = { };
-		VkPipelineShaderStageCreateInfo geomCreateInfo = { };
 		VkPipelineShaderStageCreateInfo fragCreateInfo = { };
 		try {
 			{
@@ -86,24 +104,6 @@ namespace citrus::graphics {
 				vertCreateInfo.module = vertModule;
 				vertCreateInfo.pName = "main";
 			}
-			if(!geomLoc.empty()) {
-				string src = util::loadEntireFile(geomLoc);
-
-				VkShaderModuleCreateInfo createInfo = { };
-				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-				createInfo.codeSize = src.size();
-				createInfo.pCode = reinterpret_cast<const uint32_t*>(src.data());
-
-				if(vkCreateShaderModule(inst._device, &createInfo, nullptr, &geomModule) != VK_SUCCESS) {
-					geomModule = VK_NULL_HANDLE;
-					throw std::runtime_error("Failed to create geom shader module");
-				}
-
-				geomCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-				geomCreateInfo.stage = VK_SHADER_STAGE_GEOMETRY_BIT;
-				geomCreateInfo.module = vertModule;
-				geomCreateInfo.pName = "main";
-			}
 			{
 				string src = util::loadEntireFile(fragLoc);
 
@@ -123,19 +123,16 @@ namespace citrus::graphics {
 				fragCreateInfo.pName = "main";
 			}
 		} catch(std::runtime_error& rt) {
-			std::cout << "yooooo!\n";
+            util::sout(string(rt.what()) + "\n");
+            return;
 		}
 
-		vector<VkPipelineShaderStageCreateInfo> stages = geomLoc.empty() ?
-			vector<VkPipelineShaderStageCreateInfo> {vertCreateInfo, fragCreateInfo } :
-			vector<VkPipelineShaderStageCreateInfo> {vertCreateInfo, geomCreateInfo, fragCreateInfo};
+		vector<VkPipelineShaderStageCreateInfo> stages = vector<VkPipelineShaderStageCreateInfo> { vertCreateInfo, fragCreateInfo };
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(desc.bindings.size());
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(desc.attribs.size());
-		vertexInputInfo.pVertexBindingDescriptions = desc.bindings.data();
-		vertexInputInfo.pVertexAttributeDescriptions = desc.attribs.data();
+		vertexInputInfo.vertexBindingDescriptionCount = 0;
+		vertexInputInfo.vertexAttributeDescriptionCount = 0;
 		
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -168,7 +165,7 @@ namespace citrus::graphics {
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 		rasterizer.depthBiasClamp = 0.0f; // Optional
@@ -255,29 +252,14 @@ namespace citrus::graphics {
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         
-        VkAttachmentDescription depthAttachment = { };
-        depthAttachment.format = _inst.findDepthFormat();
-        depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        
 		VkAttachmentReference colorAttachmentRef = { };
 		colorAttachmentRef.attachment = 0;
 		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        
-        VkAttachmentReference depthAttachmentRef = { };
-        depthAttachmentRef.attachment = 1;
-        depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
-        subpass.pDepthStencilAttachment = useDepth ? &depthAttachmentRef : nullptr;
         
 		VkSubpassDependency dependency = {};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -319,12 +301,10 @@ namespace citrus::graphics {
 		pipelineInfo.basePipelineIndex = -1; // Optional
 
 		if(vkCreateGraphicsPipelines(_inst._device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS) {
-			
 			throw std::runtime_error("failed to create graphics pipeline!");
 		}
 
 		if(vertModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, vertModule, nullptr);
-		if(geomModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, geomModule, nullptr);
 		if(fragModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, fragModule, nullptr);
 		
 		std::array<VkDescriptorPoolSize, 2> poolSizes = { };
@@ -414,8 +394,10 @@ namespace citrus::graphics {
 
 			targets.push_back(res);
 		}
+		
+		_good = true;
 	}
-	vkShader::~vkShader() {
+	finalPassShader::~finalPassShader() {
 		if(_descriptorSetLayout != VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(_inst._device, _descriptorSetLayout, nullptr);
 		if(_descriptorPool != VK_NULL_HANDLE) vkDestroyDescriptorPool(_inst._device, _descriptorPool, nullptr);
 		for(int i = 0; i < targets.size(); i++) {

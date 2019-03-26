@@ -2,9 +2,9 @@
 
 #include <memory>
 #include <vector>
-#include <citrus/util.h>
+#include "citrus/util.h"
 
-#include <citrus/graphics/instance.h>
+#include "citrus/graphics/instance.h"
 
 class aiNode;
 class aiScene;

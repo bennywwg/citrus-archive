@@ -6,12 +6,12 @@
 #include <atomic>
 #include <typeindex>
 #include <thread>
-#include <citrus/util.h>
-#include <citrus/engine/manager.h>
-#include <citrus/graphics/window.h>
+#include "citrus/util.h"
+#include "citrus/engine/manager.h"
+#include "citrus/graphics/window.h"
 #include <memory>
-#include <citrus/graphics/tilemapFont.h>
-#include <citrus/graphics/camera.h>
+#include "citrus/graphics/tilemapFont.h"
+#include "citrus/graphics/camera.h"
 
 
 namespace citrus {

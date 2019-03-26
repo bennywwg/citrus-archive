@@ -3,9 +3,9 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <citrus/util.h>
-#include <citrus/dynamics/transform.h>
-#include <citrus/dynamics/geom.h>
+#include "citrus/util.h"
+#include "citrus/dynamics/transform.h"
+#include "citrus/dynamics/geom.h"
 
 namespace citrus {
 	namespace engine {

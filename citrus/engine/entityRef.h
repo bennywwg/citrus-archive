@@ -1,7 +1,7 @@
 #pragma once
 
-#include <citrus/util.h>
-#include <citrus/editor/gui.h>
+#include "citrus/util.h"
+#include "citrus/editor/gui.h"
 
 namespace citrus::engine {
 

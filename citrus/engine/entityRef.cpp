@@ -1,5 +1,5 @@
-#include <citrus/engine/entityRef.h>
-#include <citrus/engine/entity.h>
+#include "citrus/engine/entityRef.h"
+#include "citrus/engine/entity.h"
 #include <mutex>
 
 namespace citrus::engine {

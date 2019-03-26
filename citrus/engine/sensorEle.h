@@ -1,10 +1,10 @@
 #pragma once
 
-#include <citrus/engine/element.h>
-#include <citrus/dynamics/sensor.h>
-#include <citrus/dynamics/world.h>
-#include <citrus/dynamics/collisionShape.h>
-#include <citrus/dynamics/transform.h>
+#include "citrus/engine/element.h"
+#include "citrus/dynamics/sensor.h"
+#include "citrus/dynamics/world.h"
+#include "citrus/dynamics/collisionShape.h"
+#include "citrus/dynamics/transform.h"
 
 namespace citrus::engine {
 	class sensorEle : public element {

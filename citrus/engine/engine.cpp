@@ -1,10 +1,12 @@
 #include <typeindex>
-#include <citrus/util.h>
+#include "citrus/util.h"
 
-#include <citrus/engine/engine.h>
-#include <citrus/graphics/window.h>
-#include <citrus/editor/gui.h>
+#include "citrus/engine/engine.h"
+#include "citrus/graphics/window.h"
+#include "citrus/editor/gui.h"
 #include <vector>
+#include "citrus/graphics/finalPassShader.h"
+#include "citrus/graphics/image.h"
 
 namespace citrus::engine {
 	void engine::Log(string str) {
@@ -34,7 +36,14 @@ namespace citrus::engine {
 		//try {
 			_renderState.store(render_initializing);
 			_win = nullptr;
-			_win = new graphics::window(512, 512, "Citrus Engine");
+			_win = new graphics::window(512, 512, "Citrus Engine", "C:\\Users\\benny\\Desktop\\citrus\\res");
+
+			graphics::image4b img(string("C:\\Users\\benny\\Desktop\\citrus\\res") + "/textures/grid.png");
+
+			graphics::ctTexture tx = _win->inst()->createTexture4b(img.width(), img.height(), false, img.data());
+
+			_win->inst()->_finalPass->setTexture0(tx);
+			_win->inst()->_finalPass->buildAllCommandBuffers();
 
 			this->Log(_win->getAdapter());
 
@@ -54,14 +63,21 @@ namespace citrus::engine {
 				}
 
 				clock::time_point fbegin = clock::now();
-				
+
+				VkSemaphore imageReadySem = _win->inst()->createSemaphore();
+				VkSemaphore frameDoneSem = _win->inst()->createSemaphore();
+
+				int thisFrameSwap = _win->getNextFrameIndex(imageReadySem);
+
 				_win->poll();
 
 				man->flush();
 				/*if (!ed || ed->playing || ed->doFrame)*/ man->preRender();
 				man->render();
 
-				_win->swapBuffers();
+				_win->inst()->_finalPass->submit(thisFrameSwap, imageReadySem, frameDoneSem);
+
+				_win->present(thisFrameSwap, frameDoneSem);
 				fpsSample++;
 
 				long long nextLastFrame = (clock::now() - fbegin).count();
@@ -69,6 +85,9 @@ namespace citrus::engine {
 				lastFrameNanos = nextLastFrame;
 				
 				/*if (!ed || ed->playing || ed->doFrame)*/ frame++;
+
+				_win->inst()->destroySemaphore(imageReadySem);
+				_win->inst()->destroySemaphore(frameDoneSem);
 
 				//if (ed) ed->doFrame = false;
 			}
@@ -81,6 +100,8 @@ namespace citrus::engine {
 		} catch(...) {
 			Log("Unrecoverable Error in Render Thread (Whack error.)");
 		}*/
+
+		_win->inst()->destroyTexture(tx);
 
 		if(_win) delete _win;
 

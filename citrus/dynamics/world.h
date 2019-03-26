@@ -6,7 +6,7 @@
 
 #include <btBulletDynamicsCommon.h>
 
-#include "rigidBody.h"
+#include "citrus/dynamics/rigidBody.h"
 
 namespace citrus::dynamics {
 	class sensor;

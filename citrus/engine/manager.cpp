@@ -1,5 +1,5 @@
-#include <citrus/engine/manager.h>
-#include <citrus/engine/elementRef.inl>
+#include "citrus/engine/manager.h"
+#include "citrus/engine/elementRef.inl"
 
 namespace citrus {
 	namespace engine {

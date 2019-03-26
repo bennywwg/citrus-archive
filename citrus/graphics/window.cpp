@@ -1,7 +1,7 @@
-#include <citrus/graphics/window.h>
-#include <citrus/util.h>
+#include "citrus/graphics/window.h"
+#include "citrus/util.h"
 #include <map>
-#include <GLFW/glfw3.h>
+
 
 namespace citrus::graphics {
 	//hardcoded icon
@@ -214,11 +214,28 @@ namespace citrus::graphics {
 		glfwGetFramebufferSize(_win, &width, &height);
 		return glm::ivec2(width, height);
 	}
-	void window::swapBuffers() {
-		glfwSwapBuffers(_win);
+	uint32_t window::getNextFrameIndex(VkSemaphore imageReadySignal) {
+		uint32_t imageIndex;
+		vkAcquireNextImageKHR(_inst->_device, _inst->_swapChain, std::numeric_limits<uint64_t>::max(), imageReadySignal, VK_NULL_HANDLE, &imageIndex);
+        return imageIndex;
+    }
+	void window::present(uint32_t index, VkSemaphore wait) {
+		VkPresentInfoKHR presentInfo = { };
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &wait;
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &_inst->_swapChain;
+		presentInfo.pImageIndices = &index;
+
+		vkQueuePresentKHR(_inst->_presentQueue, &presentInfo);
+		vkQueueWaitIdle(_inst->_presentQueue);
 	}
 	void window::poll() {
 		glfwPollEvents();
+	}
+	instance* window::inst() {
+		return _inst;
 	}
 	void window::setButtonCallback(std::function<void(int, int, int, int)> func) {
 		_buttonCallbackTable[_win] = func;
@@ -233,10 +250,10 @@ namespace citrus::graphics {
 	string window::getAdapter() {
 		return _adapter;
 	}
-	window::window(unsigned int width, unsigned int height, std::string title) {
+	window::window(unsigned int width, unsigned int height, std::string title, std::string resFolder) {
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		glfwWindowHint(GLFW_RESIZABLE, false);
 		_win = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
-		std::cout << _win << "\n";
 		GLFWimage img;
 		img.height = 32;
 		img.width = 32;
@@ -250,8 +267,11 @@ namespace citrus::graphics {
 		setCursorCallback([](double, double) { });
 
 		memset(_buttonStates, 0, sizeof(_buttonStates));
+        
+        _inst = new instance("ctvk_" + title, _win, width, height, resFolder);
 	}
 	window::~window() {
+        delete _inst;
 		glfwDestroyWindow(_win);
 	}
 }

@@ -7,8 +7,8 @@
 #include <typeindex>
 #include <memory>
 
-#include <citrus/dynamics/transform.h>
-#include <citrus/engine/element.h>
+#include "citrus/dynamics/transform.h"
+#include "citrus/engine/element.h"
 
 namespace citrus {
 	namespace engine {

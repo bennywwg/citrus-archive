@@ -1,8 +1,8 @@
 #pragma once
 
-#include <citrus/engine/element.h>
-#include <citrus/engine/engine.h>
-#include <citrus/graphics/mesh.h>
+#include "citrus/engine/element.h"
+#include "citrus/engine/engine.h"
+#include "citrus/graphics/mesh.h"
 
 namespace citrus::engine {
 	class meshFilter : public element {

@@ -10,12 +10,16 @@
 #include <iostream>
 #include <vector>
 
+#include "citrus/graphics/instance.h"
+
 struct GLFWwindow;
 
 namespace citrus {
 	namespace graphics {
 		class window;
 
+        class instance;
+        
 		using std::string;
 
 		extern std::map<GLFWwindow*, std::function<void(int, int, int, int)>> _buttonCallbackTable;
@@ -129,6 +133,8 @@ namespace citrus {
 
 			glm::dvec2 _cursorPos;
 			int _buttonStates[_numButtonEnums];
+            
+            instance *_inst;
 
 			public:
 			bool shouldClose();
@@ -142,9 +148,11 @@ namespace citrus {
 
 			glm::ivec2 framebufferSize();
 
-			void swapBuffers();
+            uint32_t getNextFrameIndex(VkSemaphore imageReadySignal);
+			void present(uint32_t index, VkSemaphore wait);
 
 			void poll();
+			instance* inst();
 
 			void setButtonCallback(std::function<void(int, int, int, int)> func);
 			void setCursorCallback(std::function<void(double, double)> func);
@@ -152,7 +160,7 @@ namespace citrus {
 
 			string getAdapter();
 
-			window(unsigned int width, unsigned int height, std::string title);
+			window(unsigned int width, unsigned int height, std::string title, std::string resFolder = "");
 			~window();
 
 			private:

@@ -1,22 +1,26 @@
-#include <citrus/graphics/instance.h>
+#include "citrus/graphics/instance.h"
 #include <iostream>
 #include <cstring>
 
 #ifdef __linux__
 #include <experimental/optional>
+template<typename T>
+using optional_t = std::experimental::optional<T>;
 #elif _WIN32
 #include <optional>
+template<typename T>
+using optional_t = std::optional<T>;
 #endif
 
 #include <cstdlib>
 #include <set>
 #include <algorithm>
-#include <citrus/graphics/vkShader.h>
+#include "citrus/graphics/finalPassShader.h"
 
 namespace citrus::graphics {
 	struct QueueFamilyIndices {
-		std::experimental::optional<uint32_t> graphicsFamily;
-		std::experimental::optional<uint32_t> presentFamily;
+		optional_t<uint32_t> graphicsFamily;
+		optional_t<uint32_t> presentFamily;
 
 		bool isComplete() {
 			return graphicsFamily && presentFamily;
@@ -311,6 +315,28 @@ namespace citrus::graphics {
 	void instance::destroyDevice() {
 		vkDestroyDevice(_device, nullptr);
 	}
+	
+	VkFormat instance::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+        for (VkFormat format : candidates) {
+            VkFormatProperties props;
+            vkGetPhysicalDeviceFormatProperties(_chosenDevice, format, &props);
+
+            if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+                return format;
+            } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+                return format;
+            }
+        }
+
+        throw std::runtime_error("failed to find supported format!");
+    }
+    VkFormat instance::findDepthFormat() {
+        return findSupportedFormat(
+            {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+        );
+    }
 
 	void instance::initSurface(GLFWwindow* win) {
 		VkResult res = glfwCreateWindowSurface(_instance, win, nullptr, &_surface);
@@ -489,46 +515,12 @@ namespace citrus::graphics {
 
 	int num = 0;
 
+    //sequence of events
+    //query window for next frame index and setup semaphore to signal when that image is available
+    //submit final pass shader, waiting for image available, and signalling when done rendering
+    //present rendered frame, waiting for when done rendering
 	void instance::drawFrame() {
-		uint32_t imageIndex;
-		vkAcquireNextImageKHR(_device, _swapChain, std::numeric_limits<uint64_t>::max(), _imgAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-	
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		VkSemaphore waitSemaphores[] = {_imgAvailableSemaphore};
-		VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &_finalPass->targets[imageIndex].cbf;
-		VkSemaphore signalSemaphores[] = { _renderFinishedSemaphore };
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
-
-		//set some data for testing purposes only
-		mat4 m = glm::translate(glm::vec3(sin(((float)num)*0.01f), 0.0f, 0.0f));
-		mapUnmapMemory(uniformMem.mem, sizeof(mat4), _finalPass->targets[imageIndex].uboOff, &m);
-		num++;
-
-		if(vkQueueSubmit(_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
-			throw std::runtime_error("failed to submit draw command buffer!");
-		}
-
-		VkPresentInfoKHR presentInfo = {};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
-
-		VkSwapchainKHR swapChains[] = {_swapChain};
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = swapChains;
-		presentInfo.pImageIndices = &imageIndex;
-
-		vkQueuePresentKHR(_presentQueue, &presentInfo);
-		vkQueueWaitIdle(_presentQueue);
 	}
 	
 	void instance::initMemory() {
@@ -546,6 +538,9 @@ namespace citrus::graphics {
 		textureMem.initImage(512 * 1024 * 1024, 0,
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		textureMem.name = "texture";
+        fboMem.initImage(64 * 1024 * 1024, 0, //enough for nearly 8 1080p framebuffers
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        fboMem.name = "framebuffer";
 		stagingMem.initBuffer(16 * 1024 * 1024, 0,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		stagingMem.name = "staging";
@@ -795,13 +790,19 @@ namespace citrus::graphics {
 		
 		submitFenceProc(commandBuffer, proc);
 	}
-	void instance::pipelineBarrierLayoutChange(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, fenceProc* proc) {
+	void instance::pipelineBarrierLayoutChange(VkImage image,
+        VkImageLayout oldLayout, VkImageLayout newLayout,
+        VkAccessFlags srcAccess, VkAccessFlags dstAccess,
+        VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+        fenceProc* proc) {
 		VkCommandBuffer commandBuffer = createCommandBuffer();
 
         VkImageMemoryBarrier barrier = {};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         barrier.oldLayout = oldLayout;
         barrier.newLayout = newLayout;
+        barrier.srcAccessMask = srcAccess;
+        barrier.dstAccessMask = dstAccess;
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image = image;
@@ -810,25 +811,6 @@ namespace citrus::graphics {
         barrier.subresourceRange.levelCount = 1;
         barrier.subresourceRange.baseArrayLayer = 0;
         barrier.subresourceRange.layerCount = 1;
-
-        VkPipelineStageFlags sourceStage;
-        VkPipelineStageFlags destinationStage;
-
-        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-            barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        } else {
-            throw std::runtime_error("unsupported layout transition!");
-        }
 		
 		VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -838,7 +820,7 @@ namespace citrus::graphics {
 
         vkCmdPipelineBarrier(
             commandBuffer,
-            sourceStage, destinationStage,
+            srcStage, dstStage,
             0,
             0, nullptr,
             0, nullptr,
@@ -850,7 +832,7 @@ namespace citrus::graphics {
 		submitFenceProc(commandBuffer, proc);
 	}
 	
-	ctTexture instance::createTexture4b(uint32_t width, uint32_t height, void *data) {
+	ctTexture instance::createTexture4b(uint32_t width, uint32_t height, bool fboTexture, void *data) {
 		VkImageCreateInfo imageInfo = { };
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -862,7 +844,10 @@ namespace citrus::graphics {
 		imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imageInfo.usage =
+            (data ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : 0) |
+            (fboTexture ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : 0) |
+            VK_IMAGE_USAGE_SAMPLED_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		
@@ -883,9 +868,17 @@ namespace citrus::graphics {
 
 		vkBindImageMemory(_device, img, textureMem.mem, off);
 		mapUnmapMemory(stagingMem.mem, width * height * 4, tmp, data);
-		pipelineBarrierLayoutChange(img, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, nullptr);
+		pipelineBarrierLayoutChange(img,
+            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            0, VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+            nullptr);
 		copyBufferToImage(stagingMem.buf, tmp, img, width, height, nullptr);
-		pipelineBarrierLayoutChange(img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, nullptr);
+		pipelineBarrierLayoutChange(img,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            nullptr);
 		stagingMem.free(tmp);
 		
 		VkImageViewCreateInfo viewInfo = { };
@@ -963,7 +956,25 @@ namespace citrus::graphics {
 			vkFreeCommandBuffers(_device, _commandPool, 1, &commandBuffer);
 		}
 	}
+
+	VkSemaphore instance::createSemaphore() {
+		VkSemaphore res = VK_NULL_HANDLE;
+
+		VkSemaphoreCreateInfo info = { };
+		info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		info.flags = 0;
+		if (vkCreateSemaphore(_device, &info, nullptr, &res) != VK_SUCCESS) throw std::runtime_error("couldn't create semaphore");
+
+		return res;
+	}
+	void instance::destroySemaphore(VkSemaphore sem) {
+		vkDestroySemaphore(_device, sem, nullptr);
+	}
 	
+	int instance::swapChainSize() {
+		return _swapChainImages.size();
+	}
+
 	VkCommandBuffer instance::createCommandBuffer() {
         VkCommandBufferAllocateInfo allocInfo = {};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -977,8 +988,8 @@ namespace citrus::graphics {
         return commandBuffer;
     }
 
-	instance::instance(string name, GLFWwindow* win) :
-	vertexMem(*this), indexMem(*this), uniformMem(*this), textureMem(*this), stagingMem(*this) {
+	instance::instance(string name, GLFWwindow* win, int width, int height, std::string resFolder) :
+	vertexMem(*this), indexMem(*this), uniformMem(*this), textureMem(*this), fboMem(*this), stagingMem(*this) {
 		loadExtensions();
 		checkExtensions();
 		loadValidationLayers();
@@ -991,24 +1002,23 @@ namespace citrus::graphics {
 		initDevice();
 		chooseSurfaceFormat();
 		chooseSurfacePresentMode();
-		chooseSurfaceExtent(640,480);
+		chooseSurfaceExtent(width,height);
 		initSwapChain();
 		initCommandPool();
 		initSemaphores();
 		initMemory();
-		_finalPass = new vkShader(*this,
-			meshDescription(),
+		_finalPass = new finalPassShader(*this,
 			_swapChainImageViews,
-			640, 480,
-			"res/shaders/finalpass.vert.spv",
-			"",
-			"res/shaders/finalpass.frag.spv");
+			width, height,
+			resFolder + "/shaders/finalpass.vert.spv",
+			resFolder + "/shaders/finalpass.frag.spv");
 	}
 	instance::~instance() {
 		vertexMem.freeResources();
 		indexMem.freeResources();
 		uniformMem.freeResources();
 		textureMem.freeResources();
+        fboMem.freeResources();
 		stagingMem.freeResources();
 
 		delete _finalPass;

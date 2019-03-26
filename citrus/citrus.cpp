@@ -1,26 +1,26 @@
-#include <citrus/util.h>
+#include "citrus/util.h"
 
-#include <citrus/graphics/instance.h>
+#include "citrus/graphics/instance.h"
 
 #include <iomanip>
 
-#include <citrus/engine/engine.h>
-#include <citrus/engine/freeCam.h>
-#include <citrus/engine/renderManager.h>
-#include <citrus/engine/worldManager.h>
-#include <citrus/engine/meshFilter.h>
-#include <citrus/engine/rigidBodyComponent.h>
-#include <citrus/engine/playerController.h>
-#include <citrus/engine/worldManager.h>
-#include <citrus/engine/rigidBodyComponent.h>
-#include <citrus/engine/projectile.h>
-#include <citrus/engine/sensorEle.h>
+#include "citrus/engine/engine.h"
+#include "citrus/engine/freeCam.h"
+#include "citrus/engine/renderManager.h"
+#include "citrus/engine/worldManager.h"
+#include "citrus/engine/meshFilter.h"
+#include "citrus/engine/rigidBodyComponent.h"
+#include "citrus/engine/playerController.h"
+#include "citrus/engine/worldManager.h"
+#include "citrus/engine/rigidBodyComponent.h"
+#include "citrus/engine/projectile.h"
+#include "citrus/engine/sensorEle.h"
 
-#include <citrus/engine/entityRef.inl>
-#include <citrus/engine/elementRef.inl>
-#include <citrus/engine/manager.inl>
-#include <citrus/graphics/vkShader.h>
-#include <citrus/graphics/image.h>
+#include "citrus/engine/entityRef.inl"
+#include "citrus/engine/elementRef.inl"
+#include "citrus/engine/manager.inl"
+#include "citrus/graphics/vkShader.h"
+#include "citrus/graphics/image.h"
 using citrus::engine::entityRef;
 
 #include <sstream>
@@ -38,12 +38,23 @@ void terminateGLFW() {
 int main(int argc, char **argv) {
 	util::sout("Citrus 0.0.0 - DO NOT DISTRIBUTE\n");
 
-	graphics::image4b img("res/textures/grid.png");
+	std::string resFolder = argc == 1 ? "" :argv[1];
 
 	initializeGLFW();
 
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	auto win = glfwCreateWindow(640, 480, "test", nullptr, nullptr);
+	engine::engine* e = new engine::engine(1.0 / 100.0);
+
+	e->start();
+
+	std::cin.get();
+
+	e->stop();
+
+	delete e;
+    
+    terminateGLFW();
+    
+    return 0;
 
 	graphics::meshDescription desc;
 	{
@@ -61,13 +72,13 @@ int main(int argc, char **argv) {
 	
 	
 
-	graphics::instance * inst = new graphics::instance("ctvk", win);
+	//graphics::instance * inst = new graphics::instance("ctvk", win, 640, 480);
     
 
-	graphics::mesh me("res/meshes/human.dae");
+	graphics::mesh me(resFolder + "/meshes/human.dae");
     
 
-	graphics::model *mo = new graphics::model(*inst, me);
+	//graphics::model *mo = new graphics::model(*inst, me);
     
 
 	//graphics::vkShader *sh = new graphics::vkShader(*inst, desc, {}, 640, 480,
@@ -75,20 +86,20 @@ int main(int argc, char **argv) {
 	//	"",
 	//	"res/shaders/standard.frag.spv");
 	
-	graphics::ctTexture tex = inst->createTexture4b(img.width(), img.height(), img.data());
+	//graphics::ctTexture tex = inst-.>createTexture4b(img.width(), img.height(), false, img.data());
     
 	
-	for(int i = 0; i < inst->_finalPass->targets.size(); i++) {
-		auto fpfbo = inst->_finalPass->targets[i];
-		inst->_finalPass->bindTexture(i, tex);
-		inst->_finalPass->beginBufferAndRenderPass(fpfbo);
-		inst->_finalPass->bindPipelineAndDraw(fpfbo);
-		inst->_finalPass->endRenderPassAndBuffer(fpfbo);
-	}
+	//for(int i = 0; i < inst->_finalPass->targets.size(); i++) {
+		//auto fpfbo = inst->_finalPass->targets[i];
+		//inst->_finalPass->bindTexture(i, tex);
+		//inst->_finalPass->beginBufferAndRenderPass(fpfbo);
+		//inst->_finalPass->bindPipelineAndDraw(fpfbo);
+		//inst->_finalPass->endRenderPassAndBuffer(fpfbo);
+	//}
 	
 	
 	for(int i = 0; i < 10; i++) {
-		inst->drawFrame();
+		//inst->drawFrame();
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
@@ -96,11 +107,11 @@ int main(int argc, char **argv) {
 
 	//delete sh;
 	
-	inst->destroyTexture(tex);
+	//inst->destroyTexture(tex);
 		
-	delete mo;
+	//delete mo;
 
-	delete inst;
+	//delete inst;
 
 	return 0;
 	

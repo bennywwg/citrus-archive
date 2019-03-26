@@ -1,7 +1,7 @@
 #pragma once
 
-#include <citrus/graphics/instance.h>
-#include <citrus/graphics/mesh.h>
+#include "citrus/graphics/instance.h"
+#include "citrus/graphics/mesh.h"
 
 namespace citrus::graphics {
 	
@@ -28,7 +28,7 @@ namespace citrus::graphics {
 		
 		vector<ctFBO> targets;
 
-		vkShader(instance& inst, meshDescription const& desc, vector<VkImageView> views, uint32_t width, uint32_t height, string vertLoc, string geomLoc, string fragLoc);
+		vkShader(instance& inst, meshDescription const& desc, vector<VkImageView> views, uint32_t width, uint32_t height, bool useDepth, string vertLoc, string geomLoc, string fragLoc);
 		~vkShader();
 	};
 }

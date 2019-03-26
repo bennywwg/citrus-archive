@@ -8,11 +8,11 @@
 #include <shared_mutex>
 #include <atomic>
 
-#include <citrus/engine/element.h>
-#include <citrus/engine/entity.h>
-#include <citrus/util.h>
-#include <citrus/engine/elementRef.h>
-#include <citrus/engine/entityRef.h>
+#include "citrus/engine/element.h"
+#include "citrus/engine/entity.h"
+#include "citrus/util.h"
+#include "citrus/engine/elementRef.h"
+#include "citrus/engine/entityRef.h"
 
 namespace citrus {
 	namespace engine {

@@ -3,8 +3,8 @@
 #include <btBulletCollisionCommon.h>
 #include <btBulletDynamicsCommon.h>
 
-#include <citrus/util.h>
-#include <citrus/dynamics/collisionObject.h>
+#include "citrus/util.h"
+#include "citrus/dynamics/collisionObject.h"
 
 namespace citrus {
 	namespace dynamics {

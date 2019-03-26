@@ -1,9 +1,9 @@
 #pragma once
 
-#include <citrus/engine/entityRef.h>
-#include <citrus/util.h>
+#include "citrus/engine/entityRef.h"
+#include "citrus/util.h"
 
-#include <citrus/editor/gui.h>
+#include "citrus/editor/gui.h"
 #include <memory>
 
 namespace citrus {

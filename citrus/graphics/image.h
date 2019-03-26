@@ -1,6 +1,6 @@
 #pragma once
 
-#include <citrus/util.h>
+#include "citrus/util.h"
 
 namespace citrus::graphics {
 	#pragma pack(push, 1)
@@ -94,7 +94,6 @@ namespace citrus::graphics {
 			_data.resize(_width * _height);
 
             if (std::is_integral<T>::value) { //copy value
-                util::sout("integral\n");
                 for (uint32_t i = 0; i < _data.size(); i++) {
                     T *px = (T*)&(_data[i]);
                     for (int u = 0; u < N; u++) {
@@ -106,7 +105,6 @@ namespace citrus::graphics {
                     }
                 }
             } else if (std::is_floating_point<T>::value) { //normalize to range [0,1]
-                util::sout("floating\n");
                 for (uint32_t i = 0; i < _data.size(); i++) {
                     for (uint32_t u = 0; u < N; u++) {
                         if(u < dN) {
@@ -118,7 +116,6 @@ namespace citrus::graphics {
                     }
                 }
             } else {
-                util::sout("other\n");
                 for (int i = 0; i < (int) _data.size(); i++) { //use constructor taking unsigned char
                     for (uint32_t u = 0; u < N; u++) {
                         if(u < dN) {

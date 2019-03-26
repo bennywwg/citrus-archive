@@ -9,7 +9,12 @@
 #include <chrono>
 #include <experimental/filesystem>
 
+#ifdef _WIN32
+#include <nlohmann/json.hpp>
+#elif
 #include <json.hpp>
+#endif
+
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -18,7 +23,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include <btBulletDynamicsCommon.h>
-//#include <bullet/btBulletDynamicsCommon.h>
+//#include <bullet/btBulletDynamicsCommon.h"
 
 #define NO_COPY(classname)\
 			private:\
@@ -131,4 +136,4 @@ namespace citrus {
 	}
 }
 
-#include <citrus/dynamics/transform.h>
+#include "citrus/dynamics/transform.h"

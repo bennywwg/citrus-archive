@@ -1,5 +1,5 @@
-#include <citrus/graphics/tilemapFont.h>
-#include <citrus/util.h>
+#include "citrus/graphics/tilemapFont.h"
+#include "citrus/util.h"
 
 namespace citrus::engine {
 	void tilemapFont::streamText(std::string text, glm::ivec2 loc, glm::vec3 drawColor, float depth, glm::ivec2 screen) {

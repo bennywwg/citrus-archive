@@ -3,12 +3,12 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <citrus/util.h>
+#include "citrus/util.h"
 
 namespace citrus::graphics {
 	using std::string;
 	using std::vector;
-	class vkShader;
+	class finalPassShader;
 
 	class instance;
 
@@ -16,15 +16,14 @@ namespace citrus::graphics {
 		VkFramebuffer		fbo;
 		VkCommandBuffer		cbf;
 		VkDescriptorSet		set;
-		uint64_t			uboOff; //offset into instance.uniformMemory.mem
-		
+		uint64_t			uboOff; //offset into instance.uniformMem.mem
 	};
-
+    
 	struct ctTexture {
 		VkImage			img;
 		VkImageView		view;
 		VkSampler		samp;
-		uint64_t		off; //offset into instance.textureMemory.mem
+		uint64_t		off; //offset into instance.textureMem.mem
 	};
 	
 	class fenceProc {
@@ -55,12 +54,7 @@ namespace citrus::graphics {
 	
 	
 	class instance {
-		friend class QueueFamilyIndices;
-		friend class SwapChainSupportDetails;
-		friend class vkShader;
-		friend class vkBuffer;
-		friend class fenceProc;
-
+		public:
 		const bool enableValidationLayers = true;
 
 		VkInstance _instance;
@@ -83,9 +77,8 @@ namespace citrus::graphics {
 		VkCommandPool _commandPool;
 		VkSemaphore _imgAvailableSemaphore, _renderFinishedSemaphore;
 
-		public:
-		vkShader* _finalPass;
-		private:
+		finalPassShader* _finalPass;
+        
 
 		void initInstance(string name);
 		void destroyInstance();
@@ -107,7 +100,10 @@ namespace citrus::graphics {
 		void choosePhysicalDevice();
 		void initDevice();
 		void destroyDevice();
-
+        
+        VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+        VkFormat findDepthFormat();
+        
 		void initSurface(GLFWwindow* win);
 		void destroySurface();
 		void chooseSurfaceFormat();
@@ -126,7 +122,7 @@ namespace citrus::graphics {
 		uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		
 		void initMemory();
-	public:
+        
 		struct allocator {
 			struct allocBlock {
 				uint64_t addr;
@@ -154,6 +150,7 @@ namespace citrus::graphics {
 		allocator indexMem;
 		allocator uniformMem;
 		allocator textureMem;
+        allocator fboMem;
 		allocator stagingMem;
 		
 		void mapUnmapMemory(VkDeviceMemory dstMemory, uint64_t size, uint64_t start, void* data);
@@ -161,14 +158,26 @@ namespace citrus::graphics {
 		void fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, std::function<void(void*)> fillFunc, fenceProc* proc = nullptr);
 		void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, uint64_t size, uint64_t srcStart, uint64_t dstStart, fenceProc* proc = nullptr);
 		void copyBufferToImage(VkBuffer stagingBuf, uint64_t start, VkImage image, uint32_t width, uint32_t height, fenceProc* proc = nullptr);
-		void pipelineBarrierLayoutChange(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, fenceProc* proc = nullptr);
-
+		void pipelineBarrierLayoutChange(VkImage image,
+            VkImageLayout oldLayout, VkImageLayout newLayout,
+            VkAccessFlags srcAccess, VkAccessFlags dstAccess,
+            VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
+            fenceProc* proc = nullptr);
 		
-		ctTexture createTexture4b(uint32_t width, uint32_t height, void* data);
+        //creates an image, image view, and sampler
+        //if fboTexture is true, image usage contains VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+        //if data is non-null, image usage contains VK_IMAGE_USAGE_TRANSFER_DST_BIT and
+        //stage is VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT 
+		ctTexture createTexture4b(uint32_t width, uint32_t height, bool fboTexture, void* data);
 		void destroyTexture(ctTexture tex);
 		
 		//takes ownership of commandBuffer, blocks if proc == nullptr
 		void submitFenceProc(VkCommandBuffer commandBuffer, fenceProc* proc = nullptr);
+
+		VkSemaphore createSemaphore();
+		void destroySemaphore(VkSemaphore sem);
+
+		int swapChainSize();
 		
 	private:
 		
@@ -178,7 +187,7 @@ namespace citrus::graphics {
 
 		void drawFrame();
 
-		instance(string name, GLFWwindow* win);
+		instance(string name, GLFWwindow* win, int width, int height, std::string resFolder = "");
 		~instance();
 	};
 }

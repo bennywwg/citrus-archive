@@ -1,8 +1,8 @@
 #pragma once
 
-#include <editor/gui.h>
+#include "citrus/editor/gui.h"
 #include <memory>
-#include <engine/entityRef.h>
+#include "citrus/engine/entityRef.h"
 #include <vector>
 
 namespace citrus::editor {

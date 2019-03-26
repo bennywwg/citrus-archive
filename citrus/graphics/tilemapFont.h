@@ -5,7 +5,7 @@
 
 #include <string>
 #include <memory>
-#include <citrus/util.h>
+#include "citrus/util.h"
 
 namespace citrus {
 	namespace engine {

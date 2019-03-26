@@ -1,4 +1,4 @@
-#include <citrus/dynamics/collisionObject.h>
+#include "citrus/dynamics/collisionObject.h"
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 

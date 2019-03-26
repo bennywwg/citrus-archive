@@ -1,6 +1,6 @@
-#include <citrus/graphics/mesh.h>
+#include "citrus/graphics/mesh.h"
 
-#include <citrus/graphics/instance.h>
+#include "citrus/graphics/instance.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -646,11 +646,11 @@ namespace citrus::graphics {
 		Assimp::Importer imp;
 		//imp.SetExtraVerbose(true);
 
-		const aiScene* scene = imp.ReadFile(location,
+		const aiScene* scene = nullptr;/* imp.ReadFile(location.c_str(),
 			aiProcess_CalcTangentSpace |
 			aiProcess_Triangulate |
 			aiProcess_JoinIdenticalVertices |
-			aiProcess_SortByPType);
+			aiProcess_SortByPType);*/
 		if(!scene) {
 			util::sout(imp.GetErrorString());
 			throw std::runtime_error(("Failed to load model " + location).c_str());
@@ -672,12 +672,12 @@ namespace citrus::graphics {
 		Assimp::Importer imp;
 		imp.SetExtraVerbose(true);
 
-		const aiScene* scene = imp.ReadFile(path,
+		const aiScene* scene = nullptr;/* imp.ReadFile(path,
 			aiProcess_CalcTangentSpace |
 			aiProcess_Triangulate |
 			aiProcess_JoinIdenticalVertices |
 			aiProcess_SortByPType |
-			aiProcess_CalcTangentSpace);
+			aiProcess_CalcTangentSpace);*/
 		if(!scene) {
 			util::sout(imp.GetErrorString());
 			throw std::runtime_error(("Failed to load model " + path).c_str());

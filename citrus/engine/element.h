@@ -6,11 +6,11 @@
 #include <type_traits>
 #include <typeindex>
 
-#include <citrus/util.h>
+#include "citrus/util.h"
 
-#include <citrus/engine/entityRef.h>
+#include "citrus/engine/entityRef.h"
 
-#include <citrus/editor/gui.h>
+#include "citrus/editor/gui.h"
 
 namespace citrus::engine {
 	class engine;

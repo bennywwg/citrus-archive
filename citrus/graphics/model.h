@@ -1,5 +1,5 @@
-#include <citrus/util.h>
-#include <citrus/graphics/instance.h>
+#include "citrus/util.h"
+#include "citrus/graphics/instance.h"
 
 namespace citrus::graphics {
 	class instance;

@@ -1,10 +1,10 @@
-#include <citrus/engine/engine.h>
-#include <citrus/engine/renderManager.h>
-#include <citrus/engine/entityRef.inl>
-#include <citrus/engine/elementRef.inl>
-#include <citrus/engine/manager.inl>
+#include "citrus/engine/engine.h"
+#include "citrus/engine/renderManager.h"
+#include "citrus/engine/entityRef.inl"
+#include "citrus/engine/elementRef.inl"
+#include "citrus/engine/manager.inl"
 
-//#include <openvr/openvr.h>
+//#include <openvr/openvr.h"
 
 namespace citrus {
 	namespace engine {

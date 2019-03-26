@@ -1,10 +1,10 @@
-#include <citrus/engine/meshFilter.h>
+#include "citrus/engine/meshFilter.h"
 
-#include <citrus/engine/renderManager.h>
+#include "citrus/engine/renderManager.h"
 
-#include <citrus/engine/manager.inl>
+#include "citrus/engine/manager.inl"
 
-#include <citrus/engine/elementRef.inl>
+#include "citrus/engine/elementRef.inl"
 
 namespace citrus::engine {
 	void meshFilter::setState(int m, int t, int s, int a) {

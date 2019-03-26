@@ -3,9 +3,9 @@
 #ifndef FREECAMCOMPONENT_H
 #define FREECAMCOMPONENT_H
 
-#include <citrus/graphics/camera.h>
-#include <citrus/util.h>
-#include <citrus/engine/element.h>
+#include "citrus/graphics/camera.h"
+#include "citrus/util.h"
+#include "citrus/engine/element.h"
 
 namespace citrus {
 	namespace engine {

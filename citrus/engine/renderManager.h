@@ -3,12 +3,12 @@
 #ifndef RENDERMANAGERCOMPONENT_H
 #define RENDERMANAGERCOMPONENT_H
 
-#include <citrus/engine/freeCam.h>
-#include <citrus/graphics/tilemapFont.h>
-#include <citrus/engine/meshFilter.h>
-#include <citrus/util.h>
+#include "citrus/engine/freeCam.h"
+#include "citrus/graphics/tilemapFont.h"
+#include "citrus/engine/meshFilter.h"
+#include "citrus/util.h"
 
-#include <citrus/graphics/model.h>
+#include "citrus/graphics/model.h"
 
 
 namespace citrus::engine {
