@@ -38,15 +38,83 @@ void terminateGLFW() {
 int main(int argc, char **argv) {
 	util::sout("Citrus 0.0.0 - DO NOT DISTRIBUTE\n");
 
-	std::string resFolder = argc == 1 ? "" :argv[1];
+	std::string resDir = argc == 1 ? "" :argv[1];
 
 	initializeGLFW();
 
 	engine::engine* e = new engine::engine(1.0 / 100.0);
 
+	e->man->registerType<engine::renderManager>("Render Manager", true);
+	e->man->registerType<engine::freeCam>("Free Cam", true);
+	e->man->registerType<engine::meshFilter>("Mesh Filter", false);
+	e->man->registerType<engine::playerController>("Player Controller", true);
+	e->man->registerType<engine::worldManager>("World Manager", true);
+	e->man->registerType<engine::rigidBodyComponent>("Rigid Body", false);
+	e->man->registerType<engine::sensorEle>("Sensor", false);
+	e->man->registerType<engine::projectile>("Projectile", true);
+	e->man->setOrder({
+		typeid(engine::worldManager),
+		typeid(engine::sensorEle),
+		typeid(engine::rigidBodyComponent),
+		typeid(engine::freeCam),
+		typeid(engine::playerController),
+		typeid(engine::projectile),
+		typeid(engine::renderManager),
+		typeid(engine::meshFilter)
+	});
+
+	auto cr = e->man->create("Main Cam", {
+		engine::eleInit<engine::freeCam>::run(
+			[](engine::freeCam & cam) {
+				cam.cam.aspectRatio = 1.0f;
+				cam.cam.zNear = 0.01f;
+				cam.cam.zFar = 100.0f;
+				cam.cam.verticalFOV = 90.0f;
+				cam.cam.trans.setPosition(vec3(0.0f, 0.0f, -10.0f));
+			}
+		)
+	}, util::nextID()).getElement<engine::freeCam>();
+
+	auto item = e->man->create("MeshTable", {
+		engine::eleInit<engine::renderManager>::run(
+			[resDir, cr](engine::renderManager & man) {
+				man.loadAnimation(resDir + "/animations/run.cta", 0);
+				man.loadAnimation(resDir + "/animations/idle.cta", 1);
+
+				//man.loadMesh(resDir + "/meshes/natsuki.dae", 0);
+				man.loadMesh(resDir + "/meshes/monkas.dae", 0);
+				man.loadMesh(resDir + "/meshes/sphere.dae", 1);
+				man.loadMesh(resDir + "/meshes/cube1x1x1.dae", 2);
+				man.loadMesh(resDir + "/meshes/walker.dae", 3);
+				man.loadMesh(resDir + "/meshes/human.dae", 4);
+				man.loadMesh(resDir + "/meshes/blast.dae", 5);
+				man.loadMesh(resDir + "/meshes/icosphere.dae", 6);
+				man.loadMesh(resDir + "/meshes/arrow.dae", 7);
+
+				man.bindAllAvailableAnimations();
+
+				man.loadShader(resDir + "/shaders/standard.vert.spv", resDir + "/shaders/standard.frag.spv", 0);
+
+				man.camRef = cr;
+			}
+		)
+	}, util::nextID());
+
+	e->man->create("TestMesh", {
+		engine::eleInit<engine::meshFilter>::run(
+			[](engine::meshFilter& filt) {
+				filt.setState(0, 0, 0);
+			}	
+		)
+	}, util::nextID());
+
 	e->start();
 
 	std::cin.get();
+
+	e->man->destroy(item);
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
 	e->stop();
 
@@ -73,9 +141,6 @@ int main(int argc, char **argv) {
 	
 
 	//graphics::instance * inst = new graphics::instance("ctvk", win, 640, 480);
-    
-
-	graphics::mesh me(resFolder + "/meshes/human.dae");
     
 
 	//graphics::model *mo = new graphics::model(*inst, me);
@@ -161,7 +226,7 @@ int main(int argc, char **argv) {
 					man.bindAllAvailableAnimations();
 				}
 			)
-			}, util::nextID());
+		}, util::nextID());
 
 		entityRef cam2 = e.man->create("Test 2", {
 			engine::eleInit<engine::freeCam>::run(

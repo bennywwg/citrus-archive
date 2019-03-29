@@ -5,39 +5,24 @@
 #include <iostream>
 
 namespace citrus::graphics {
-	void vkShader::beginBufferAndRenderPass(ctFBO fbo) {
-		VkCommandBufferBeginInfo beginInfo = {};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-		if (vkBeginCommandBuffer(fbo.cbf, &beginInfo) != VK_SUCCESS) {
-			throw std::runtime_error("failed to begin recording command buffer!");
-		}
-
+	void vkShader::beginShader(uint32_t frameIndex, VkCommandBuffer buf) {
+		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 		VkRenderPassBeginInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = _renderPass;
-		renderPassInfo.framebuffer = fbo.fbo;
-
+		renderPassInfo.framebuffer = targets[frameIndex].fbo;
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = _inst._extent;
-
-		VkClearValue clearColor = { 1.0f, 0.0f, 0.0f, 1.0f };
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
 
-		vkCmdBeginRenderPass(fbo.cbf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(buf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+		vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &targets[frameIndex].set, 0, nullptr);
 	}
-	void vkShader::bindPipelineAndDraw(ctFBO fbo) {
-		vkCmdBindPipeline(fbo.cbf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-		vkCmdBindDescriptorSets(fbo.cbf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &fbo.set, 0, nullptr);
-		vkCmdDraw(fbo.cbf, 3, 1, 0, 0);
-	}
-	void vkShader::endRenderPassAndBuffer(ctFBO fbo) {
-		vkCmdEndRenderPass(fbo.cbf);
-		if (vkEndCommandBuffer(fbo.cbf) != VK_SUCCESS) {
-			throw std::runtime_error("failed to record command buffer!");
-		}
+	void vkShader::endShader(uint32_t frameIndex, VkCommandBuffer buf) {
+		vkCmdEndRenderPass(buf);
 	}
 	void vkShader::bindTexture(uint32_t target, ctTexture const& tex) {
 		VkDescriptorImageInfo imageInfo = { };
@@ -246,14 +231,14 @@ namespace citrus::graphics {
 		}
 
 		VkAttachmentDescription colorAttachment = { };
-		colorAttachment.format = _inst._surfaceFormat.format;
+		colorAttachment.format = VK_FORMAT_R8G8B8A8_UNORM;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         
         VkAttachmentDescription depthAttachment = { };
         depthAttachment.format = _inst.findDepthFormat();
@@ -329,9 +314,9 @@ namespace citrus::graphics {
 		
 		std::array<VkDescriptorPoolSize, 2> poolSizes = { };
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(_inst._swapChainImageViews.size());
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(views.size());
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(_inst._swapChainImageViews.size());
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(views.size());
 		
 		VkDescriptorPoolCreateInfo poolInfo = { };
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -377,16 +362,11 @@ namespace citrus::graphics {
 				throw std::runtime_error("failed to create framebuffer!");
 			}
 			
-			VkCommandBuffer buf;
 			VkCommandBufferAllocateInfo allocInfo = {};
 			allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 			allocInfo.commandPool = _inst._commandPool;
 			allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 			allocInfo.commandBufferCount = 1;
-
-			if(vkAllocateCommandBuffers(_inst._device, &allocInfo, &buf) != VK_SUCCESS) {
-				throw std::runtime_error("failed to allocate command buffers!");
-			}
 
 			uint64_t off = _inst.uniformMem.alloc(sizeof(mat4));
 
@@ -408,7 +388,6 @@ namespace citrus::graphics {
 
 			ctFBO res = { };
 			res.fbo = fbo;
-			res.cbf = buf;
 			res.set = descriptorHandles[i];
 			res.uboOff = off;
 
@@ -421,7 +400,6 @@ namespace citrus::graphics {
 		for(int i = 0; i < targets.size(); i++) {
 			_inst.uniformMem.free(targets[i].uboOff);
 			vkDestroyFramebuffer(_inst._device, targets[i].fbo, nullptr);
-			vkFreeCommandBuffers(_inst._device, _inst._commandPool, 1, &targets[i].cbf);
 		}
 		if(_pipeline != VK_NULL_HANDLE) vkDestroyPipeline(_inst._device, _pipeline, nullptr);
 		if(_renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(_inst._device, _renderPass, nullptr);

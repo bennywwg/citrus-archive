@@ -10,5 +10,6 @@ layout(location = 0) out vec4 color;
 layout(binding = 1) uniform sampler2D colorTex;
 
 void main() {
-	color = vec4(frag_uv * frag_norm.y, 0, 1);
+	color = vec4(1, 0, 0, 1);
+	//color = vec4(frag_uv * frag_norm.y, 0, 1);
 }

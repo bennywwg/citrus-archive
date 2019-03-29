@@ -489,7 +489,7 @@ namespace citrus::graphics {
 		VkCommandPoolCreateInfo poolInfo = {};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-		poolInfo.flags = 0; // Optional
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Optional
 
 		if(vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create command pool!");
@@ -864,22 +864,24 @@ namespace citrus::graphics {
 
 
 		uint64_t off = textureMem.alloc(memRequirements.size);
-		uint64_t tmp = stagingMem.alloc(width * height * 4);
-
 		vkBindImageMemory(_device, img, textureMem.mem, off);
-		mapUnmapMemory(stagingMem.mem, width * height * 4, tmp, data);
-		pipelineBarrierLayoutChange(img,
-            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            0, VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-            nullptr);
-		copyBufferToImage(stagingMem.buf, tmp, img, width, height, nullptr);
-		pipelineBarrierLayoutChange(img,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            nullptr);
-		stagingMem.free(tmp);
+
+		if (data) {
+			uint64_t tmp = stagingMem.alloc(width * height * 4);
+			mapUnmapMemory(stagingMem.mem, width * height * 4, tmp, data);
+			pipelineBarrierLayoutChange(img,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				0, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				nullptr);
+			copyBufferToImage(stagingMem.buf, tmp, img, width, height, nullptr);
+			pipelineBarrierLayoutChange(img,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				nullptr);
+			stagingMem.free(tmp);
+		}
 		
 		VkImageViewCreateInfo viewInfo = { };
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -970,6 +972,25 @@ namespace citrus::graphics {
 	void instance::destroySemaphore(VkSemaphore sem) {
 		vkDestroySemaphore(_device, sem, nullptr);
 	}
+	VkFence instance::createFence(bool signalled) {
+		VkFence fen;
+
+		VkFenceCreateInfo info = { };
+		info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		info.flags = signalled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
+
+		if(vkCreateFence(_device, &info, nullptr, &fen) != VK_SUCCESS) throw std::runtime_error("couldn't create fence");
+		return fen;
+	}
+	void instance::destroyFence(VkFence fen) {
+		vkDestroyFence(_device, fen, nullptr);
+	}
+	void instance::waitForFence(VkFence fen) {
+		if(vkWaitForFences(_device, 1, &fen, true, 0) != VK_SUCCESS) throw std::runtime_error("failed to wait for fence");
+	}
+	void instance::resetFence(VkFence fen) {
+		if (vkResetFences(_device, 1, &fen) != VK_SUCCESS) throw std::runtime_error("failed to reset fence");
+	}
 	
 	int instance::swapChainSize() {
 		return _swapChainImages.size();
@@ -987,6 +1008,9 @@ namespace citrus::graphics {
 		
         return commandBuffer;
     }
+	void instance::destroyCommandBuffer(VkCommandBuffer buf) {
+		vkFreeCommandBuffers(_device, _commandPool, 1, &buf);
+	}
 
 	instance::instance(string name, GLFWwindow* win, int width, int height, std::string resFolder) :
 	vertexMem(*this), indexMem(*this), uniformMem(*this), textureMem(*this), fboMem(*this), stagingMem(*this) {

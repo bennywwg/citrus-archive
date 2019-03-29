@@ -18,11 +18,8 @@ namespace citrus::graphics {
 		uint32_t _width, _height;
 		
 	public:
-		
-		//these are terrible
-		void beginBufferAndRenderPass(ctFBO fbo);
-		void bindPipelineAndDraw(ctFBO fbo);
-		void endRenderPassAndBuffer(ctFBO fbo);
+		void beginShader(uint32_t frameIndex, VkCommandBuffer buf);
+		void endShader(uint32_t frameIndex, VkCommandBuffer buf);
 		
 		void bindTexture(uint32_t target, ctTexture const& tex);
 		

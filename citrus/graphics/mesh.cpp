@@ -596,6 +596,26 @@ namespace citrus::graphics {
 			));
 		}
 
+		if (mesh->HasNormals()) {
+			for (size_t j = 0; j < mesh->mNumVertices; j++) {
+				norm.push_back(glm::vec3(
+					mesh->mNormals[j].x,
+					mesh->mNormals[j].y,
+					mesh->mNormals[j].z
+				));
+			}
+		}
+
+		if (mesh->HasTangentsAndBitangents()) {
+			for (size_t j = 0; j < mesh->mNumVertices; j++) {
+				tangent.push_back(glm::vec3(
+					mesh->mTangents[j].x,
+					mesh->mTangents[j].y,
+					mesh->mTangents[j].z
+				));
+			}
+		}
+
 		if(mesh->HasTextureCoords(0)) {
 			for(size_t j = 0; j < mesh->mNumVertices; j++) {
 				uv.push_back(glm::vec2(
@@ -646,11 +666,11 @@ namespace citrus::graphics {
 		Assimp::Importer imp;
 		//imp.SetExtraVerbose(true);
 
-		const aiScene* scene = nullptr;/* imp.ReadFile(location.c_str(),
+		const aiScene* scene = imp.ReadFile(location.c_str(),
 			aiProcess_CalcTangentSpace |
 			aiProcess_Triangulate |
 			aiProcess_JoinIdenticalVertices |
-			aiProcess_SortByPType);*/
+			aiProcess_SortByPType);
 		if(!scene) {
 			util::sout(imp.GetErrorString());
 			throw std::runtime_error(("Failed to load model " + location).c_str());
@@ -672,12 +692,13 @@ namespace citrus::graphics {
 		Assimp::Importer imp;
 		imp.SetExtraVerbose(true);
 
-		const aiScene* scene = nullptr;/* imp.ReadFile(path,
+		const aiScene* scene = imp.ReadFile(path,
 			aiProcess_CalcTangentSpace |
 			aiProcess_Triangulate |
 			aiProcess_JoinIdenticalVertices |
 			aiProcess_SortByPType |
-			aiProcess_CalcTangentSpace);*/
+			aiProcess_GenSmoothNormals |
+			aiProcess_CalcTangentSpace);
 		if(!scene) {
 			util::sout(imp.GetErrorString());
 			throw std::runtime_error(("Failed to load model " + path).c_str());
@@ -696,5 +717,28 @@ namespace citrus::graphics {
 		loadBones(scene, mesh);
 
 		imp.FreeScene();
+	}
+	string meshDescription::toString() const {
+		string res;
+		for (int i = 0; i < attribs.size(); i++) {
+			res += "layout(location = " + std::to_string(attribs[i].location) + ") in [...] binding" + std::to_string(attribs[i].binding) + ";\n";
+		}
+		return res;
+	}
+	meshDescription meshDescription::getLit(bool rigged) {
+		mesh m;
+		m.pos.push_back(vec3(0, 0, 0));
+		m.norm.push_back(vec3(0, 0, 0));
+		m.tangent.push_back(vec3(0, 0, 0));
+		m.uv.push_back(vec2(0, 0));
+		if(rigged) m.bone0.push_back(0);
+		return m.getDescription();
+	}
+	meshDescription meshDescription::getShadeless(bool rigged) {
+		mesh m;
+		m.pos.push_back(vec3(0, 0, 0));
+		m.uv.push_back(vec2(0, 0));
+		if (rigged) m.bone0.push_back(0);
+		return m.getDescription();
 	}
 }

@@ -17,15 +17,14 @@ namespace citrus::graphics {
         
         bool _good;
         
-		vector<ctFBO> targets;
+		vector<ctFBO> targets; 
+		vector<VkCommandBuffer> cbufs;
 	public:
-        void buildAllCommandBuffers();
+        void fillCommandBuffer(uint32_t frameIndex, ctTexture rtex);
         
         //submit to graphics queue
-        void submit(uint32_t targetIndex, VkSemaphore wait, VkSemaphore signal);
-        
-        //set texture0 for all swapchain targets
-		void setTexture0(ctTexture const& tex);
+		void submit(uint32_t targetIndex, VkSemaphore wait, VkSemaphore signal);
+		void submit(uint32_t targetIndex, vector<VkSemaphore> waits, VkSemaphore signal);
 		
         //constructs final pass compositor shader
         //views : swapchain image views to render to, one target created per view

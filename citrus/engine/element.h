@@ -11,6 +11,8 @@
 #include "citrus/engine/entityRef.h"
 
 #include "citrus/editor/gui.h"
+#include "citrus/graphics/window.h"
+#include "citrus/graphics/instance.h"
 
 namespace citrus::engine {
 	class engine;
@@ -31,6 +33,8 @@ namespace citrus::engine {
 	public:
 		entityRef ent() const;
 		engine* eng() const;
+		graphics::window* win() const;
+		graphics::instance* inst() const;
 
 		bool initialized() const;
 

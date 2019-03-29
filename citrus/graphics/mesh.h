@@ -5,10 +5,7 @@
 #include "citrus/util.h"
 
 #include "citrus/graphics/instance.h"
-
-class aiNode;
-class aiScene;
-class aiMesh;
+#include <assimp/scene.h>
 
 namespace citrus::graphics {
 	struct node {
@@ -112,6 +109,11 @@ namespace citrus::graphics {
 	struct meshDescription {
 		vector<VkVertexInputAttributeDescription> attribs;
 		vector<VkVertexInputBindingDescription> bindings;
+		
+		string toString() const;
+
+		static meshDescription getLit(bool rigged);
+		static meshDescription getShadeless(bool rigged);
 	};
 
 	class mesh {

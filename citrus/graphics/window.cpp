@@ -231,6 +231,18 @@ namespace citrus::graphics {
 		vkQueuePresentKHR(_inst->_presentQueue, &presentInfo);
 		vkQueueWaitIdle(_inst->_presentQueue);
 	}
+	void window::present(uint32_t index, vector<VkSemaphore> waits) {
+		VkPresentInfoKHR presentInfo = { };
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = waits.size();
+		presentInfo.pWaitSemaphores = waits.data();
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &_inst->_swapChain;
+		presentInfo.pImageIndices = &index;
+
+		vkQueuePresentKHR(_inst->_presentQueue, &presentInfo);
+		vkQueueWaitIdle(_inst->_presentQueue);
+	}
 	void window::poll() {
 		glfwPollEvents();
 	}

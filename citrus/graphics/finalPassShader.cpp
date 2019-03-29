@@ -2,79 +2,87 @@
 
 namespace citrus::graphics {
 	
-	void finalPassShader::buildAllCommandBuffers() {
-        for(ctFBO const& target : targets) {
-            VkCommandBufferBeginInfo beginInfo = {};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	void finalPassShader::fillCommandBuffer(uint32_t frameIndex, ctTexture rtex) {
+		VkDescriptorImageInfo imageInfo = { };
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = rtex.view;
+		imageInfo.sampler = rtex.samp;
 
-            if (vkBeginCommandBuffer(target.cbf, &beginInfo) != VK_SUCCESS) {
-                throw std::runtime_error("failed to begin recording command buffer!");
-            }
+		VkWriteDescriptorSet descriptorWrite = { };
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = targets[frameIndex].set;
+		descriptorWrite.dstBinding = 1;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pImageInfo = &imageInfo;
 
-            VkRenderPassBeginInfo renderPassInfo = {};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassInfo.renderPass = _renderPass;
-            renderPassInfo.framebuffer = target.fbo;
+		vkUpdateDescriptorSets(_inst._device, 1, &descriptorWrite, 0, nullptr);
 
-            renderPassInfo.renderArea.offset = { 0, 0 };
-            renderPassInfo.renderArea.extent = { _width, _height };
+        VkCommandBufferBeginInfo beginInfo = {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-            VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-            renderPassInfo.clearValueCount = 1;
-            renderPassInfo.pClearValues = &clearColor;
+        if (vkBeginCommandBuffer(cbufs[frameIndex], &beginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("failed to begin recording command buffer!");
+        }
 
-            vkCmdBeginRenderPass(target.cbf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        VkRenderPassBeginInfo renderPassInfo = {};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = _renderPass;
+        renderPassInfo.framebuffer = targets[frameIndex].fbo;
+
+        renderPassInfo.renderArea.offset = { 0, 0 };
+        renderPassInfo.renderArea.extent = { _width, _height };
+
+        VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+        renderPassInfo.clearValueCount = 1;
+        renderPassInfo.pClearValues = &clearColor;
+
+        vkCmdBeginRenderPass(cbufs[frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             
-            vkCmdBindPipeline(target.cbf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-            vkCmdBindDescriptorSets(target.cbf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &target.set, 0, nullptr);
-            vkCmdDraw(target.cbf, 6, 1, 0, 0);
+        vkCmdBindPipeline(cbufs[frameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+        vkCmdBindDescriptorSets(cbufs[frameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &targets[frameIndex].set, 0, nullptr);
+        vkCmdDraw(cbufs[frameIndex], 6, 1, 0, 0);
             
-            vkCmdEndRenderPass(target.cbf);
-            if (vkEndCommandBuffer(target.cbf) != VK_SUCCESS) {
-                throw std::runtime_error("failed to record command buffer!");
-            }
+        vkCmdEndRenderPass(cbufs[frameIndex]);
+        if (vkEndCommandBuffer(cbufs[frameIndex]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to record command buffer!");
         }
     }
 	
 	void finalPassShader::submit(uint32_t index, VkSemaphore wait, VkSemaphore signal) {
-        VkSubmitInfo submitInfo = {};
+		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &targets[index].cbf;
-        
-        
-		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		submitInfo.pCommandBuffers = &cbufs[index];
+
+		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = &wait;
 		submitInfo.pWaitDstStageMask = &waitStage;
-        
+
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = &signal;
-        
-        vkQueueSubmit(_inst._graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    }
-	
-	void finalPassShader::setTexture0(ctTexture const& tex) {
-        VkDescriptorImageInfo imageInfo = { };
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = tex.view;
-		imageInfo.sampler = tex.samp;
-		
-        for(auto const& target : targets) {
-            VkWriteDescriptorSet descriptorWrite = { };
-            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrite.dstSet = target.set;
-            descriptorWrite.dstBinding = 1;
-            descriptorWrite.dstArrayElement = 0;
-            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrite.descriptorCount = 1;
-            descriptorWrite.pImageInfo = &imageInfo;
 
-            vkUpdateDescriptorSets(_inst._device, 1, &descriptorWrite, 0, nullptr);
-        }
-		
+		vkQueueSubmit(_inst._graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
     }
+	void finalPassShader::submit(uint32_t index, vector<VkSemaphore> waits, VkSemaphore signal) {
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &cbufs[index];
+
+		vector<VkPipelineStageFlags> waitStages(waits.size(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+		submitInfo.waitSemaphoreCount = waits.size();
+		submitInfo.pWaitSemaphores = waits.data();
+		submitInfo.pWaitDstStageMask = waitStages.data();
+
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &signal;
+
+		vkQueueSubmit(_inst._graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	}
 	
 	finalPassShader::finalPassShader(instance& inst,
         vector<VkImageView> views, uint32_t width, uint32_t height,
@@ -388,11 +396,11 @@ namespace citrus::graphics {
 
 			ctFBO res = { };
 			res.fbo = fbo;
-			res.cbf = buf;
 			res.set = descriptorHandles[i];
 			res.uboOff = off;
 
 			targets.push_back(res);
+			cbufs.push_back(buf);
 		}
 		
 		_good = true;
@@ -403,7 +411,7 @@ namespace citrus::graphics {
 		for(int i = 0; i < targets.size(); i++) {
 			_inst.uniformMem.free(targets[i].uboOff);
 			vkDestroyFramebuffer(_inst._device, targets[i].fbo, nullptr);
-			vkFreeCommandBuffers(_inst._device, _inst._commandPool, 1, &targets[i].cbf);
+			vkFreeCommandBuffers(_inst._device, _inst._commandPool, 1, &cbufs[i]);
 		}
 		if(_pipeline != VK_NULL_HANDLE) vkDestroyPipeline(_inst._device, _pipeline, nullptr);
 		if(_renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(_inst._device, _renderPass, nullptr);

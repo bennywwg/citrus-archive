@@ -150,6 +150,7 @@ namespace citrus {
 
             uint32_t getNextFrameIndex(VkSemaphore imageReadySignal);
 			void present(uint32_t index, VkSemaphore wait);
+			void present(uint32_t index, vector<VkSemaphore> waits);
 
 			void poll();
 			instance* inst();

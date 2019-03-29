@@ -20,13 +20,11 @@ namespace citrus::graphics {
 	model::model(instance& inst, mesh& me) : inst(inst) {
 		uint64_t memSize = me.requiredMemory();
 		uint64_t indexMemSize = me.index.size() * sizeof(uint16_t);
-		
-        util::sout("got here\n");
 
         vertexMem = inst.vertexMem.alloc(memSize);
 		indexMem = inst.indexMem.alloc(indexMemSize);
         
-
+		count = me.index.size();
 
 		inst.fillBuffer(inst.vertexMem.buf, memSize, vertexMem, [&me](void* data){ me.constructContinuous(data); });
 		inst.fillBuffer(inst.indexMem.buf, indexMemSize, indexMem, me.index.data());

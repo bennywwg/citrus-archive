@@ -1,6 +1,8 @@
 #include "citrus/engine/element.h"
 #include "citrus/engine/entity.h"
 #include "citrus/engine/entityRef.h"
+#include "citrus/engine/engine.h"
+#include "citrus/graphics/window.h"
 
 namespace citrus {
 	namespace engine {
@@ -9,6 +11,12 @@ namespace citrus {
 		}
 		engine* element::eng() const {
 			return _eng;
+		}
+		graphics::window* element::win() const {
+			return eng()->getWindow();
+		}
+		graphics::instance* element::inst() const {
+			return win()->inst();
 		}
 		bool element::initialized() const {
 			return _initialized;

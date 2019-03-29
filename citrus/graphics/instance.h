@@ -14,7 +14,6 @@ namespace citrus::graphics {
 
 	struct ctFBO {
 		VkFramebuffer		fbo;
-		VkCommandBuffer		cbf;
 		VkDescriptorSet		set;
 		uint64_t			uboOff; //offset into instance.uniformMem.mem
 	};
@@ -176,12 +175,17 @@ namespace citrus::graphics {
 
 		VkSemaphore createSemaphore();
 		void destroySemaphore(VkSemaphore sem);
-
+		VkFence createFence(bool signalled = false);
+		void destroyFence(VkFence fen);
+		void waitForFence(VkFence fen);
+		void resetFence(VkFence fen);
+		VkCommandBuffer createCommandBuffer();
+		void destroyCommandBuffer(VkCommandBuffer buf);
+		
 		int swapChainSize();
 		
 	private:
 		
-		VkCommandBuffer createCommandBuffer();
 		
 	public:
 

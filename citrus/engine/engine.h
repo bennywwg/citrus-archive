@@ -17,8 +17,6 @@
 namespace citrus {
 	namespace graphics {
 		class window;
-		class shader;
-		class texture;
 	}
 
 	namespace geom {
@@ -61,7 +59,10 @@ namespace citrus {
 
 			std::thread _renderThread;
 
+			uint32_t _frameIndex;
+
 			public:
+			uint32_t currentFrameIndex();
 			int frame = 0;
 
 			manager* man;
@@ -78,7 +79,8 @@ namespace citrus {
 			private: std::atomic<renderState> _renderState;
 			private: void _runRender();
 
-
+			VkSemaphore _imageReadySem;
+			VkSemaphore _presentSem;
 			public:
 
 			int fps();
@@ -87,7 +89,7 @@ namespace citrus {
 			double time();
 			double dt();
 			
-			graphics::window* getWindow();
+			graphics::window* getWindow() const;
 
 			template<typename T>
 			inline std::vector<eleRef<T>> getAllOfType() {
@@ -101,6 +103,11 @@ namespace citrus {
 			void setOrder(std::vector<std::type_index> order);
 
 			void loadLevel(citrus::path levelPath);
+
+			//semaphore signals when swapchain image is ready to be drawn to
+			VkSemaphore getImageReadySemaphore();
+			//signal semaphore to indicate render to present swapchain image
+			VkSemaphore getPresentSemaphore();
 
 			//lifetiem events
 			void start();

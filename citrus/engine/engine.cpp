@@ -38,12 +38,12 @@ namespace citrus::engine {
 			_win = nullptr;
 			_win = new graphics::window(512, 512, "Citrus Engine", "C:\\Users\\benny\\Desktop\\citrus\\res");
 
-			graphics::image4b img(string("C:\\Users\\benny\\Desktop\\citrus\\res") + "/textures/grid.png");
+			//graphics::image4b img(string("C:\\Users\\benny\\Desktop\\citrus\\res") + "/textures/grid.png");
 
-			graphics::ctTexture tx = _win->inst()->createTexture4b(img.width(), img.height(), false, img.data());
+			//graphics::ctTexture tx = _win->inst()->createTexture4b(img.width(), img.height(), false, img.data());
 
-			_win->inst()->_finalPass->setTexture0(tx);
-			_win->inst()->_finalPass->buildAllCommandBuffers();
+			//_win->inst()->_finalPass->setTexture0(tx);
+			//_win->inst()->_finalPass->buildAllCommandBuffers();
 
 			this->Log(_win->getAdapter());
 
@@ -64,10 +64,10 @@ namespace citrus::engine {
 
 				clock::time_point fbegin = clock::now();
 
-				VkSemaphore imageReadySem = _win->inst()->createSemaphore();
-				VkSemaphore frameDoneSem = _win->inst()->createSemaphore();
+				_imageReadySem = _win->inst()->createSemaphore();
+				_presentSem = _win->inst()->createSemaphore();
 
-				int thisFrameSwap = _win->getNextFrameIndex(imageReadySem);
+				_frameIndex = _win->getNextFrameIndex(_imageReadySem);
 
 				_win->poll();
 
@@ -75,9 +75,9 @@ namespace citrus::engine {
 				/*if (!ed || ed->playing || ed->doFrame)*/ man->preRender();
 				man->render();
 
-				_win->inst()->_finalPass->submit(thisFrameSwap, imageReadySem, frameDoneSem);
-
-				_win->present(thisFrameSwap, frameDoneSem);
+				_win->present(_frameIndex, _presentSem);
+				_win->inst()->destroySemaphore(_imageReadySem);
+				_win->inst()->destroySemaphore(_presentSem);
 				fpsSample++;
 
 				long long nextLastFrame = (clock::now() - fbegin).count();
@@ -85,9 +85,9 @@ namespace citrus::engine {
 				lastFrameNanos = nextLastFrame;
 				
 				/*if (!ed || ed->playing || ed->doFrame)*/ frame++;
-
-				_win->inst()->destroySemaphore(imageReadySem);
-				_win->inst()->destroySemaphore(frameDoneSem);
+					
+				//_win->inst()->destroySemaphore(imageReadySem);
+				//_win->inst()->destroySemaphore(frameDoneSem);
 
 				//if (ed) ed->doFrame = false;
 			}
@@ -101,7 +101,7 @@ namespace citrus::engine {
 			Log("Unrecoverable Error in Render Thread (Whack error.)");
 		}*/
 
-		_win->inst()->destroyTexture(tx);
+		//_win->inst()->destroyTexture(tx);
 
 		if(_win) delete _win;
 
@@ -109,7 +109,7 @@ namespace citrus::engine {
 		Log("Render Thread End");
 	}
 
-	graphics::window* engine::getWindow() {
+	graphics::window* engine::getWindow() const {
 		return _win;
 	}
 	
@@ -155,11 +155,21 @@ namespace citrus::engine {
 			}
 		}*/
 	}
+	uint32_t engine::currentFrameIndex() {
+		return _frameIndex;
+	}
+	VkSemaphore engine::getImageReadySemaphore() {
+		return _imageReadySem;
+	}
+	VkSemaphore engine::getPresentSemaphore() {
+		return _presentSem;
+	}
 
 	void engine::setOrder(vector<std::type_index> order) {
 		man->setOrder(order);
 	}
 
+	
 	void engine::start() {
 		_engineStart = clock::now();
 		_renderThread = std::thread(&engine::_runRender, this);
