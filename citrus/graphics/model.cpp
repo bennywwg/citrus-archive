@@ -5,15 +5,16 @@ namespace citrus::graphics {
 	class instance;
 	class mesh;
 	
-	void model::cmdDraw(VkCommandBuffer commands) const {
+	void model::bindVertexAndIndexBuffers(VkCommandBuffer commands) const {
 		VkBuffer vertexBuffers[8];
-		for(int i = 0; i < numOffsets; i++) {
+		for (int i = 0; i < numOffsets; i++) {
 			vertexBuffers[i] = inst.vertexMem.buf;
 		}
 		vkCmdBindVertexBuffers(commands, 0, numOffsets, vertexBuffers, offsets);
 
 		vkCmdBindIndexBuffer(commands, inst.indexMem.buf, indexMem, VK_INDEX_TYPE_UINT16);
-		
+	}
+	void model::cmdDraw(VkCommandBuffer commands) const {
 		vkCmdDrawIndexed(commands, count, 1, 0, 0, 0);
 	}
 	

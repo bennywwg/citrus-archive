@@ -21,9 +21,15 @@ namespace citrus::engine {
 			graphics::mesh* _me = nullptr;
 		};
 
-		struct shaderList {
-			graphics::vkShader* _sh = nullptr;
+		struct modelSet {
+			uint64_t modelIndex;
+			uint64_t nonEmptyCount;
 			vector<eleRef<meshFilter>> _eles;
+		};
+
+		struct shaderList {
+			graphics::dynamicOffsetMeshShader* _sh = nullptr;
+			vector<modelSet> _sets;
 		};
 		
 		vector<shaderList> _shaderTypes;

@@ -69,6 +69,8 @@ namespace citrus {
 
 		string loadEntireFile(string path);
 
+		uint64_t roundUpAlign(uint64_t val, uint64_t align);
+
 		extern mutex _soutMut;
 		void sout(string text);
 

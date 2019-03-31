@@ -132,6 +132,14 @@ namespace citrus::util {
 		return true;
 	}
 	
+	uint64_t roundUpAlign(uint64_t val, uint64_t align) {
+		if (align == 0) return val;
+
+		if (val % align == 0) return val;
+
+		return (val / align + 1) * align;
+	}
+
 	mutex _soutMut;
 	mutex _idMut;
 	int _currentID = 0;

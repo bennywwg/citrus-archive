@@ -106,7 +106,15 @@ int main(int argc, char **argv) {
 				filt.setState(0, 0, 0);
 			}	
 		)
-	}, util::nextID());
+	}, util::nextID()).setLocalPosition(vec3(0.5f, 0.0f, 0.0f));
+
+	e->man->create("TestMesh2", {
+		engine::eleInit<engine::meshFilter>::run(
+			[](engine::meshFilter& filt) {
+				filt.setState(0, 0, 0);
+			}	
+		)
+	}, util::nextID()).setLocalPosition(vec3(-0.5f, 0.0f, 0.0f));
 
 	e->start();
 

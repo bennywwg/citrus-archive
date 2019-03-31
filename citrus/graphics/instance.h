@@ -24,6 +24,14 @@ namespace citrus::graphics {
 		VkSampler		samp;
 		uint64_t		off; //offset into instance.textureMem.mem
 	};
+
+	struct ctDynamicOffsetBuffer {
+		VkBuffer		buf;
+		VkDeviceMemory	mem;
+		uint64_t		size;
+		uint64_t		align;
+		void*		mapped;
+	};
 	
 	class fenceProc {
 		instance& _inst;
@@ -139,7 +147,7 @@ namespace citrus::graphics {
 			uint64_t alloc(uint64_t size);
 			void free(uint64_t addr);
 			void initBuffer(uint64_t size, uint64_t align, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
-			void initImage(uint64_t size, uint64_t align, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+			void initImage(uint64_t size, uint64_t align, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
 			void freeResources();
 
 			allocator(instance& inst);
@@ -181,6 +189,12 @@ namespace citrus::graphics {
 		void resetFence(VkFence fen);
 		VkCommandBuffer createCommandBuffer();
 		void destroyCommandBuffer(VkCommandBuffer buf);
+
+		uint64_t minUniformBufferOffsetAlignment();
+		ctDynamicOffsetBuffer createDynamicOffsetBuffer(uint64_t size);
+		void destroyDynamicOffsetBuffer(ctDynamicOffsetBuffer bm);
+		void flushDynamicOffsetBuffer(ctDynamicOffsetBuffer bm);
+		void flushDynamicOffsetBufferRange(ctDynamicOffsetBuffer bm, uint64_t start, uint64_t size);
 		
 		int swapChainSize();
 		

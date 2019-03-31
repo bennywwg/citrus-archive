@@ -1012,6 +1012,71 @@ namespace citrus::graphics {
 		vkFreeCommandBuffers(_device, _commandPool, 1, &buf);
 	}
 
+	uint64_t instance::minUniformBufferOffsetAlignment() {
+		VkPhysicalDeviceProperties props;
+		vkGetPhysicalDeviceProperties(_chosenDevice, &props);
+		return props.limits.minUniformBufferOffsetAlignment;
+	}
+	ctDynamicOffsetBuffer instance::createDynamicOffsetBuffer(uint64_t size) {
+
+		ctDynamicOffsetBuffer res = { };
+		res.size = size;
+		res.align = minUniformBufferOffsetAlignment();
+
+		VkBufferCreateInfo bufferInfo = { };
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = size;
+		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(_device, &bufferInfo, nullptr, &res.buf) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create memory buffer!");
+		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(_device, res.buf, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo = { };
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+		if (vkAllocateMemory(_device, &allocInfo, nullptr, &res.mem) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate buffer memory!");
+		}
+
+		vkBindBufferMemory(_device, res.buf, res.mem, 0);
+
+		vkMapMemory(_device, res.mem, 0, res.size, 0, &res.mapped);
+		
+		return res;
+	}
+	void instance::destroyDynamicOffsetBuffer(ctDynamicOffsetBuffer bm) {
+		vkUnmapMemory(_device, bm.mem);
+		vkDestroyBuffer(_device, bm.buf, nullptr);
+		vkFreeMemory(_device, bm.mem, nullptr);
+	}
+
+	void instance::flushDynamicOffsetBuffer(ctDynamicOffsetBuffer bm) {
+		VkMappedMemoryRange range = { };
+		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range.memory = bm.mem;
+		range.offset = 0;
+		range.size = bm.size;
+
+		vkFlushMappedMemoryRanges(_device, 1, &range);
+	}
+
+	void instance::flushDynamicOffsetBufferRange(ctDynamicOffsetBuffer bm, uint64_t start, uint64_t size) {
+		VkMappedMemoryRange range = { };
+		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range.memory = bm.mem;
+		range.offset = start;
+		range.size = size;
+
+		vkFlushMappedMemoryRanges(_device, 1, &range);
+	}
+	
 	instance::instance(string name, GLFWwindow* win, int width, int height, std::string resFolder) :
 	vertexMem(*this), indexMem(*this), uniformMem(*this), textureMem(*this), fboMem(*this), stagingMem(*this) {
 		loadExtensions();

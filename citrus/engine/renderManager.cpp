@@ -14,9 +14,11 @@ namespace citrus {
 	namespace engine {
 		void renderManager::addItem(eleRef<meshFilter> me, int m, int t, int s) {
 			std::lock_guard<std::mutex> lock(_drawableMut);
-			auto& eles = _shaderTypes[s]._eles;
-			for(int i = 0; i < eles.size(); i++) {
-				if(eles[i].null()) {
+			if (s >= _shaderTypes.size() || (_shaderTypes[s]._sh == nullptr)) throw std::runtime_error("shader index too large or unloaded");
+			if (m >= _meshTypes.size() || (_meshTypes[m]._me == nullptr)) throw std::runtime_error("shader index too large or unloaded");
+			auto& eles = _shaderTypes[s]._sets[m]._eles;
+			for (int i = 0; i < eles.size(); i++) {
+				if (eles[i].null()) {
 					eles[i] = me;
 					return;
 				}
@@ -25,10 +27,11 @@ namespace citrus {
 		}
 		void renderManager::removeItem(eleRef<meshFilter> me, int oldM, int oldT, int oldS) {
 			std::lock_guard<std::mutex> lock(_drawableMut);
-			auto& eles = _shaderTypes[oldS]._eles;
-			for(int i = 0; i < eles.size(); i++) {
-				if(eles[i] == me) {
+			auto & eles = _shaderTypes[oldS]._sets[oldM]._eles;
+			for (int i = 0; i < eles.size(); i++) {
+				if (eles[i].null()) {
 					eles[i] = nullptr;
+					return;
 				}
 			}
 		}
@@ -37,14 +40,19 @@ namespace citrus {
 			if (_shaderTypes.size() <= index) _shaderTypes.resize(index + 1);
 			if (_shaderTypes[index]._sh) throw std::runtime_error("shader index already in use");
 
-			_shaderTypes[index]._sh = new graphics::vkShader(
+			_shaderTypes[index]._sh = new graphics::dynamicOffsetMeshShader(
 				*inst(),
 				graphics::meshDescription::getLit(true),
 				{ _frames[0].view, _frames[1].view },
 				win()->framebufferSize().x,
 				win()->framebufferSize().y,
 				false,
+				100, sizeof(glm::mat4),
 				vertLoc, "", fragLoc);
+			for (int i = 0; i < _meshTypes.size(); i++) {
+				_shaderTypes[index]._sets.emplace_back();
+				_shaderTypes[index]._sets.back().modelIndex = i;
+			}
 		}
 
 		void renderManager::loadAnimation(string loc, int index) {
@@ -58,7 +66,16 @@ namespace citrus {
 		}
 
 		void renderManager::loadMesh(string loc, int index) {
-			if (_meshTypes.size() <= index) _meshTypes.resize(index + 1);
+			if (_meshTypes.size() <= index) {
+				_meshTypes.resize(index + 1);
+				for (int i = 0; i < _shaderTypes.size(); i++) {
+					int oldSize = _shaderTypes[i]._sets.size();
+					_shaderTypes[i]._sets.resize(index + 1);
+					for (int j = oldSize; j < _shaderTypes[i]._sets.size(); j++) {
+						_shaderTypes[i]._sets[j].modelIndex = j;
+					}
+				}
+			}
 			if (_meshTypes[index]._model) throw std::runtime_error("mesh index already in use");
 			
 			_meshTypes[index]._me = new graphics::mesh(loc);
@@ -95,6 +112,9 @@ namespace citrus {
 			};
 			_currentFrame = 0;
 			_renderDoneSem = VK_NULL_HANDLE;
+			const uint64_t maxDynamicObjects = 10000;
+			const uint64_t dynamicObjectDataSize = glm::max(inst()->minUniformBufferOffsetAlignment(), sizeof(mat4));
+			const uint64_t dynamicSize = maxDynamicObjects * dynamicObjectDataSize;
 		}
 		nlohmann::json renderManager::save() const {
 			return nlohmann::json();
@@ -123,15 +143,43 @@ namespace citrus {
 
 			for (int i = 0; i < _shaderTypes.size(); i++) {
 				if (_shaderTypes[i]._sh) {
-					graphics::vkShader& sh = *_shaderTypes[i]._sh;
+					
+					//fill dynamic buffer with data
+					graphics::dynamicOffsetMeshShader& sh = *_shaderTypes[i]._sh;
+					uint64_t dynamicOffset = 0;
+					uint64_t dynamicIncrement = sh.realItemSize;
+					vector<modelSet>& sets = _shaderTypes[i]._sets;
+					for (int j = 0; j < sets.size(); j++) {
+						vector<eleRef<meshFilter>> eles = sets[j]._eles;
+						for (int k = 0; k < eles.size(); k++) {
+							if (eles[k].null()) continue;
+							glm::mat4 mvp = eles[k] ->ent().getGlobalTransform().getMat();
+							memcpy(((uint8_t*)sh.targets[_currentFrame].buf.mapped) + dynamicOffset, &mvp, sizeof(glm::mat4));
+							dynamicOffset += dynamicIncrement;
+						}
+					}
+					
+					//upload and reset data
+					inst()->flushDynamicOffsetBufferRange(sh.targets[_currentFrame].buf, 0, dynamicOffset);
+					dynamicOffset = 0;
 
 					sh.beginShader(_currentFrame, buf);
 
-					vector<eleRef<meshFilter>>& eles = _shaderTypes[i]._eles;
-					for (int j = 0; j < eles.size(); j++) {
-						if (eles[j].null()) continue;
-						eles[j]->ent().getGlobalTransform().getMat();
-						_meshTypes[eles[j]->model()]._model->cmdDraw(buf);
+					for (int j = 0; j < sets.size(); j++) {
+
+						_meshTypes[sets[j].modelIndex]._model->bindVertexAndIndexBuffers(buf);
+
+
+
+						vector<eleRef<meshFilter>> eles = sets[j]._eles;
+						for (int k = 0; k < eles.size(); k++) {
+							if (eles[k].null()) continue;
+
+							uint32_t dynamicOffsetu32 = dynamicOffset;
+							vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, sh.pipelineLayout, 0, 1, &sh.targets[_currentFrame].set, 1, &dynamicOffsetu32);
+							_meshTypes[eles[k]->model()]._model->cmdDraw(buf);
+							dynamicOffset += dynamicIncrement;
+						}
 					}
 
 					sh.endShader(_currentFrame, buf);

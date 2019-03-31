@@ -15,6 +15,7 @@ namespace citrus::graphics {
 		uint32_t numOffsets;
 		uint64_t offsets[8]; //not all slots are used
 		
+		void bindVertexAndIndexBuffers(VkCommandBuffer commands) const;
 		void cmdDraw(VkCommandBuffer commands) const;
 	
 		model(instance& inst, mesh& me);

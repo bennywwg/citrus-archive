@@ -5,26 +5,25 @@
 #include <iostream>
 
 namespace citrus::graphics {
-	void vkShader::beginShader(uint32_t frameIndex, VkCommandBuffer buf) {
+	void dynamicOffsetMeshShader::beginShader(uint32_t frameIndex, VkCommandBuffer buf) {
 		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 		VkRenderPassBeginInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = _renderPass;
+		renderPassInfo.renderPass = renderPass;
 		renderPassInfo.framebuffer = targets[frameIndex].fbo;
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = _inst._extent;
+		renderPassInfo.renderArea.extent = inst._extent;
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
 
 		vkCmdBeginRenderPass(buf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-		vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &targets[frameIndex].set, 0, nullptr);
+		vkCmdBindPipeline(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	}
-	void vkShader::endShader(uint32_t frameIndex, VkCommandBuffer buf) {
+	void dynamicOffsetMeshShader::endShader(uint32_t frameIndex, VkCommandBuffer buf) {
 		vkCmdEndRenderPass(buf);
 	}
-	void vkShader::bindTexture(uint32_t target, ctTexture const& tex) {
+	void dynamicOffsetMeshShader::bindTexture(uint32_t target, ctTexture const& tex) {
 		VkDescriptorImageInfo imageInfo = { };
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageInfo.imageView = tex.view;
@@ -39,12 +38,13 @@ namespace citrus::graphics {
 		descriptorWrite.descriptorCount = 1;
 		descriptorWrite.pImageInfo = &imageInfo;
 
-		vkUpdateDescriptorSets(_inst._device, 1, &descriptorWrite, 0, nullptr);
+		vkUpdateDescriptorSets(inst._device, 1, &descriptorWrite, 0, nullptr);
 	}
 	
-	vkShader::vkShader(instance& inst, meshDescription const& desc,
+	dynamicOffsetMeshShader::dynamicOffsetMeshShader(instance& inst, meshDescription const& desc,
         vector<VkImageView> views, uint32_t width, uint32_t height, bool useDepth,
-        string vertLoc, string geomLoc, string fragLoc) : _inst(inst), _width(width), _height(height) {
+		uint64_t maxItems, uint64_t itemSize,
+        string vertLoc, string geomLoc, string fragLoc) : inst(inst), width(width), height(height) {
 
 		VkShaderModule vertModule = VK_NULL_HANDLE;
 		VkShaderModule geomModule = VK_NULL_HANDLE;
@@ -153,7 +153,7 @@ namespace citrus::graphics {
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 		rasterizer.depthBiasClamp = 0.0f; // Optional
@@ -198,7 +198,7 @@ namespace citrus::graphics {
 		
 		VkDescriptorSetLayoutBinding uboLayoutBinding = { };
 		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 		uboLayoutBinding.descriptorCount = 1;
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		
@@ -215,18 +215,18 @@ namespace citrus::graphics {
 		descriptorLayoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
 		descriptorLayoutInfo.pBindings = layoutBindings.data();
 
-		if (vkCreateDescriptorSetLayout(_inst._device, &descriptorLayoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS) {
+		if (vkCreateDescriptorSetLayout(inst._device, &descriptorLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor set layout!");
 		}
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = { };
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
+		pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 		pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 		pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-		if(vkCreatePipelineLayout(inst._device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
+		if(vkCreatePipelineLayout(inst._device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
 
@@ -241,7 +241,7 @@ namespace citrus::graphics {
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         
         VkAttachmentDescription depthAttachment = { };
-        depthAttachment.format = _inst.findDepthFormat();
+        depthAttachment.format = inst.findDepthFormat();
         depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -281,7 +281,7 @@ namespace citrus::graphics {
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		if(vkCreateRenderPass(_inst._device, &renderPassInfo, nullptr, &_renderPass) != VK_SUCCESS) {
+		if(vkCreateRenderPass(inst._device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create render pass!");
 		}
 		
@@ -297,13 +297,13 @@ namespace citrus::graphics {
 		pipelineInfo.pDepthStencilState = nullptr; // Optional
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = nullptr; // Optional
-		pipelineInfo.layout = _pipelineLayout;
-		pipelineInfo.renderPass = _renderPass;
+		pipelineInfo.layout = pipelineLayout;
+		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 		pipelineInfo.basePipelineIndex = -1; // Optional
 
-		if(vkCreateGraphicsPipelines(_inst._device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS) {
+		if(vkCreateGraphicsPipelines(inst._device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
 			
 			throw std::runtime_error("failed to create graphics pipeline!");
 		}
@@ -313,7 +313,7 @@ namespace citrus::graphics {
 		if(fragModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, fragModule, nullptr);
 		
 		std::array<VkDescriptorPoolSize, 2> poolSizes = { };
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 		poolSizes[0].descriptorCount = static_cast<uint32_t>(views.size());
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[1].descriptorCount = static_cast<uint32_t>(views.size());
@@ -324,24 +324,26 @@ namespace citrus::graphics {
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(views.size());
 		
-		if (vkCreateDescriptorPool(_inst._device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS) {
+		if (vkCreateDescriptorPool(inst._device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor pool!");
 		}
 		
 		//allocate 1 descriptor set per fbo
-		std::vector<VkDescriptorSetLayout> layouts(views.size(), _descriptorSetLayout);
+		std::vector<VkDescriptorSetLayout> layouts(views.size(), descriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo = { };
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = _descriptorPool;
+		allocInfo.descriptorPool = descriptorPool;
 		allocInfo.descriptorSetCount = static_cast<uint32_t>(views.size());
 		allocInfo.pSetLayouts = layouts.data();
 		
 		vector<VkDescriptorSet> descriptorHandles;
 		descriptorHandles.resize(views.size());
-		if (vkAllocateDescriptorSets(_inst._device, &allocInfo, descriptorHandles.data()) != VK_SUCCESS) {
+		if (vkAllocateDescriptorSets(inst._device, &allocInfo, descriptorHandles.data()) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate descriptor sets!");
 		}
 
+		realItemSize = util::roundUpAlign(itemSize, inst.minUniformBufferOffsetAlignment());
+		uint64_t totalSize = maxItems * realItemSize;
 		for(int i = 0; i < views.size(); i++) {
 			VkImageView view = views[i];
 			VkImageView attachments[] = {
@@ -350,59 +352,51 @@ namespace citrus::graphics {
 
 			VkFramebufferCreateInfo framebufferInfo = {};
 			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = _renderPass;
+			framebufferInfo.renderPass = renderPass;
 			framebufferInfo.attachmentCount = 1;
 			framebufferInfo.pAttachments = attachments;
-			framebufferInfo.width = _width;
-			framebufferInfo.height = _height;
+			framebufferInfo.width = width;
+			framebufferInfo.height = height;
 			framebufferInfo.layers = 1;
 
 			VkFramebuffer fbo;
-			if(vkCreateFramebuffer(_inst._device, &framebufferInfo, nullptr, &fbo) != VK_SUCCESS) {
+			if(vkCreateFramebuffer(inst._device, &framebufferInfo, nullptr, &fbo) != VK_SUCCESS) {
 				throw std::runtime_error("failed to create framebuffer!");
 			}
 			
-			VkCommandBufferAllocateInfo allocInfo = {};
-			allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			allocInfo.commandPool = _inst._commandPool;
-			allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			allocInfo.commandBufferCount = 1;
-
-			uint64_t off = _inst.uniformMem.alloc(sizeof(mat4));
+			invocationData res = { };
+			res.fbo = fbo;
+			res.set = descriptorHandles[i];
+			res.buf = inst.createDynamicOffsetBuffer(totalSize);
 
 			VkDescriptorBufferInfo bufferInfo = { };
-			bufferInfo.buffer = _inst.uniformMem.buf;
-			bufferInfo.offset = off;
-			bufferInfo.range = sizeof(mat4);
+			bufferInfo.buffer = res.buf.buf;
+			bufferInfo.offset = 0;
+			bufferInfo.range = realItemSize;
 			
 			VkWriteDescriptorSet descriptorWrite = { };
 			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrite.dstSet = descriptorHandles[i];
+			descriptorWrite.dstSet = res.set;
 			descriptorWrite.dstBinding = 0;
 			descriptorWrite.dstArrayElement = 0;
-			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 			descriptorWrite.descriptorCount = 1;
 			descriptorWrite.pBufferInfo = &bufferInfo;
 
-			vkUpdateDescriptorSets(_inst._device, 1, &descriptorWrite, 0, nullptr);
-
-			ctFBO res = { };
-			res.fbo = fbo;
-			res.set = descriptorHandles[i];
-			res.uboOff = off;
+			vkUpdateDescriptorSets(inst._device, 1, &descriptorWrite, 0, nullptr);
 
 			targets.push_back(res);
 		}
 	}
-	vkShader::~vkShader() {
-		if(_descriptorSetLayout != VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(_inst._device, _descriptorSetLayout, nullptr);
-		if(_descriptorPool != VK_NULL_HANDLE) vkDestroyDescriptorPool(_inst._device, _descriptorPool, nullptr);
+	dynamicOffsetMeshShader::~dynamicOffsetMeshShader() {
+		if(descriptorSetLayout != VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(inst._device, descriptorSetLayout, nullptr);
+		if(descriptorPool != VK_NULL_HANDLE) vkDestroyDescriptorPool(inst._device, descriptorPool, nullptr);
 		for(int i = 0; i < targets.size(); i++) {
-			_inst.uniformMem.free(targets[i].uboOff);
-			vkDestroyFramebuffer(_inst._device, targets[i].fbo, nullptr);
+			inst.destroyDynamicOffsetBuffer(targets[i].buf);
+			vkDestroyFramebuffer(inst._device, targets[i].fbo, nullptr);
 		}
-		if(_pipeline != VK_NULL_HANDLE) vkDestroyPipeline(_inst._device, _pipeline, nullptr);
-		if(_renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(_inst._device, _renderPass, nullptr);
-		if(_pipelineLayout != VK_NULL_HANDLE) vkDestroyPipelineLayout(_inst._device, _pipelineLayout, nullptr);
+		if(pipeline != VK_NULL_HANDLE) vkDestroyPipeline(inst._device, pipeline, nullptr);
+		if(renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(inst._device, renderPass, nullptr);
+		if(pipelineLayout != VK_NULL_HANDLE) vkDestroyPipelineLayout(inst._device, pipelineLayout, nullptr);
 	}
 }
