@@ -2,15 +2,16 @@
 
 #include <memory>
 #include <vector>
-#include "citrus/util.h"
 
-#include "citrus/graphics/instance.h"
 #include <assimp/scene.h>
+
+#include "citrus/util.h"
+#include "citrus/graphics/instance.h"
 
 namespace citrus::graphics {
 	struct node {
 		std::string name;
-		glm::mat4 transform;
+		mat4 transform;
 		int parent;
 		std::vector<int> children;
 	};
@@ -53,7 +54,7 @@ namespace citrus::graphics {
 		repeat = 3,
 		linear = 2
 	};
-	
+
 	struct animation {
 		template<typename T>
 		struct key {
@@ -105,11 +106,11 @@ namespace citrus::graphics {
 
 		void loadAllAnimations(const aiScene* scene);
 	};
-	
+
 	struct meshDescription {
 		vector<VkVertexInputAttributeDescription> attribs;
 		vector<VkVertexInputBindingDescription> bindings;
-		
+
 		string toString() const;
 
 		static meshDescription getLit(bool rigged);
@@ -127,7 +128,15 @@ namespace citrus::graphics {
 		vector<int32_t> bone1;
 		vector<float> weight0;
 		vector<float> weight1;
-		
+
+		struct rawVertexData {
+			void* dataStart;
+			uint64_t dataSize;
+			uint64_t elementCount;
+		};
+
+		vector<rawVertexData> getRawData();
+
 		nodeContainer nodes;
 		boneContainer bones;
 		std::vector<animationBinding> animations;
@@ -139,21 +148,23 @@ namespace citrus::graphics {
 		bool hasUV() const;
 		bool hasBones() const;
 
+		void fillEmpty();
+
 		uint64_t vertSizeWithoutPadding() const;
 		uint64_t requiredMemory() const;
 		void constructContinuous(void* data) const;
 		void constructInterleaved(void* data) const;
 		vector<uint64_t> offsets() const;
-		
+
 		//used for constructing constructing shaders and such
 		meshDescription getDescription() const;
-		
+
 		//used to check if meshes and shaders share the same attributes
 		uint64_t getDescriptionCode() const;
-		
+
 		void calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4>& data, double time, behavior mode) const;
 		bool bindAnimation(const animation& ani);
-		
+
 		void loadMesh(const aiScene* scene, aiMesh* mesh);
 		void loadNodes(const aiScene* scene, aiMesh* mesh);
 		void loadBones(const aiScene* scene, aiMesh* mesh);

@@ -9,7 +9,6 @@ namespace citrus::engine {
 	private:
 		int _model = -1;
 		int _tex = -1;
-		int _sh = -1;
 		int _ani = -1;
 		graphics::behavior _mode;
 		double _aniStart = 0.0;
@@ -17,11 +16,11 @@ namespace citrus::engine {
 	public:
 		glm::vec3 color;
 		bool visible = true;;
+		int systemIndex = -1;
 
-		void setState(int m, int t, int s, int a = -1);
+		void setState(int m, int t, int a = -1);
 		int model() const;
 		int tex() const;
-		int sh() const;
 		int ani() const;
 		graphics::behavior mode() const;
 		double aniTime() const;

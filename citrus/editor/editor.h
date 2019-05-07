@@ -4,6 +4,7 @@
 #include "citrus/util.h"
 
 #include "citrus/editor/gui.h"
+#include "citrus/graphics/camera.h"
 #include <memory>
 
 namespace citrus {
@@ -56,11 +57,8 @@ namespace citrus {
 
 			void click(ivec2 cursor);
 
-			
-
-
-			void update(renderManager& man, camera& cam);
-			void render(renderManager& man, camera& cam);
+			void update(renderManager& man, graphics::camera& cam);
+			void render(renderManager& man, graphics::camera& cam);
 
 			ctEditor();
 		};

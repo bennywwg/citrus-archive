@@ -262,7 +262,12 @@ namespace citrus::graphics {
 	string window::getAdapter() {
 		return _adapter;
 	}
+
+	void errorFun(int code, const char* str) {
+		std::cout << "GLFW ERROR: " << str << "\n";
+	}
 	window::window(unsigned int width, unsigned int height, std::string title, std::string resFolder) {
+		glfwSetErrorCallback(errorFun);
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, false);
 		_win = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);

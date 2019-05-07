@@ -7,27 +7,24 @@
 #include "citrus/engine/elementRef.inl"
 
 namespace citrus::engine {
-	void meshFilter::setState(int m, int t, int s, int a) {
+	void meshFilter::setState(int m, int t, int a) {
 		auto g = eng()->getAllOfType<renderManager>()[0];
-		if(s != -1) {
-			g->addItem(eleRef<meshFilter>(this), m, t, s);
+		if(t != -1) {
+			g->addItem(eleRef<meshFilter>(this), m, t);
 		} else {
-			g->removeItem(eleRef<meshFilter>(this), _model, _tex, _sh);
+			g->removeItem(eleRef<meshFilter>(this), _model);
 		}
 		_model = m;
 		_tex = t;
-		_sh = s;
 		_ani = a;
 		if(a != -1) _mode = graphics::behavior::repeat;
+		util::sout("setState\n");
 	}
 	int meshFilter::model() const {
 		return _model;
 	}
 	int meshFilter::tex() const {
 		return _tex;
-	}
-	int meshFilter::sh() const {
-		return _sh;
 	}
 	int meshFilter::ani() const {
 		return _ani;
@@ -63,9 +60,9 @@ namespace citrus::engine {
 	meshFilter::meshFilter(entityRef ent) : element(ent, typeid(meshFilter)) {
 	}
 	meshFilter::~meshFilter() {
-		if(_sh != -1) {
+		if(_tex != -1) {
 			auto g = eng()->getAllOfType<renderManager>()[0];
-			g->removeItem(eleRef<meshFilter>(this), _model, _tex, _sh);
+			g->removeItem(eleRef<meshFilter>(this), _model);
 		}
 	}
 }

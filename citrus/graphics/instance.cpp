@@ -1,4 +1,4 @@
-#include "citrus/graphics/instance.h"
+#include "instance.h"
 #include <iostream>
 #include <cstring>
 
@@ -11,6 +11,8 @@ using optional_t = std::experimental::optional<T>;
 template<typename T>
 using optional_t = std::optional<T>;
 #endif
+
+#define enableValidationLayers true
 
 #include <cstdlib>
 #include <set>
@@ -33,19 +35,19 @@ namespace citrus::graphics {
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
 			int i = 0;
-			for(const auto& queueFamily : queueFamilies) {
+			for (const auto& queueFamily : queueFamilies) {
 				VkBool32 presentSupport = false;
 				vkGetPhysicalDeviceSurfaceSupportKHR(device, i, inst->_surface, &presentSupport);
 
-				if(queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+				if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 					graphicsFamily = i;
 				}
 
-				if(queueFamily.queueCount > 0 && presentSupport) {
+				if (queueFamily.queueCount > 0 && presentSupport) {
 					presentFamily = i;
 				}
 
-				if(isComplete()) {
+				if (isComplete()) {
 					break;
 				}
 
@@ -64,7 +66,7 @@ namespace citrus::graphics {
 			uint32_t formatCount;
 			vkGetPhysicalDeviceSurfaceFormatsKHR(device, inst->_surface, &formatCount, nullptr);
 
-			if(formatCount != 0) {
+			if (formatCount != 0) {
 				formats.resize(formatCount);
 				vkGetPhysicalDeviceSurfaceFormatsKHR(device, inst->_surface, &formatCount, formats.data());
 			}
@@ -72,7 +74,7 @@ namespace citrus::graphics {
 			uint32_t presentModeCount;
 			vkGetPhysicalDeviceSurfacePresentModesKHR(device, inst->_surface, &presentModeCount, nullptr);
 
-			if(presentModeCount != 0) {
+			if (presentModeCount != 0) {
 				presentModes.resize(presentModeCount);
 				vkGetPhysicalDeviceSurfacePresentModesKHR(device, inst->_surface, &presentModeCount, presentModes.data());
 			}
@@ -94,15 +96,16 @@ namespace citrus::graphics {
 	}
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pCallback) {
 		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-		if(func != nullptr) {
+		if (func != nullptr) {
 			return func(instance, pCreateInfo, pAllocator, pCallback);
-		} else {
+		}
+		else {
 			return VK_ERROR_EXTENSION_NOT_PRESENT;
 		}
 	}
 	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT callback, const VkAllocationCallbacks* pAllocator) {
 		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-		if(func != nullptr) {
+		if (func != nullptr) {
 			func(instance, callback, pAllocator);
 		}
 	}
@@ -125,17 +128,18 @@ namespace citrus::graphics {
 		createInfo.pApplicationInfo = &appInfo;
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();
-		if(enableValidationLayers) {
+		if (enableValidationLayers) {
 			createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
 			createInfo.ppEnabledLayerNames = layers.data();
-		} else {
+		}
+		else {
 			createInfo.enabledLayerCount = 0;
 		}
 
 
 
 		VkResult res = vkCreateInstance(&createInfo, nullptr, &_instance);
-		if(res != VK_SUCCESS) throw std::runtime_error("vkCreateInstance failure");
+		if (res != VK_SUCCESS) throw std::runtime_error("vkCreateInstance failure");
 	}
 	void instance::destroyInstance() {
 		vkDestroyInstance(_instance, nullptr);
@@ -148,7 +152,7 @@ namespace citrus::graphics {
 
 		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-		if(enableValidationLayers) {
+		if (enableValidationLayers) {
 			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		}
 
@@ -162,15 +166,15 @@ namespace citrus::graphics {
 	}
 	void instance::checkExtensions() {
 		vector<const char*> required = getRequiredExtensions();
-		for(const char* extensionName : required) {
+		for (const char* extensionName : required) {
 			bool found = false;
-			for(const auto& extensionProperties : _availableExtensions)
-				if(string(extensionName) == string(extensionProperties.extensionName)) {
+			for (const auto& extensionProperties : _availableExtensions)
+				if (string(extensionName) == string(extensionProperties.extensionName)) {
 					found = true;
 					break;
 				}
 
-			if(!found) throw std::runtime_error(("Extension \"" + string(extensionName) + "\" not available").c_str());
+			if (!found) throw std::runtime_error(("Extension \"" + string(extensionName) + "\" not available").c_str());
 		}
 	}
 
@@ -185,18 +189,18 @@ namespace citrus::graphics {
 		_availableLayers = vector<VkLayerProperties>(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, _availableLayers.data());
 
-		
+
 	}
 	void instance::checkValidationLayers() {
-		for(const char* layerName : getRequiredLayers()) {
+		for (const char* layerName : getRequiredLayers()) {
 			bool found = false;
-			for(const auto& layerProperties : _availableLayers)
-				if(string(layerName) == string(layerProperties.layerName)) {
+			for (const auto& layerProperties : _availableLayers)
+				if (string(layerName) == string(layerProperties.layerName)) {
 					found = true;
 					break;
 				}
 
-			if(!found) throw std::runtime_error(("Layer \"" + string(layerName) + "\" not available").c_str());
+			if (!found) throw std::runtime_error(("Layer \"" + string(layerName) + "\" not available").c_str());
 		}
 	}
 	void instance::initDebugCallback() {
@@ -208,7 +212,7 @@ namespace citrus::graphics {
 		createInfo.pUserData = nullptr;
 
 		VkResult res = CreateDebugUtilsMessengerEXT(_instance, &createInfo, nullptr, &_callback);
-		if(res != VK_SUCCESS)
+		if (res != VK_SUCCESS)
 			throw std::runtime_error("CreateDebugUtilsMessengerEXT failed");
 	}
 	void instance::destroyDebugCallback() {
@@ -230,7 +234,7 @@ namespace citrus::graphics {
 		auto requiredDeviceExtensions = getRequiredDeviceExtensions();
 		std::set<std::string> requiredExtensions(requiredDeviceExtensions.begin(), requiredDeviceExtensions.end());
 
-		for(const auto& extension : availableExtensions) {
+		for (const auto& extension : availableExtensions) {
 			requiredExtensions.erase(extension.extensionName);
 		}
 
@@ -246,7 +250,7 @@ namespace citrus::graphics {
 
 		return deviceHasRequiredExtensions(device) &&
 			!swapChainDetails.formats.empty() && !swapChainDetails.presentModes.empty();
-			deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+		deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
 			deviceFeatures.geometryShader;
 	}
 	void instance::loadPhysicalDevices() {
@@ -254,31 +258,31 @@ namespace citrus::graphics {
 		vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
 		_availableDevices = vector<VkPhysicalDevice>(deviceCount);
 		vkEnumeratePhysicalDevices(_instance, &deviceCount, _availableDevices.data());
-		for(auto& device : _availableDevices) if(isDeviceSuitable(device)) _suitableDevices.push_back(device);
+		for (auto& device : _availableDevices) if (isDeviceSuitable(device)) _suitableDevices.push_back(device);
 	}
 	void instance::choosePhysicalDevice() {
 		uint32_t best = 0;
 		VkPhysicalDevice bestDevice = VK_NULL_HANDLE;
-		for(auto& device : _suitableDevices) {
+		for (auto& device : _suitableDevices) {
 			VkPhysicalDeviceProperties props;
 			vkGetPhysicalDeviceProperties(device, &props);
-			if(props.limits.maxImageDimension2D > best) {
+			if (props.limits.maxImageDimension2D > best) {
 				best = props.limits.maxImageDimension2D;
 				bestDevice = device;
 			}
 		}
 		_chosenDevice = bestDevice;
-		if(_chosenDevice == VK_NULL_HANDLE) throw std::runtime_error("No suitable device found");
+		if (_chosenDevice == VK_NULL_HANDLE) throw std::runtime_error("No suitable device found");
 	}
 	void instance::initDevice() {
 		QueueFamilyIndices indices(_chosenDevice, this);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 		float queuePriority = 1.0f;
 
-		for(uint32_t queueFamily : uniqueQueueFamilies) {
+		for (uint32_t queueFamily : uniqueQueueFamilies) {
 			VkDeviceQueueCreateInfo queueCreateInfo = {};
 			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 			queueCreateInfo.queueFamilyIndex = queueFamily;
@@ -299,15 +303,16 @@ namespace citrus::graphics {
 		createInfo.pEnabledFeatures = &deviceFeatures;
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredDeviceExtensions.size());
 		createInfo.ppEnabledExtensionNames = requiredDeviceExtensions.data();
-		if(enableValidationLayers) {
+		if (enableValidationLayers) {
 			createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
 			createInfo.ppEnabledLayerNames = layers.data();
-		} else {
+		}
+		else {
 			createInfo.enabledLayerCount = 0;
 		}
 
 		VkResult res = vkCreateDevice(_chosenDevice, &createInfo, nullptr, &_device);
-		if(res != VK_SUCCESS) throw std::runtime_error("Could not creat device");
+		if (res != VK_SUCCESS) throw std::runtime_error("Could not creat device");
 
 		vkGetDeviceQueue(_device, indices.graphicsFamily.value(), 0, &_graphicsQueue);
 		vkGetDeviceQueue(_device, indices.presentFamily.value(), 0, &_presentQueue);
@@ -315,32 +320,33 @@ namespace citrus::graphics {
 	void instance::destroyDevice() {
 		vkDestroyDevice(_device, nullptr);
 	}
-	
-	VkFormat instance::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
-        for (VkFormat format : candidates) {
-            VkFormatProperties props;
-            vkGetPhysicalDeviceFormatProperties(_chosenDevice, format, &props);
 
-            if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
-                return format;
-            } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
-                return format;
-            }
-        }
+	VkFormat instance::findSupportedFormat(const std::vector<VkFormat> & candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+		for (VkFormat format : candidates) {
+			VkFormatProperties props;
+			vkGetPhysicalDeviceFormatProperties(_chosenDevice, format, &props);
 
-        throw std::runtime_error("failed to find supported format!");
-    }
-    VkFormat instance::findDepthFormat() {
-        return findSupportedFormat(
-            {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-        );
-    }
+			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+				return format;
+			}
+			else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+				return format;
+			}
+		}
 
-	void instance::initSurface(GLFWwindow* win) {
+		throw std::runtime_error("failed to find supported format!");
+	}
+	VkFormat instance::findDepthFormat() {
+		return findSupportedFormat(
+			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+		);
+	}
+
+	void instance::initSurface(GLFWwindow * win) {
 		VkResult res = glfwCreateWindowSurface(_instance, win, nullptr, &_surface);
-		if(res != VK_SUCCESS)
+		if (res != VK_SUCCESS)
 			throw std::runtime_error("failed to create window surface!");
 	}
 	void instance::destroySurface() {
@@ -349,12 +355,12 @@ namespace citrus::graphics {
 	void instance::chooseSurfaceFormat() {
 		auto swapChainDetails = SwapChainSupportDetails(_chosenDevice, this);
 
-		if(swapChainDetails.formats.size() == 1 && swapChainDetails.formats[0].format == VK_FORMAT_UNDEFINED) {
-			_surfaceFormat = {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+		if (swapChainDetails.formats.size() == 1 && swapChainDetails.formats[0].format == VK_FORMAT_UNDEFINED) {
+			_surfaceFormat = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
 		}
 
-		for(const auto& availableFormat : swapChainDetails.formats) {
-			if(availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+		for (const auto& availableFormat : swapChainDetails.formats) {
+			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
 				_surfaceFormat = availableFormat;
 			}
 		}
@@ -366,11 +372,12 @@ namespace citrus::graphics {
 
 		VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
 
-		for(const auto& availablePresentMode : swapChainDetails.presentModes) {
-			if(availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+		for (const auto& availablePresentMode : swapChainDetails.presentModes) {
+			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 				_presentMode = availablePresentMode;
 				return;
-			} else if(availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+			}
+			else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
 				bestMode = availablePresentMode;
 			}
 		}
@@ -380,10 +387,11 @@ namespace citrus::graphics {
 	void instance::chooseSurfaceExtent(uint32_t width, uint32_t height) {
 		auto swapChainDetails = SwapChainSupportDetails(_chosenDevice, this);
 
-		if(swapChainDetails.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+		if (swapChainDetails.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 			_extent = swapChainDetails.capabilities.currentExtent;
-		} else {
-			VkExtent2D actualExtent = {width, height};
+		}
+		else {
+			VkExtent2D actualExtent = { width, height };
 
 			actualExtent.width = std::max(swapChainDetails.capabilities.minImageExtent.width, std::min(swapChainDetails.capabilities.maxImageExtent.width, actualExtent.width));
 			actualExtent.height = std::max(swapChainDetails.capabilities.minImageExtent.height, std::min(swapChainDetails.capabilities.maxImageExtent.height, actualExtent.height));
@@ -395,12 +403,12 @@ namespace citrus::graphics {
 		auto swapChainDetails = SwapChainSupportDetails(_chosenDevice, this);
 
 		uint32_t imageCount = swapChainDetails.capabilities.minImageCount + 1;
-		if(swapChainDetails.capabilities.maxImageCount > 0 && imageCount > swapChainDetails.capabilities.maxImageCount) {
+		if (swapChainDetails.capabilities.maxImageCount > 0 && imageCount > swapChainDetails.capabilities.maxImageCount) {
 			imageCount = swapChainDetails.capabilities.maxImageCount;
 		}
 
 		auto indices = QueueFamilyIndices(_chosenDevice, this);
-		uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 		VkSwapchainCreateInfoKHR createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -411,11 +419,12 @@ namespace citrus::graphics {
 		createInfo.imageExtent = _extent;
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		if(indices.graphicsFamily != indices.presentFamily) {
+		if (indices.graphicsFamily != indices.presentFamily) {
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 			createInfo.queueFamilyIndexCount = 2;
 			createInfo.pQueueFamilyIndices = queueFamilyIndices;
-		} else {
+		}
+		else {
 			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 0; // Optional
 			createInfo.pQueueFamilyIndices = nullptr; // Optional
@@ -434,7 +443,7 @@ namespace citrus::graphics {
 		vkGetSwapchainImagesKHR(_device, _swapChain, &imageCount, _swapChainImages.data());
 
 		_swapChainImageViews.resize(_swapChainImages.size());
-		for(size_t i = 0; i < _swapChainImages.size(); i++) {
+		for (size_t i = 0; i < _swapChainImages.size(); i++) {
 			VkImageViewCreateInfo createInfo = {};
 			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			createInfo.image = _swapChainImages[i];
@@ -451,11 +460,11 @@ namespace citrus::graphics {
 			createInfo.subresourceRange.layerCount = 1;
 
 			VkResult res = vkCreateImageView(_device, &createInfo, nullptr, &_swapChainImageViews[i]);
-			if(res != VK_SUCCESS) throw std::runtime_error("Failed to create swapchain image view");
+			if (res != VK_SUCCESS) throw std::runtime_error("Failed to create swapchain image view");
 		}
 	}
 	void instance::destroySwapChain() {
-		for(auto imageView : _swapChainImageViews) {
+		for (auto imageView : _swapChainImageViews) {
 			vkDestroyImageView(_device, imageView, nullptr);
 		}
 		vkDestroySwapchainKHR(_device, _swapChain, nullptr);
@@ -483,6 +492,26 @@ namespace citrus::graphics {
 		}*/
 	}
 
+	VkCommandPool instance::createCommandPool() {
+		QueueFamilyIndices queueFamilyIndices = QueueFamilyIndices(_chosenDevice, this);
+
+		VkCommandPoolCreateInfo poolInfo = {};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+		VkCommandPool res;
+
+		if (vkCreateCommandPool(_device, &poolInfo, nullptr, &res) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create command pool!");
+		}
+
+		return res;
+	}
+	void instance::destroyCommandPool(VkCommandPool pool) {
+		vkDestroyCommandPool(_device, pool, nullptr);
+	}
+
 	void instance::initCommandPool() {
 		QueueFamilyIndices queueFamilyIndices = QueueFamilyIndices(_chosenDevice, this);
 
@@ -491,7 +520,7 @@ namespace citrus::graphics {
 		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Optional
 
-		if(vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS) {
+		if (vkCreateCommandPool(_device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create command pool!");
 		}
 	}
@@ -503,7 +532,7 @@ namespace citrus::graphics {
 		VkSemaphoreCreateInfo semaphoreInfo = { };
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-		if(vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_imgAvailableSemaphore) != VK_SUCCESS ||
+		if (vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_imgAvailableSemaphore) != VK_SUCCESS ||
 			vkCreateSemaphore(_device, &semaphoreInfo, nullptr, &_renderFinishedSemaphore) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create semaphores!");
 		}
@@ -515,17 +544,17 @@ namespace citrus::graphics {
 
 	int num = 0;
 
-    //sequence of events
-    //query window for next frame index and setup semaphore to signal when that image is available
-    //submit final pass shader, waiting for image available, and signalling when done rendering
-    //present rendered frame, waiting for when done rendering
+	//sequence of events
+	//query window for next frame index and setup semaphore to signal when that image is available
+	//submit final pass shader, waiting for image available, and signalling when done rendering
+	//present rendered frame, waiting for when done rendering
 	void instance::drawFrame() {
 
 	}
-	
+
 	void instance::initMemory() {
-        VkPhysicalDeviceProperties props;
-        vkGetPhysicalDeviceProperties(_chosenDevice, &props);
+		VkPhysicalDeviceProperties props;
+		vkGetPhysicalDeviceProperties(_chosenDevice, &props);
 		vertexMem.initBuffer(256 * 1024 * 1024, 0,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		vertexMem.name = "vertex";
@@ -535,26 +564,26 @@ namespace citrus::graphics {
 		uniformMem.initBuffer(16 * 1024 * 1024, props.limits.minUniformBufferOffsetAlignment,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		uniformMem.name = "uniform";
-		textureMem.initImage(512 * 1024 * 1024, 0,
+		textureMem.initImage(512 * 1024 * 1024, 0x400, //TODO: NOT HARDCODE THIS
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		textureMem.name = "texture";
-        fboMem.initImage(64 * 1024 * 1024, 0, //enough for nearly 8 1080p framebuffers
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        fboMem.name = "framebuffer";
+		fboMem.initImage(64 * 1024 * 1024, 0, //enough for nearly 8 1080p framebuffers
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		fboMem.name = "framebuffer";
 		stagingMem.initBuffer(16 * 1024 * 1024, 0,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		stagingMem.name = "staging";
 	}
-	
+
 	uint64_t instance::allocator::alloc(uint64_t size) {
 		//util::sout(name + " allocating " + std::to_string(size) + " bytes... \n");
 		//util::sout("#blocks = " + std::to_string(blocks.size()) + "\n");
-		for(int i = 0; i <= blocks.size(); i++) {
+		for (int i = 0; i <= blocks.size(); i++) {
 			uint64_t addr = (i == 0) ? 0 : (blocks[i - 1].addr + blocks[i - 1].size);
-            if(alignment && addr % alignment) addr += alignment - (addr % alignment);
+			if (alignment && addr % alignment) addr += alignment - (addr % alignment);
 			uint64_t nend = (i == blocks.size()) ? this->size : blocks[i].addr;
 			//util::sout("\tscan: addr = " + std::to_string(addr) + ", nend = " + std::to_string(nend) + "\n");
-			if(addr + size <= nend) {
+			if (addr + size <= nend) {
 				blocks.push_back({ addr, size });
 				//util::sout("got " + std::to_string(addr) + "\n");
 				return addr;
@@ -563,8 +592,8 @@ namespace citrus::graphics {
 		throw std::runtime_error(("out of " + name + " memory").c_str());
 	}
 	void instance::allocator::free(uint64_t addr) {
-		for(int i = 0; i < blocks.size(); i++) {
-			if(addr == blocks[i].addr) {
+		for (int i = 0; i < blocks.size(); i++) {
+			if (addr == blocks[i].addr) {
 				blocks.erase(blocks.begin() + i);
 				return;
 			}
@@ -573,78 +602,78 @@ namespace citrus::graphics {
 	}
 	void instance::allocator::initBuffer(uint64_t size, uint64_t align, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
 		this->size = size;
-        this->alignment = align;
-		
+		this->alignment = align;
+
 		VkBufferCreateInfo bufferInfo = { };
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = size;
 		bufferInfo.usage = usage;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		
+
 		if (vkCreateBuffer(inst._device, &bufferInfo, nullptr, &buf) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create memory buffer!");
 		}
-		
+
 		VkMemoryRequirements memRequirements;
 		vkGetBufferMemoryRequirements(inst._device, buf, &memRequirements);
-		
+
 		VkMemoryAllocateInfo allocInfo = { };
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = inst.findMemoryType(memRequirements.memoryTypeBits, properties);
-		
+
 		if (vkAllocateMemory(inst._device, &allocInfo, nullptr, &mem) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate buffer memory!");
 		}
-		
+
 		vkBindBufferMemory(inst._device, buf, mem, 0);
 	}
 	void instance::allocator::initImage(uint64_t size, uint64_t align, VkImageUsageFlags usage, VkMemoryPropertyFlags properties) {
 		this->size = size;
-        this->alignment = align;
+		this->alignment = align;
 		this->buf = VK_NULL_HANDLE;
 
 		VkImage tmpImage;
 
 		VkImageCreateInfo imageInfo = {};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.extent.width = 1;
-        imageInfo.extent.height = 1;
-        imageInfo.extent.depth = 1;
-        imageInfo.mipLevels = 1;
-        imageInfo.arrayLayers = 1;
-        imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = usage;
-        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.extent.width = 1;
+		imageInfo.extent.height = 1;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageInfo.usage = usage;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        if (vkCreateImage(inst._device, &imageInfo, nullptr, &tmpImage) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create image!");
-        }
+		if (vkCreateImage(inst._device, &imageInfo, nullptr, &tmpImage) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create image!");
+		}
 
 		VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(inst._device, tmpImage, &memRequirements);
+		vkGetImageMemoryRequirements(inst._device, tmpImage, &memRequirements);
 
 		vkDestroyImage(inst._device, tmpImage, nullptr);
-		
+
 		VkMemoryAllocateInfo allocInfo = {};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = size;
 		allocInfo.memoryTypeIndex = inst.findMemoryType(memRequirements.memoryTypeBits, properties);
-		
+
 		if (vkAllocateMemory(inst._device, &allocInfo, nullptr, &mem) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate image memory!");
 		}
 	}
 	void instance::allocator::freeResources() {
-		if(buf != VK_NULL_HANDLE) vkDestroyBuffer(inst._device, buf, nullptr);
+		if (buf != VK_NULL_HANDLE) vkDestroyBuffer(inst._device, buf, nullptr);
 		vkFreeMemory(inst._device, mem, nullptr);
 	}
-	instance::allocator::allocator(instance& inst) : inst(inst) { }
-	
+	instance::allocator::allocator(instance & inst) : inst(inst) { }
+
 	/*img instance::createImg(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties) {
 		VkBuffer im;
 		VkImageCreateInfo imageInfo = {};
@@ -694,9 +723,9 @@ namespace citrus::graphics {
 
 		throw std::runtime_error("failed to find suitable memory type!");
 	}
-	void instance::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, uint64_t size, uint64_t srcStart, uint64_t dstStart, fenceProc* proc) {
-		VkCommandBuffer commandBuffer = createCommandBuffer();
-		
+	void instance::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, uint64_t size, uint64_t srcStart, uint64_t dstStart) {
+		VkCommandBuffer commandBuffer = createCommandBuffer(_commandPool);
+
 		VkCommandBufferBeginInfo beginInfo = {};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -710,54 +739,57 @@ namespace citrus::graphics {
 		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
 		vkEndCommandBuffer(commandBuffer);
-		
-		submitFenceProc(commandBuffer, proc);
+
+		submitWaitDestroy(_graphicsQueue, commandBuffer, _commandPool);
 	}
-	
+
+	void instance::submitWaitDestroy(VkQueue queue, VkCommandBuffer buf, VkCommandPool pool) {
+		VkSubmitInfo info = { };
+		info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		info.commandBufferCount = 1;
+		info.pCommandBuffers = &buf;
+		info.signalSemaphoreCount = 0;
+		info.waitSemaphoreCount = 0;
+
+		vkQueueSubmit(queue, 1, &info, VK_NULL_HANDLE);
+
+		vkQueueWaitIdle(queue);
+
+		destroyCommandBuffer(buf, pool);
+	}
+
 	void instance::mapUnmapMemory(VkDeviceMemory dstMemory, uint64_t size, uint64_t start, void* data) {
 		void* scratch;
 		vkMapMemory(_device, dstMemory, start, size, 0, &scratch);
 		memcpy(scratch, data, size);
 		vkUnmapMemory(_device, dstMemory);
 	}
-	void instance::fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, void* data, fenceProc* proc) {
+	void instance::fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, void* data) {
 		uint64_t stagingBuffer = stagingMem.alloc(size);
-		
+
 		void* scratch;
 		vkMapMemory(_device, stagingMem.mem, stagingBuffer + start, size, 0, &scratch);
 		memcpy(scratch, data, size);
 		vkUnmapMemory(_device, stagingMem.mem);
 
-		if(proc) {
-			if(proc->stagingBuf != VK_NULL_HANDLE) throw std::runtime_error("proc already contains staging buffer or staging memory");
-			proc->stagingBuf = stagingBuffer;
-			copyBuffer(stagingMem.buf, dstBuffer, size, 0, start, proc);
-		} else {
-			copyBuffer(stagingMem.buf, dstBuffer, size, 0, start, nullptr); //this will block because proc is nullptr
-			stagingMem.free(stagingBuffer);
-		}
+		copyBuffer(stagingMem.buf, dstBuffer, size, 0, start); //this will block because proc is nullptr
+		stagingMem.free(stagingBuffer);
 	}
-	void instance::fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, std::function<void(void*)> fillFunc, fenceProc* proc) {
+	void instance::fillBuffer(VkBuffer dstBuffer, uint64_t size, uint64_t start, std::function<void(void*)> fillFunc) {
 		uint64_t stagingBuffer = stagingMem.alloc(size);
-		
+
 		void* scratch;
 		vkMapMemory(_device, stagingMem.mem, start + stagingBuffer, size, 0, &scratch);
 		fillFunc(scratch);
 		vkUnmapMemory(_device, stagingMem.mem);
 
-		if(proc) {
-			if(proc->stagingBuf != VK_NULL_HANDLE) throw std::runtime_error("proc already contains staging buffer or staging memory");
-			proc->stagingBuf = stagingBuffer;
-			copyBuffer(stagingMem.buf, dstBuffer, size, 0, start, proc);
-		} else {
-			copyBuffer(stagingMem.buf, dstBuffer, size, 0, start, nullptr); //this will block because proc is nullptr
-			stagingMem.free(stagingBuffer);
-		}
+		copyBuffer(stagingMem.buf, dstBuffer, size, 0, start); //this will block because proc is nullptr
+		stagingMem.free(stagingBuffer);
 	}
-	
-	void instance::copyBufferToImage(VkBuffer buffer, uint64_t start, VkImage image, uint32_t width, uint32_t height, fenceProc* proc) {
-		VkCommandBuffer commandBuffer = createCommandBuffer();
-		
+
+	void instance::copyBufferToImage(VkBuffer buffer, uint64_t start, VkImage image, uint32_t width, uint32_t height) {
+		VkCommandBuffer commandBuffer = createCommandBuffer(_commandPool);
+
 		VkBufferImageCopy region = { };
 		region.bufferOffset = start;
 		region.bufferRowLength = 0;
@@ -770,13 +802,13 @@ namespace citrus::graphics {
 
 		region.imageOffset = { 0, 0, 0 };
 		region.imageExtent = { width, height, 1 };
-		
+
 		VkCommandBufferBeginInfo beginInfo = {};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 		vkBeginCommandBuffer(commandBuffer, &beginInfo);
-		
+
 		vkCmdCopyBufferToImage(
 			commandBuffer,
 			buffer,
@@ -785,54 +817,54 @@ namespace citrus::graphics {
 			1,
 			&region
 		);
-        
-        vkEndCommandBuffer(commandBuffer);
-		
-		submitFenceProc(commandBuffer, proc);
+
+		vkEndCommandBuffer(commandBuffer);
+
+		submitWaitDestroy(_graphicsQueue, commandBuffer, _commandPool);
 	}
 	void instance::pipelineBarrierLayoutChange(VkImage image,
-        VkImageLayout oldLayout, VkImageLayout newLayout,
-        VkAccessFlags srcAccess, VkAccessFlags dstAccess,
-        VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
-        fenceProc* proc) {
-		VkCommandBuffer commandBuffer = createCommandBuffer();
+		VkImageAspectFlags aspect,
+		VkImageLayout oldLayout, VkImageLayout newLayout,
+		VkAccessFlags srcAccess, VkAccessFlags dstAccess,
+		VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage) {
+		VkCommandBuffer commandBuffer = createCommandBuffer(_commandPool);
 
-        VkImageMemoryBarrier barrier = {};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout = oldLayout;
-        barrier.newLayout = newLayout;
-        barrier.srcAccessMask = srcAccess;
-        barrier.dstAccessMask = dstAccess;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = image;
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-		
+		VkImageMemoryBarrier barrier = {};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = oldLayout;
+		barrier.newLayout = newLayout;
+		barrier.srcAccessMask = srcAccess;
+		barrier.dstAccessMask = dstAccess;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image = image;
+		barrier.subresourceRange.aspectMask = aspect;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+
 		VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-        vkCmdPipelineBarrier(
-            commandBuffer,
-            srcStage, dstStage,
-            0,
-            0, nullptr,
-            0, nullptr,
-            1, &barrier
-        );
-		
+		vkCmdPipelineBarrier(
+			commandBuffer,
+			srcStage, dstStage,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &barrier
+		);
+
 		vkEndCommandBuffer(commandBuffer);
-		
-		submitFenceProc(commandBuffer, proc);
+
+		submitWaitDestroy(_graphicsQueue, commandBuffer, _commandPool);
 	}
-	
-	ctTexture instance::createTexture4b(uint32_t width, uint32_t height, bool fboTexture, void *data) {
+
+	ctTexture instance::createTexture4b(uint32_t width, uint32_t height, bool fboTexture, void* data) {
 		VkImageCreateInfo imageInfo = { };
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -845,20 +877,20 @@ namespace citrus::graphics {
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageInfo.usage =
-            (data ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : 0) |
-            (fboTexture ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : 0) |
-            VK_IMAGE_USAGE_SAMPLED_BIT;
+			(data ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : 0) |
+			(fboTexture ? VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT : 0) |
+			VK_IMAGE_USAGE_SAMPLED_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		
+
 		VkImage img;
 		VkImageView view;
 		VkSampler samp;
-		
+
 		if (vkCreateImage(_device, &imageInfo, nullptr, &img) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create image!");
 		}
-		
+
 		VkMemoryRequirements memRequirements;
 		vkGetImageMemoryRequirements(_device, img, &memRequirements);
 
@@ -870,19 +902,19 @@ namespace citrus::graphics {
 			uint64_t tmp = stagingMem.alloc(width * height * 4);
 			mapUnmapMemory(stagingMem.mem, width * height * 4, tmp, data);
 			pipelineBarrierLayoutChange(img,
+				VK_IMAGE_ASPECT_COLOR_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				0, VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				nullptr);
-			copyBufferToImage(stagingMem.buf, tmp, img, width, height, nullptr);
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+			copyBufferToImage(stagingMem.buf, tmp, img, width, height);
 			pipelineBarrierLayoutChange(img,
+				VK_IMAGE_ASPECT_COLOR_BIT,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				nullptr);
+				VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 			stagingMem.free(tmp);
 		}
-		
+
 		VkImageViewCreateInfo viewInfo = { };
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		viewInfo.image = img;
@@ -893,11 +925,11 @@ namespace citrus::graphics {
 		viewInfo.subresourceRange.levelCount = 1;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
-		
+
 		if (vkCreateImageView(_device, &viewInfo, nullptr, &view) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create texture image view!");
 		}
-		
+
 		VkSamplerCreateInfo samplerInfo = { };
 		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -915,18 +947,18 @@ namespace citrus::graphics {
 		samplerInfo.mipLodBias = 0.0f;
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = 0.0f;
-		
-		
+
+
 		if (vkCreateSampler(_device, &samplerInfo, nullptr, &samp) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create texture sampler!");
 		}
-		
+
 		ctTexture res = { };
 		res.img = img;
 		res.view = view;
 		res.samp = samp;
 		res.off = off;
-		
+
 		return res;
 	}
 	void instance::destroyTexture(ctTexture tex) {
@@ -934,29 +966,62 @@ namespace citrus::graphics {
 		vkDestroyImageView(_device, tex.view, nullptr);
 		vkDestroyImage(_device, tex.img, nullptr);
 	}
-	
-	void instance::submitFenceProc(VkCommandBuffer commandBuffer, fenceProc* proc) {
-		if(proc && (proc->fence != VK_NULL_HANDLE  || proc->cbuff != VK_NULL_HANDLE)) std::runtime_error("proc already contains a fence or command buffer");
-		
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-		
-		VkFenceCreateInfo info = { };
-		info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		if(proc) {
-			proc->cbuff = commandBuffer;
-			vkCreateFence(_device, &info, nullptr, &proc->fence);
-			vkQueueSubmit(_graphicsQueue, 1, &submitInfo, proc->fence);
-		} else {
-			VkFence tmpFence;
-			vkCreateFence(_device, &info, nullptr, &tmpFence);
-			vkQueueSubmit(_graphicsQueue, 1, &submitInfo, tmpFence);
-			vkWaitForFences(_device, 1, &tmpFence, true, std::numeric_limits<uint64_t>::max());
-			vkDestroyFence(_device, tmpFence, nullptr);
-			vkFreeCommandBuffers(_device, _commandPool, 1, &commandBuffer);
+	ctDepthTexture instance::createDepthTexture(uint32_t width, uint32_t height) {
+		VkImageCreateInfo imageInfo = { };
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.extent.width = static_cast<uint32_t>(width);
+		imageInfo.extent.height = static_cast<uint32_t>(height);
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.format = findDepthFormat();
+		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		VkImage img;
+		VkImageView view;
+
+		if (vkCreateImage(_device, &imageInfo, nullptr, &img) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create image!");
 		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetImageMemoryRequirements(_device, img, &memRequirements);
+
+		uint64_t off = textureMem.alloc(memRequirements.size);
+		vkBindImageMemory(_device, img, textureMem.mem, off);
+
+		VkImageViewCreateInfo viewInfo = { };
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = img;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = findDepthFormat();
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+
+		if (vkCreateImageView(_device, &viewInfo, nullptr, &view) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create texture image view!");
+		}
+
+		ctDepthTexture res = { };
+		res.img = img;
+		res.view = view;
+		res.off = off;
+
+		return res;
+	}
+
+	void instance::destroyDepthTexture(ctDepthTexture dt) {
+		vkDestroyImageView(_device, dt.view, nullptr);
+		vkDestroyImage(_device, dt.img, nullptr);
+		textureMem.free(dt.off);
 	}
 
 	VkSemaphore instance::createSemaphore() {
@@ -979,37 +1044,40 @@ namespace citrus::graphics {
 		info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		info.flags = signalled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
 
-		if(vkCreateFence(_device, &info, nullptr, &fen) != VK_SUCCESS) throw std::runtime_error("couldn't create fence");
+		if (vkCreateFence(_device, &info, nullptr, &fen) != VK_SUCCESS) throw std::runtime_error("couldn't create fence");
 		return fen;
 	}
 	void instance::destroyFence(VkFence fen) {
 		vkDestroyFence(_device, fen, nullptr);
 	}
 	void instance::waitForFence(VkFence fen) {
-		if(vkWaitForFences(_device, 1, &fen, true, 0) != VK_SUCCESS) throw std::runtime_error("failed to wait for fence");
+		if (vkWaitForFences(_device, 1, &fen, true, 0) != VK_SUCCESS) throw std::runtime_error("failed to wait for fence");
+	}
+	void instance::waitForFences(vector<VkFence>const& fens) {
+		if (vkWaitForFences(_device, fens.size(), fens.data(), true, 0) != VK_SUCCESS) throw std::runtime_error("failed to wait for fences");
 	}
 	void instance::resetFence(VkFence fen) {
 		if (vkResetFences(_device, 1, &fen) != VK_SUCCESS) throw std::runtime_error("failed to reset fence");
 	}
-	
+
 	int instance::swapChainSize() {
 		return _swapChainImages.size();
 	}
 
-	VkCommandBuffer instance::createCommandBuffer() {
-        VkCommandBufferAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = _commandPool;
-        allocInfo.commandBufferCount = 1;
+	VkCommandBuffer instance::createCommandBuffer(VkCommandPool pool, bool secondary) {
+		VkCommandBufferAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = secondary ? VK_COMMAND_BUFFER_LEVEL_SECONDARY : VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = pool;
+		allocInfo.commandBufferCount = 1;
 
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(_device, &allocInfo, &commandBuffer);
-		
-        return commandBuffer;
-    }
-	void instance::destroyCommandBuffer(VkCommandBuffer buf) {
-		vkFreeCommandBuffers(_device, _commandPool, 1, &buf);
+		VkCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers(_device, &allocInfo, &commandBuffer);
+
+		return commandBuffer;
+	}
+	void instance::destroyCommandBuffer(VkCommandBuffer buf, VkCommandPool pool) {
+		vkFreeCommandBuffers(_device, pool, 1, &buf);
 	}
 
 	uint64_t instance::minUniformBufferOffsetAlignment() {
@@ -1048,7 +1116,7 @@ namespace citrus::graphics {
 		vkBindBufferMemory(_device, res.buf, res.mem, 0);
 
 		vkMapMemory(_device, res.mem, 0, res.size, 0, &res.mapped);
-		
+
 		return res;
 	}
 	void instance::destroyDynamicOffsetBuffer(ctDynamicOffsetBuffer bm) {
@@ -1076,22 +1144,23 @@ namespace citrus::graphics {
 
 		vkFlushMappedMemoryRanges(_device, 1, &range);
 	}
-	
-	instance::instance(string name, GLFWwindow* win, int width, int height, std::string resFolder) :
-	vertexMem(*this), indexMem(*this), uniformMem(*this), textureMem(*this), fboMem(*this), stagingMem(*this) {
+
+	instance::instance(string name, GLFWwindow * win, int width, int height, std::string resFolder) :
+		width(width), height(height),
+		vertexMem(*this), indexMem(*this), uniformMem(*this), textureMem(*this), fboMem(*this), stagingMem(*this) {
 		loadExtensions();
 		checkExtensions();
 		loadValidationLayers();
-		if(enableValidationLayers) checkValidationLayers();
+		if (enableValidationLayers) checkValidationLayers();
 		initInstance(name);
-		if(enableValidationLayers)	initDebugCallback();
+		if (enableValidationLayers)	initDebugCallback();
 		initSurface(win);
 		loadPhysicalDevices();
 		choosePhysicalDevice();
 		initDevice();
 		chooseSurfaceFormat();
 		chooseSurfacePresentMode();
-		chooseSurfaceExtent(width,height);
+		chooseSurfaceExtent(width, height);
 		initSwapChain();
 		initCommandPool();
 		initSemaphores();
@@ -1107,7 +1176,7 @@ namespace citrus::graphics {
 		indexMem.freeResources();
 		uniformMem.freeResources();
 		textureMem.freeResources();
-        fboMem.freeResources();
+		fboMem.freeResources();
 		stagingMem.freeResources();
 
 		delete _finalPass;
@@ -1116,44 +1185,7 @@ namespace citrus::graphics {
 		destroySwapChain();
 		destroySurface();
 		destroyDevice();
-		if(enableValidationLayers) destroyDebugCallback();
+		if (enableValidationLayers) destroyDebugCallback();
 		destroyInstance();
-	}
-
-	void fenceProc::_free() {
-		if(!_done) throw std::runtime_error("buffer process destroyed before fence signaled (or before done was ever checked)");
-		if(fence != VK_NULL_HANDLE) vkDestroyFence(_inst._device, fence, nullptr);
-		if(cbuff != VK_NULL_HANDLE) vkFreeCommandBuffers(_inst._device, _inst._commandPool, 1, &cbuff);
-		if(stagingBuf != -1) _inst.stagingMem.free(stagingBuf);
-		fence = VK_NULL_HANDLE;
-		cbuff = VK_NULL_HANDLE;
-		stagingBuf = -1;
-	}
-
-	bool fenceProc::done() {
-		if(_done) return true;
-		_done = vkWaitForFences(_inst._device, 1, &fence, true, 0) == VK_EVENT_SET;
-		if(_done) {
-			_free();
-		}
-	}
-
-	void fenceProc::reset() {
-		_free();
-		_done = false;
-	}
-
-	void fenceProc::block() {
-		if(fence == VK_NULL_HANDLE) throw std::runtime_error("fence was never set");
-		if(_done) return;
-		vkWaitForFences(_inst._device, 1, &fence, true, std::numeric_limits<uint64_t>::max());
-		_done = true;
-		_free();
-	}
-
-	fenceProc::fenceProc(instance& inst) : _inst(inst) {
-	}
-	fenceProc::~fenceProc() {
-		_free();
 	}
 }

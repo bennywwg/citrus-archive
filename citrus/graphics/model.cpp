@@ -10,7 +10,7 @@ namespace citrus::graphics {
 		for (int i = 0; i < numOffsets; i++) {
 			vertexBuffers[i] = inst.vertexMem.buf;
 		}
-		vkCmdBindVertexBuffers(commands, 0, numOffsets, vertexBuffers, offsets);
+		vkCmdBindVertexBuffers(commands, 0, numOffsets, vertexBuffers, offsets);	
 
 		vkCmdBindIndexBuffer(commands, inst.indexMem.buf, indexMem, VK_INDEX_TYPE_UINT16);
 	}

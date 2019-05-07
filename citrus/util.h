@@ -64,6 +64,9 @@ namespace citrus {
 	using std::shared_ptr;
 	using std::unique_ptr;
 
+	using hpclock = std::chrono::high_resolution_clock;
+	using hptime = hpclock::time_point;
+
 	namespace util {
 		bool isPowerOfTwo(unsigned int val);
 

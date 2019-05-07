@@ -77,7 +77,7 @@ namespace citrus::engine {
 						p.ent().setLocalScale(glm::vec3(0.1f, 0.1f, 0.1f));
 					}),
 					eleInit<meshFilter>::run([e](meshFilter& m) {
-						m.setState(5, 0, 2);
+						m.setState(2, 0, 0);
 						m.color = glm::vec3(1.0f, 0.5f, 0.5f);
 					}),
 					eleInit<sensorEle>::run([e](sensorEle& s) {

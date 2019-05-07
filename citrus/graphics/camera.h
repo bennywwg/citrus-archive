@@ -1,32 +1,38 @@
 #pragma once
 
-#ifndef CAMERA_H
-#define CAMERA_H
-
 #include "citrus/util.h"
-#include "citrus/dynamics/transform.h"
 #include "citrus/dynamics/geom.h"
 
-namespace citrus {
-	namespace engine {
-		class camera {
-		public:
-			transform trans;
+namespace citrus::graphics {
+	struct frustrumCullInfo {
+		//ncp, fcp, right plane, top plane, left plane, bottom plane, respectively
+		vec3 pzdir, nzdir, rpdir, tpdir, lpdir, bpdir;
 
-			float verticalFOV = 90.0f;
-			float aspectRatio = 1.0f;
-			float zNear = 0.001f;
-			float zFar = 100.0f;
+		//respective thresholds for each dir
+		float pzlim, nzlim, rplim, tplim, lplim, bplim;
 
-			void setGimbalAngles(float angleX, float angleY);
+		//returns true if sphere needs to be rendered
+		bool testSphere(vec3 pos, float rad) const;
+	};
 
-			geom::line getRayFromScreenSpace(glm::vec2 ss = glm::vec2(0, 0));
+	class camera {
+	public:
+		vec3 pos = vec3(0.0f, 0.0f, 0.0f);
+		quat ori = quat(1.0f, 0.0f, 0.0f, 0.0f);
 
-			glm::mat4 getViewMatrix();
-			glm::mat4 getProjectionMatrix();
-			glm::mat4 getViewProjectionMatrix();
-		};
-	}
+		float verticalFOV = 90.0f;
+		float aspectRatio = 1.0f;
+		float zNear = 0.001f;
+		float zFar = 100.0f;
+
+		void setGimbalAngles(float angleX, float angleY);
+
+		geom::line getRayFromScreenSpace(glm::vec2 ss = glm::vec2(0, 0)) const;
+
+		mat4 getViewMatrix() const;
+		mat4 getProjectionMatrix() const;
+		mat4 getViewProjectionMatrix() const;
+
+		frustrumCullInfo genFrustrumInfo() const;
+	};
 }
-
-#endif

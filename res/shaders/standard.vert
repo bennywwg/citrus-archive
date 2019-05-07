@@ -14,12 +14,17 @@ layout(location = 0) out vec3 frag_norm;
 layout(location = 1) out vec3 frag_tangent;
 layout(location = 2) out vec2 frag_uv;
 
-layout (binding = 0) uniform UboInstance {
-	mat4 model; 
+layout (set = 0, binding = 0) uniform UboInstance {
+	vec4 nothing;
 } uboInstance;
 
+layout (push_constant) uniform PushConstants {
+	mat4	mvp;
+	mat4x3	model;
+} pushConstants;
+
 void main() {
-    gl_Position	= uboInstance.model * vec4(vert_pos, 1.0);
+    gl_Position	= pushConstants.mvp * vec4(vert_pos, 1.0);
     frag_norm	= vert_norm;
 	frag_tangent= vert_tangent;
 	frag_uv		= vert_uv;

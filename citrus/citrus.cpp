@@ -19,7 +19,6 @@
 #include "citrus/engine/entityRef.inl"
 #include "citrus/engine/elementRef.inl"
 #include "citrus/engine/manager.inl"
-#include "citrus/graphics/vkShader.h"
 #include "citrus/graphics/image.h"
 using citrus::engine::entityRef;
 
@@ -41,160 +40,12 @@ int main(int argc, char **argv) {
 	std::string resDir = argc == 1 ? "" :argv[1];
 
 	initializeGLFW();
-
-	engine::engine* e = new engine::engine(1.0 / 100.0);
-
-	e->man->registerType<engine::renderManager>("Render Manager", true);
-	e->man->registerType<engine::freeCam>("Free Cam", true);
-	e->man->registerType<engine::meshFilter>("Mesh Filter", false);
-	e->man->registerType<engine::playerController>("Player Controller", true);
-	e->man->registerType<engine::worldManager>("World Manager", true);
-	e->man->registerType<engine::rigidBodyComponent>("Rigid Body", false);
-	e->man->registerType<engine::sensorEle>("Sensor", false);
-	e->man->registerType<engine::projectile>("Projectile", true);
-	e->man->setOrder({
-		typeid(engine::worldManager),
-		typeid(engine::sensorEle),
-		typeid(engine::rigidBodyComponent),
-		typeid(engine::freeCam),
-		typeid(engine::playerController),
-		typeid(engine::projectile),
-		typeid(engine::renderManager),
-		typeid(engine::meshFilter)
-	});
-
-	auto cr = e->man->create("Main Cam", {
-		engine::eleInit<engine::freeCam>::run(
-			[](engine::freeCam & cam) {
-				cam.cam.aspectRatio = 1.0f;
-				cam.cam.zNear = 0.01f;
-				cam.cam.zFar = 100.0f;
-				cam.cam.verticalFOV = 90.0f;
-				cam.cam.trans.setPosition(vec3(0.0f, 0.0f, -10.0f));
-			}
-		)
-	}, util::nextID()).getElement<engine::freeCam>();
-
-	auto item = e->man->create("MeshTable", {
-		engine::eleInit<engine::renderManager>::run(
-			[resDir, cr](engine::renderManager & man) {
-				man.loadAnimation(resDir + "/animations/run.cta", 0);
-				man.loadAnimation(resDir + "/animations/idle.cta", 1);
-
-				//man.loadMesh(resDir + "/meshes/natsuki.dae", 0);
-				man.loadMesh(resDir + "/meshes/monkas.dae", 0);
-				man.loadMesh(resDir + "/meshes/sphere.dae", 1);
-				man.loadMesh(resDir + "/meshes/cube1x1x1.dae", 2);
-				man.loadMesh(resDir + "/meshes/walker.dae", 3);
-				man.loadMesh(resDir + "/meshes/human.dae", 4);
-				man.loadMesh(resDir + "/meshes/blast.dae", 5);
-				man.loadMesh(resDir + "/meshes/icosphere.dae", 6);
-				man.loadMesh(resDir + "/meshes/arrow.dae", 7);
-
-				man.bindAllAvailableAnimations();
-
-				man.loadShader(resDir + "/shaders/standard.vert.spv", resDir + "/shaders/standard.frag.spv", 0);
-
-				man.camRef = cr;
-			}
-		)
-	}, util::nextID());
-
-	e->man->create("TestMesh", {
-		engine::eleInit<engine::meshFilter>::run(
-			[](engine::meshFilter& filt) {
-				filt.setState(0, 0, 0);
-			}	
-		)
-	}, util::nextID()).setLocalPosition(vec3(0.5f, 0.0f, 0.0f));
-
-	e->man->create("TestMesh2", {
-		engine::eleInit<engine::meshFilter>::run(
-			[](engine::meshFilter& filt) {
-				filt.setState(0, 0, 0);
-			}	
-		)
-	}, util::nextID()).setLocalPosition(vec3(-0.5f, 0.0f, 0.0f));
-
-	e->start();
-
-	std::cin.get();
-
-	e->man->destroy(item);
-
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-	e->stop();
-
-	delete e;
-    
-    terminateGLFW();
-    
-    return 0;
-
-	graphics::meshDescription desc;
+	
 	{
-		graphics::mesh m;
-		m.pos.push_back(vec3(0,0,0));
-		m.norm.push_back(vec3(0,0,0));
-		m.tangent.push_back(vec3(0,0,0));
-		m.uv.push_back(vec2(0,0));
-		m.bone0.push_back(0);
-		m.bone1.push_back(0);
-		m.weight0.push_back(0.0f);
-		m.weight1.push_back(0.0f);
-		desc = m.getDescription();
-	}
-	
-	
-
-	//graphics::instance * inst = new graphics::instance("ctvk", win, 640, 480);
-    
-
-	//graphics::model *mo = new graphics::model(*inst, me);
-    
-
-	//graphics::vkShader *sh = new graphics::vkShader(*inst, desc, {}, 640, 480,
-	//	"res/shaders/standard.vert.spv",
-	//	"",
-	//	"res/shaders/standard.frag.spv");
-	
-	//graphics::ctTexture tex = inst-.>createTexture4b(img.width(), img.height(), false, img.data());
-    
-	
-	//for(int i = 0; i < inst->_finalPass->targets.size(); i++) {
-		//auto fpfbo = inst->_finalPass->targets[i];
-		//inst->_finalPass->bindTexture(i, tex);
-		//inst->_finalPass->beginBufferAndRenderPass(fpfbo);
-		//inst->_finalPass->bindPipelineAndDraw(fpfbo);
-		//inst->_finalPass->endRenderPassAndBuffer(fpfbo);
-	//}
-	
-	
-	for(int i = 0; i < 10; i++) {
-		//inst->drawFrame();
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	}
-
-	std::cin.get();
-
-	//delete sh;
-	
-	//inst->destroyTexture(tex);
-		
-	//delete mo;
-
-	//delete inst;
-
-	return 0;
-	
-	/*{
 		engine::engine e(1.0 / 100.0);
 		
 		e.man->registerType<engine::renderManager>("Render Manager", true);
 		e.man->registerType<engine::freeCam>("Free Cam", true);
-		e.man->registerType<engine::meshManager>("Mesh Manager", false);
-		e.man->registerType<engine::shaderManager>("Shader Manager", false);
 		e.man->registerType<engine::meshFilter>("Mesh Filter", false);
 		e.man->registerType<engine::playerController>("Player Controller", true);
 		e.man->registerType<engine::worldManager>("World Manager", true);
@@ -205,36 +56,12 @@ int main(int argc, char **argv) {
 			typeid(engine::worldManager),
 			typeid(engine::sensorEle),
 			typeid(engine::rigidBodyComponent),
-			typeid(engine::shaderManager),
-			typeid(engine::meshManager),
 			typeid(engine::freeCam),
 			typeid(engine::playerController),
 			typeid(engine::projectile),
 			typeid(engine::renderManager),
 			typeid(engine::meshFilter)
 		});
-
-		std::string resDir = "/home/benny/Desktop/folder/citrus/res/";
-
-		e.man->create("MeshTable", {
-			engine::eleInit<engine::meshManager>::run(
-				[resDir](engine::meshManager& man) {
-					man.loadAnimation(resDir + "animations/run.cta", 0);
-					man.loadAnimation(resDir + "animations/idle.cta", 1);
-
-					man.loadMesh(resDir + "meshes/natsuki.dae", 0);
-					man.loadMesh(resDir + "meshes/sphere.dae", 1);
-					man.loadMesh(resDir + "meshes/cube1x1x1.dae", 2);
-					man.loadMesh(resDir + "meshes/walker.dae", 3);
-					man.loadMesh(resDir + "meshes/human.dae", 4);
-					man.loadMesh(resDir + "meshes/blast.dae", 5);
-					man.loadMesh(resDir + "meshes/icosphere.dae", 6);
-					man.loadMesh(resDir + "meshes/arrow.dae", 7);
-
-					man.bindAllAvailableAnimations();
-				}
-			)
-		}, util::nextID());
 
 		entityRef cam2 = e.man->create("Test 2", {
 			engine::eleInit<engine::freeCam>::run(
@@ -245,21 +72,35 @@ int main(int argc, char **argv) {
 				}
 			)
 		}, util::nextID());
-
-		e.man->create("Renderer", {
+		
+		auto item = e.man->create("MeshTable", {
 			engine::eleInit<engine::renderManager>::run(
-				[resDir,&cam2](engine::renderManager& man) {
-					man.camRef = cam2.getElement<engine::freeCam>();
+				[resDir, &cam2](engine::renderManager & man) {
+					man.initSystem(
+						resDir + "/shaders/standard.vert.spv",
+						resDir + "/shaders/standard.frag.spv",
+						{
+							//resDir + "/textures/Natsuki_COLOR.png",
+							resDir + "/textures/gridsmall.png",
+							resDir + "/textures/cement.png",
+							resDir + "/textures/consolas256x256.png",
+						},
+						{
+							//resDir + "/meshes/monkas.dae",
+							//resDir + "/meshes/sphere.dae",
+							resDir + "/meshes/cube1x1x1.dae",
+							//resDir + "/meshes/walker.dae",
+							resDir + "/meshes/human.dae",
+							resDir + "/meshes/blast.dae",
+							//resDir + "/meshes/icosphere.dae",
+							//resDir + "/meshes/arrow.dae"
+						}
+					);
 
-					man.loadPNG(resDir + "textures/Natsuki_COLOR.png", 0);
-					man.loadPNG(resDir + "textures/gridsmall.png", 1);
-					man.loadPNG(resDir + "textures/cement.png", 2);
-					man.loadPNG(resDir + "textures/consolas256x256.png", 3);
+					man.camRef = cam2.getElement<engine::freeCam>();
 				}
 			)
-		}, util::nextID());
-
-		
+			}, util::nextID());
 
 		e.man->create("Physics", {engine::eleInit<engine::worldManager>()}, util::nextID());
 
@@ -274,7 +115,7 @@ int main(int argc, char **argv) {
 		}, util::nextID());
 		auto playerModel = e.man->create("Player Model", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
-				filt.setState(4, 3, 1);
+				filt.setState(1, 1, 0);
 				filt.startAnimation(0, graphics::behavior::repeat);
 			})
 		}, util::nextID());
@@ -284,15 +125,15 @@ int main(int argc, char **argv) {
 		//playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
 		playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(0.0f, 1.0f, 0.0f)));
 
-		e.man->create("Walker Test", {
+		/*e.man->create("Walker Test", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
-				filt.setState(4, 1, 1);
+				filt.setState(1, 0, 0);
 				filt.startAnimation(0, graphics::behavior::repeat);
 			})
-		}, util::nextID());
+		}, util::nextID());*/
 
-		for(int x = -1; x < 15; x++) {
-			for(int z = -1; z < 15; z++) {
+		for(int x = -10; x < 10; x++) {
+			for(int z = -10; z < 10; z++) {
 				e.man->create("Floor: <" + std::to_string(x) + ", " + std::to_string(z) + ">", {
 					engine::eleInit<engine::rigidBodyComponent>::run([x,z](engine::rigidBodyComponent& cmp) {
 						cmp.setToBox(glm::vec3(0.5f, 0.5f, 0.5f));
@@ -300,7 +141,7 @@ int main(int argc, char **argv) {
 						cmp.body->dynamic = false;
 					}),
 					engine::eleInit<engine::meshFilter>::run([x,z](engine::meshFilter& m) {
-						m.setState(2, 2, 0);
+						m.setState(0, 1, 0);
 						m.visible = true;
 					}),
 					//engine::eleInit<engine::sensorEle>()
@@ -352,7 +193,7 @@ int main(int argc, char **argv) {
 
 	util::sout("Done\n");
 
-	return 0; */
+	return 0;
 
 
 
