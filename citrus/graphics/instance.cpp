@@ -123,7 +123,7 @@ namespace citrus::graphics {
 		const auto& extensions = getRequiredExtensions();
 		const auto& layers = getRequiredLayers();
 
-		VkInstanceCreateInfo createInfo = {};
+		VkInstanceCreateInfo createInfo = { };
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		createInfo.pApplicationInfo = &appInfo;
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
@@ -131,12 +131,9 @@ namespace citrus::graphics {
 		if (enableValidationLayers) {
 			createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
 			createInfo.ppEnabledLayerNames = layers.data();
-		}
-		else {
+		} else {
 			createInfo.enabledLayerCount = 0;
 		}
-
-
 
 		VkResult res = vkCreateInstance(&createInfo, nullptr, &_instance);
 		if (res != VK_SUCCESS) throw std::runtime_error("vkCreateInstance failure");

@@ -37,8 +37,8 @@ namespace citrus::engine {
 		me->systemIndex = -1;
 	}
 
-	void renderManager::initSystem(string vs, string fs, vector<string> textures, vector<string> models) {
-		sys = new graphics::system(*inst(), vs, fs, textures, models);
+	void renderManager::initSystem(string vs, string fs, vector<string> textures, vector<string> models, vector<string> animations) {
+		sys = new graphics::system(*inst(), vs, fs, textures, models, animations);
 	}
 
 	void renderManager::bindAllAvailableAnimations() {

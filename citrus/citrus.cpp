@@ -94,6 +94,9 @@ int main(int argc, char **argv) {
 							resDir + "/meshes/blast.dae",
 							//resDir + "/meshes/icosphere.dae",
 							//resDir + "/meshes/arrow.dae"
+						},
+						{
+							resDir + "/animations/idle.cta"
 						}
 					);
 

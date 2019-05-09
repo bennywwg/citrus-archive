@@ -36,7 +36,7 @@ namespace citrus::engine {
 		//try {
 			_renderState.store(render_initializing);
 			_win = nullptr;
-			_win = new graphics::window(512, 512, "Citrus Engine", "C:\\Users\\benny\\Desktop\\citrus\\res");
+			_win = new graphics::window(1280, 720, "Citrus Engine", "C:\\Users\\Scoobert\\Desktop\\citrus\\res");
 
 			//graphics::image4b img(string("C:\\Users\\benny\\Desktop\\citrus\\res") + "/textures/grid.png");
 

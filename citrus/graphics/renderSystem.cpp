@@ -1,4 +1,5 @@
 #include "citrus/graphics/renderSystem.h"
+#include <fstream>
 
 namespace citrus::graphics {
 	void system::createModules(string const& vertLoc, string const& fragLoc, VkShaderModule& vertModule, VkShaderModule& fragModule, VkPipelineShaderStageCreateInfo& vertInfo, VkPipelineShaderStageCreateInfo& fragInfo) {
@@ -739,6 +740,21 @@ namespace citrus::graphics {
 		vkDestroyBuffer(inst._device, vertexBuffer, nullptr);
 		vkDestroyBuffer(inst._device, indexBuffer, nullptr);
 	}
+	void system::loadAnimations(vector<string> animations) {
+		vector<animation> anis;
+		for (int i = 0; i < animations.size(); i++) {
+			std::ifstream f(animations[i]);
+			animation ani;
+			ani.read(f);
+			anis.push_back(ani);
+		}
+		for (int i = 0; i < animations.size(); i++) {
+			for (int j = 0; j < models.size(); j++) {
+				bool success = models[j].data.bindAnimation(anis[i]);
+				if (success) util::sout("animation bound: model " + std::to_string(j) + ", ani " + std::to_string(i) + "\n");
+			}
+		}
+	}
 	void system::initializeUniformBuffer() {
 		uniformAlignment = inst.minUniformBufferOffsetAlignment();
 
@@ -1078,7 +1094,7 @@ namespace citrus::graphics {
 
 		freeThreads();
 	}
-	system::system(instance& vkinst, string vs, string fs, vector<string> textures, vector<string> models) : inst(vkinst) {
+	system::system(instance& vkinst, string vs, string fs, vector<string> textures, vector<string> models, vector<string> animations) : inst(vkinst) {
 		maxItems = 500;
 
 		initializeAttribsBindings();
@@ -1100,6 +1116,8 @@ namespace citrus::graphics {
 		loadTextures(textures);
 
 		loadModels(models);
+
+		loadAnimations(animations);
 
 		initializeThreads(4);
 

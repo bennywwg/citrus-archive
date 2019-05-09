@@ -26,7 +26,7 @@ namespace citrus::engine {
 
 		void bindAllAvailableAnimations();
 
-		void initSystem(string vs, string fs, vector<string> textures, vector<string> models);
+		void initSystem(string vs, string fs, vector<string> textures, vector<string> models, vector<string> animations);
 
 		void load(const nlohmann::json& parsed);
 		json save() const;

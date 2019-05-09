@@ -707,6 +707,7 @@ namespace citrus::graphics {
 			if (it == nodes.nameMap.end()) return false;
 			binding.nodes[i] = it->second;
 		}
+		binding.nodeCont = &nodes;
 		animations.emplace_back(std::move(binding));
 		return true;
 	}

@@ -144,6 +144,8 @@ namespace citrus::graphics {
 		void loadModels(vector<string> paths);
 		void freeModels();
 
+		void loadAnimations(vector<string> animations);
+
 		void initializeUniformBuffer();
 		void freeUniformBuffer();
 
@@ -195,7 +197,8 @@ namespace citrus::graphics {
 
 		system(instance & vkinst, string vs, string fs,
 			vector<string> textures,
-			vector<string> models);
+			vector<string> models,
+			vector<string> animations);
 		~system();
 	};
 }
