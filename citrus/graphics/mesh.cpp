@@ -389,6 +389,12 @@ namespace citrus::graphics {
 			uv.resize(pos.size());
 		}
 	}
+	void mesh::clearBones() {
+		bone0.clear();
+		bone1.clear();
+		weight0.clear();
+		weight1.clear();
+	}
 
 	uint64_t mesh::vertSizeWithoutPadding() const {
 		uint64_t vertSize = sizeof(vec3);
@@ -739,6 +745,8 @@ namespace citrus::graphics {
 	mesh::mesh() {
 	}
 	mesh::mesh(std::string path) {
+		name = path;
+
 		Assimp::Importer imp;
 		imp.SetExtraVerbose(true);
 

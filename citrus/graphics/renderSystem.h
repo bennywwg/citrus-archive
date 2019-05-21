@@ -16,7 +16,8 @@
 #endif
 
 #define SWAP_FRAMES 2
-#define RENDER_VERTEX_INPUTS 8
+#define animated_vertex_inputs 8
+#define static_vertex_inputs 4
 
 namespace citrus::graphics {
 	class system {
@@ -43,44 +44,52 @@ namespace citrus::graphics {
 		VkPipeline			pipeline;
 
 		struct frame {
-			VkImage			color;
-			VkImage			depth;
-			VkImageView		colorView;
-			VkImageView		depthView;
-			VkSampler		samp;
-			VkFramebuffer	frameBuffer;
-			VkDeviceMemory	colorMem;
-			VkDeviceMemory	depthMem;
+			VkImage			color;											// color image
+			VkImage			depth;											// depth image
+			VkImageView		colorView;										// color view
+			VkImageView		depthView;										// depth view
+			VkSampler		samp;											// color sampler
+			VkFramebuffer	frameBuffer;									// fbo
+			VkDeviceMemory	colorMem;										// color memory
+			VkDeviceMemory	depthMem;										// depth memory
 		};
-		frame				frames[SWAP_FRAMES];
+		frame				frames[SWAP_FRAMES];							// frame info
 
 		struct texture {
-			image4b			data;
-			VkFormat		format;
-			VkImage			img;
-			VkImageView		view;
-			VkSampler		samp;
-			uint64_t		off;
+			image4b			data;											// CPU image object
+			VkFormat		format;											// format info
+			VkImage			img;											// image object
+			VkImageView		view;											// view object
+			VkSampler		samp;											// sampler object
+			VkDeviceAddress	off;											// start of memory range into textureMem
 		};
-		vector<texture>		textures;
-		VkDeviceMemory		textureMem;
+		vector<texture>		textures;										// texture info
+		VkDeviceMemory		textureMem;										// texture memory
 
 		struct model {
-			mesh			data;
-			VkDeviceAddress	vertexOffsets[RENDER_VERTEX_INPUTS];
-			VkDeviceAddress indexOffset;
-			uint32_t		indexCount;
-			float			radius;
+			mesh			data;											// CPU mesh object
+			VkDeviceAddress	vertexOffsets[animated_vertex_inputs];			// start of memory ranges into vertexBuffer used by vertices
+			VkDeviceAddress	vertexSize;										// total size of vertex memory chunk
+			VkDeviceAddress indexOffset;									// start of memory range into indexBuffer used by indices
+			VkDeviceAddress	indexSize;										// size of index memory chunk
+			uint32_t		indexCount;										// number of indices
+			float			radius;											// maximal distance any vertex is from origin
 		};
-		vector<model>		models;
-		VkDeviceMemory		vertexMemory;
-		VkBuffer			vertexBuffer;
-		VkBuffer			vertexBuffers[RENDER_VERTEX_INPUTS];  // RENDER_VERTEX_INPUTS copies of vertexBuffer
-		VkDeviceMemory		indexMemory;
-		VkBuffer			indexBuffer;
+		vector<model>		staticModels;									// model info
+		vector<model>		aniModels;										// aniModel info
+		VkMemoryRequirements vertexRequirements;							// info for vertex memory
+		VkDeviceMemory		vertexMemory;									// vertex memory
+		VkBuffer			vertexBuffer;									// buffer object associated with vertex memory
+		VkBuffer			vertexBuffers[animated_vertex_inputs];			// animated_vertex_inputs copies of vertexBuffer, useful for models and aniModels
+		VkMemoryRequirements indexRequirements;								// info for index memory
+		VkDeviceMemory		indexMemory;									// index memory
+		VkBuffer			indexBuffer;									// buffer object associated with index memory
 
-		VkVertexInputAttributeDescription	attribs[RENDER_VERTEX_INPUTS];
-		VkVertexInputBindingDescription		bindings[RENDER_VERTEX_INPUTS];
+
+		VkVertexInputAttributeDescription
+							attribs[animated_vertex_inputs];				// description of vertex data types, aniModels use all, models use first 4
+		VkVertexInputBindingDescription
+							bindings[animated_vertex_inputs];				// bindings of vertex data, aniModels use all, models use first 4
 
 		int					maxItems;
 		uint64_t			uniformAlignment;
@@ -141,9 +150,12 @@ namespace citrus::graphics {
 		void loadTextures(vector<string> paths);
 		void freeTextures();
 
-		void loadModels(vector<string> paths);
+		void collectModelInfo();
+		void loadModels(vector<string> staticPaths, vector<string> aniPaths);
+		void initializeModelData();
 		void freeModels();
 
+		vector<animation> animations;
 		void loadAnimations(vector<string> animations);
 
 		void initializeUniformBuffer();
@@ -156,14 +168,16 @@ namespace citrus::graphics {
 			bool enabled;
 		};
 
-		vector<vector<itemInfo>> items;
+		vector<vector<itemInfo>> staticItems;
+		vector<vector<itemInfo>> aniItems;
 
 		struct itemDrawRange {
 			int modelIndex;
 			int itemBegin;
 			int itemEnd; //one past end, ie use <
 		};
-		vector<vector<itemDrawRange>> sequences;
+		vector<vector<itemDrawRange>> staticRanges;
+		vector<vector<itemDrawRange>> aniRanges;
 
 		std::shared_mutex		startMut;
 		std::mutex				instMut;
@@ -185,9 +199,14 @@ namespace citrus::graphics {
 		void freeThreads();
 
 
-		void sequence();
+		void sequence(vector<vector<itemInfo>> const& items, vector<vector<itemDrawRange>> & ranges);
 		void renderFunc(int threadIndex);
-		void renderPartial(int threadIndex);
+		void renderPartial(
+			int threadIndex,
+			vector<model> const& models,
+			vector<vector<itemInfo>> const& items,
+			vector<itemDrawRange> const& ranges,
+			VkCommandBuffer & buf);
 		void render(int frameIndex, VkSemaphore signal, camera const& cam);
 		bool renderDone();
 
@@ -197,6 +216,7 @@ namespace citrus::graphics {
 
 		system(instance & vkinst, string vs, string fs,
 			vector<string> textures,
+			vector<string> staticModels,
 			vector<string> models,
 			vector<string> animations);
 		~system();

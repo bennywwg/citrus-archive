@@ -66,7 +66,7 @@ namespace citrus::graphics {
 			sizeof(float),
 			sizeof(float)
 		};
-		for (int i = 0; i < RENDER_VERTEX_INPUTS; i++) {
+		for (int i = 0; i < animated_vertex_inputs; i++) {
 			attribs[i].format = formats[i];
 			attribs[i].binding = i;
 			attribs[i].location = i;
@@ -80,7 +80,7 @@ namespace citrus::graphics {
 	void system::initializeDescriptorLayouts(int texCount) {
 		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
 		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
 		uboLayoutBinding.descriptorCount = 1;
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
@@ -137,7 +137,7 @@ namespace citrus::graphics {
 	}
 	void system::initializeDescriptorSets(int texCount) {
 		VkDescriptorPoolSize uboSize = {};
-		uboSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		uboSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
 		uboSize.descriptorCount = SWAP_FRAMES;
 
 		VkDescriptorPoolCreateInfo uboPoolInfo = {};
@@ -255,8 +255,8 @@ namespace citrus::graphics {
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = RENDER_VERTEX_INPUTS;
-		vertexInputInfo.vertexAttributeDescriptionCount = RENDER_VERTEX_INPUTS;
+		vertexInputInfo.vertexBindingDescriptionCount = animated_vertex_inputs;
+		vertexInputInfo.vertexAttributeDescriptionCount = animated_vertex_inputs;
 		vertexInputInfo.pVertexBindingDescriptions = bindings;
 		vertexInputInfo.pVertexAttributeDescriptions = attribs;
 
@@ -616,94 +616,137 @@ namespace citrus::graphics {
 			vkDestroyImage(inst._device, textures[t].img, nullptr);
 		}
 	}
-	void system::loadModels(vector<string> paths) {
-		uint64_t vertexAddr = 0, indexAddr = 0;
-		uint32_t typeBits = 0;
-
-		models.resize(paths.size());
-		items.resize(paths.size());
-
-		for (int i = 0; i < paths.size(); i++) {
-			models[i].data = mesh(paths[i]);
-			models[i].data.fillEmpty();
-			vector<mesh::rawVertexData> vInfo = models[i].data.getRawData();
-			if (vInfo.size() != RENDER_VERTEX_INPUTS) throw std::runtime_error("invalid mesh format");
-
-			models[i].radius = 0;
-			for (int j = 0; j < models[i].data.pos.size(); j++) {
-				float l2 = glm::length2(models[i].data.pos[j]);
-				if (l2 > models[i].radius) models[i].radius = l2;
-			}
-			models[i].radius = glm::sqrt(models[i].radius);
-
-			uint64_t vertexSize = models[i].data.requiredMemory();
-			uint64_t indexSize = models[i].data.index.size() * sizeof(uint16_t);
-
-			VkBufferCreateInfo vertexInfo = {};
-			vertexInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			vertexInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			vertexInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-			vertexInfo.size = vertexSize;
-
-			VkBufferCreateInfo indexInfo = {};
-			indexInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			indexInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			indexInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-			indexInfo.size = indexSize;
-
-			VkBuffer tmpVertexBuf, tmpIndexBuf;
-			vkCreateBuffer(inst._device, &vertexInfo, nullptr, &tmpVertexBuf);
-			vkCreateBuffer(inst._device, &indexInfo, nullptr, &tmpIndexBuf);
-
-			VkMemoryRequirements vertexRequirements, indexRequirements;
-			vkGetBufferMemoryRequirements(inst._device, tmpVertexBuf, &vertexRequirements);
-			vkGetBufferMemoryRequirements(inst._device, tmpIndexBuf, &indexRequirements);
-
-			vkDestroyBuffer(inst._device, tmpVertexBuf, nullptr);
-			vkDestroyBuffer(inst._device, tmpIndexBuf, nullptr);
-
-			for (int j = 0; j < RENDER_VERTEX_INPUTS; j++) {
-				vertexAddr = util::roundUpAlign(vertexAddr, vertexRequirements.alignment);
-				models[i].vertexOffsets[j] = vertexAddr;
-				vertexAddr += vInfo[j].dataSize;
-			}
-
-			indexAddr = util::roundUpAlign(indexAddr, indexRequirements.alignment);
-			models[i].indexCount = models[i].data.index.size();
-			models[i].indexOffset = indexAddr;
-			indexAddr += indexSize;
-		}
-
+	void system::collectModelInfo() {
 		VkBufferCreateInfo vertexInfo = {};
 		vertexInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		vertexInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		vertexInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		vertexInfo.size = 1024 * 1024; // buffer never actually uses memory
+
+		VkBufferCreateInfo indexInfo = {};
+		indexInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		indexInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		indexInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+		indexInfo.size = 1024 * 1024; // buffer never actually uses memory
+
+		VkBuffer tmpVertexBuf, tmpIndexBuf;
+		vkCreateBuffer(inst._device, &vertexInfo, nullptr, &tmpVertexBuf);
+		vkCreateBuffer(inst._device, &indexInfo, nullptr, &tmpIndexBuf);
+
+		vkGetBufferMemoryRequirements(inst._device, tmpVertexBuf, &vertexRequirements);
+		vkGetBufferMemoryRequirements(inst._device, tmpIndexBuf, &indexRequirements);
+
+		vkDestroyBuffer(inst._device, tmpVertexBuf, nullptr);
+		vkDestroyBuffer(inst._device, tmpIndexBuf, nullptr);
+	}
+	void system::loadModels(vector<string> staticPaths, vector<string> aniPaths) {
+		uint64_t vertexAddr = 0, indexAddr = 0;
+
+		staticModels.resize(staticPaths.size());
+		aniModels.resize(aniPaths.size());
+		staticItems.resize(staticPaths.size());
+		aniItems.resize(aniPaths.size());
+
+		for (int i = 0; i < staticPaths.size(); i++) {
+			staticModels[i].data = mesh(staticPaths[i]);
+			staticModels[i].data.fillEmpty();
+			staticModels[i].data.clearBones();
+			vector<mesh::rawVertexData> vInfo = staticModels[i].data.getRawData();
+			if (vInfo.size() != static_vertex_inputs) throw std::runtime_error("invalid mesh");
+
+			// generate radius info for culling
+			staticModels[i].radius = 0;
+			for (int j = 0; j < staticModels[i].data.pos.size(); j++) {
+				float l2 = glm::length2(staticModels[i].data.pos[j]);
+				if (l2 > staticModels[i].radius) staticModels[i].radius = l2;
+			}
+			staticModels[i].radius = glm::sqrt(staticModels[i].radius);
+
+			for (int j = 0; j < static_vertex_inputs; j++) {
+				staticModels[i].vertexOffsets[j] = vertexAddr;
+				vertexAddr += vInfo[j].dataSize;
+				vertexAddr = util::roundUpAlign(vertexAddr, vertexRequirements.alignment);
+			}
+			staticModels[i].vertexSize = vertexAddr - staticModels[i].vertexOffsets[0];
+
+			staticModels[i].indexCount = staticModels[i].data.index.size();
+			staticModels[i].indexOffset = indexAddr;
+			indexAddr += staticModels[i].data.index.size() * sizeof(decltype(mesh::index)::value_type);
+			indexAddr = util::roundUpAlign(indexAddr, indexRequirements.alignment);
+			staticModels[i].indexSize = indexAddr - staticModels[i].indexOffset;
+		}
+		for (int i = 0; i < aniPaths.size(); i++) {
+			aniModels[i].data = mesh(aniPaths[i]);
+			aniModels[i].data.fillEmpty();
+			vector<mesh::rawVertexData> vInfo = aniModels[i].data.getRawData();
+			if (vInfo.size() != animated_vertex_inputs) throw std::runtime_error("invalid animesh");
+
+			// generate radius info for culling
+			aniModels[i].radius = 0;
+			for (int j = 0; j < aniModels[i].data.pos.size(); j++) {
+				float l2 = glm::length2(aniModels[i].data.pos[j]);
+				if (l2 > aniModels[i].radius) aniModels[i].radius = l2;
+			}
+			aniModels[i].radius = glm::sqrt(aniModels[i].radius);
+
+			for (int j = 0; j < animated_vertex_inputs; j++) {
+				aniModels[i].vertexOffsets[j] = vertexAddr;
+				vertexAddr += vInfo[j].dataSize;
+				vertexAddr = util::roundUpAlign(vertexAddr, vertexRequirements.alignment);
+			}
+			aniModels[i].vertexSize = vertexAddr - aniModels[i].vertexOffsets[0];
+
+			aniModels[i].indexCount = aniModels[i].data.index.size();
+			aniModels[i].indexOffset = indexAddr;
+			indexAddr += aniModels[i].data.index.size() * sizeof(decltype(mesh::index)::value_type);
+			indexAddr = util::roundUpAlign(indexAddr, indexRequirements.alignment);
+			aniModels[i].indexSize = indexAddr - aniModels[i].indexOffset;
+		}
+	}
+	void system::initializeModelData() {
+		VkDeviceAddress totalVertexSize =
+			(aniModels.empty() ?
+				(staticModels.empty() ?
+					0 :
+					(staticModels.back().vertexOffsets[static_vertex_inputs - 1] + staticModels.back().vertexSize)) :
+				(aniModels.back().vertexOffsets[animated_vertex_inputs - 1] + aniModels.back().vertexSize));
+		VkDeviceAddress totalIndexSize =
+			(aniModels.empty() ?
+				(staticModels.empty() ?
+					0 :
+					(staticModels.back().indexOffset + staticModels.back().indexSize)) :
+				(aniModels.back().indexOffset + aniModels.back().indexSize));
+
+		VkBufferCreateInfo vertexInfo = { };
+		vertexInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		vertexInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		vertexInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-		vertexInfo.size = vertexAddr;
+		vertexInfo.size = totalVertexSize;
 
 		vkCreateBuffer(inst._device, &vertexInfo, nullptr, &vertexBuffer);
 
 		VkMemoryRequirements vertexRequirements;
 		vkGetBufferMemoryRequirements(inst._device, vertexBuffer, &vertexRequirements);
 
-		VkMemoryAllocateInfo vertexMemInfo = {};
+		VkMemoryAllocateInfo vertexMemInfo = { };
 		vertexMemInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		vertexMemInfo.allocationSize = vertexRequirements.size;
 		vertexMemInfo.memoryTypeIndex = inst.findMemoryType(vertexRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 		vkAllocateMemory(inst._device, &vertexMemInfo, nullptr, &vertexMemory);
 
-		VkBufferCreateInfo indexInfo = {};
+		VkBufferCreateInfo indexInfo = { };
 		indexInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		indexInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		indexInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-		indexInfo.size = indexAddr;
+		indexInfo.size = totalIndexSize;
 
 		vkCreateBuffer(inst._device, &indexInfo, nullptr, &indexBuffer);
 
 		VkMemoryRequirements indexRequirements;
 		vkGetBufferMemoryRequirements(inst._device, indexBuffer, &indexRequirements);
 
-		VkMemoryAllocateInfo indexMemInfo = {};
+		VkMemoryAllocateInfo indexMemInfo = { };
 		indexMemInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		indexMemInfo.allocationSize = indexRequirements.size;
 		indexMemInfo.memoryTypeIndex = inst.findMemoryType(indexRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -713,24 +756,24 @@ namespace citrus::graphics {
 		vkBindBufferMemory(inst._device, vertexBuffer, vertexMemory, 0);
 		vkBindBufferMemory(inst._device, indexBuffer, indexMemory, 0);
 
-		for (int i = 0; i < paths.size(); i++) {
-			vector<mesh::rawVertexData> vData = models[i].data.getRawData();
+		for (int i = 0; i < staticModels.size(); i++) {
+			vector<mesh::rawVertexData> vData = aniModels[i].data.getRawData();
 			for (int j = 0; j < vData.size(); j++) {
 				uint64_t secSize = vData[j].dataSize;
 				uint64_t secAddr = inst.stagingMem.alloc(secSize);
 				inst.mapUnmapMemory(inst.stagingMem.mem, secSize, secAddr, vData[j].dataStart);
-				inst.copyBuffer(inst.stagingMem.buf, vertexBuffer, secSize, secAddr, models[i].vertexOffsets[j]);
+				inst.copyBuffer(inst.stagingMem.buf, vertexBuffer, secSize, secAddr, aniModels[i].vertexOffsets[j]);
 				inst.stagingMem.free(secAddr);
 			}
 
-			uint64_t indexSize = models[i].data.index.size() * sizeof(uint16_t);
+			uint64_t indexSize = aniModels[i].data.index.size() * sizeof(uint16_t);
 			uint64_t indexAddr = inst.stagingMem.alloc(indexSize);
-			inst.mapUnmapMemory(inst.stagingMem.mem, indexSize, indexAddr, models[i].data.index.data());
-			inst.copyBuffer(inst.stagingMem.buf, indexBuffer, indexSize, indexAddr, models[i].indexOffset);
+			inst.mapUnmapMemory(inst.stagingMem.mem, indexSize, indexAddr, aniModels[i].data.index.data());
+			inst.copyBuffer(inst.stagingMem.buf, indexBuffer, indexSize, indexAddr, aniModels[i].indexOffset);
 			inst.stagingMem.free(indexAddr);
 		}
 
-		for (int i = 0; i < RENDER_VERTEX_INPUTS; i++) {
+		for (int i = 0; i < animated_vertex_inputs; i++) {
 			vertexBuffers[i] = vertexBuffer;
 		}
 	}
@@ -740,17 +783,16 @@ namespace citrus::graphics {
 		vkDestroyBuffer(inst._device, vertexBuffer, nullptr);
 		vkDestroyBuffer(inst._device, indexBuffer, nullptr);
 	}
-	void system::loadAnimations(vector<string> animations) {
-		vector<animation> anis;
-		for (int i = 0; i < animations.size(); i++) {
-			std::ifstream f(animations[i]);
+	void system::loadAnimations(vector<string> anis) {
+		for (int i = 0; i < anis.size(); i++) {
+			std::ifstream f(anis[i]);
 			animation ani;
 			ani.read(f);
-			anis.push_back(ani);
+			animations.push_back(ani);
 		}
 		for (int i = 0; i < animations.size(); i++) {
-			for (int j = 0; j < models.size(); j++) {
-				bool success = models[j].data.bindAnimation(anis[i]);
+			for (int j = 0; j < aniModels.size(); j++) {
+				bool success = aniModels[j].data.bindAnimation(animations[i]);
 				if (success) util::sout("animation bound: model " + std::to_string(j) + ", ani " + std::to_string(i) + "\n");
 			}
 		}
@@ -758,12 +800,15 @@ namespace citrus::graphics {
 	void system::initializeUniformBuffer() {
 		uniformAlignment = inst.minUniformBufferOffsetAlignment();
 
-		uint64_t dataSize = maxItems * util::roundUpAlign(sizeof(dynamicData), uniformAlignment);
+		uint64_t dataSize = 0;
+		for (int i = 0; i < animations.size(); i++) {
+			dataSize += util::roundUpAlign(animations[i].channels.size() * sizeof(mat4), uniformAlignment);
+		}
 
 		VkBufferCreateInfo bufferInfo = {};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = dataSize;
-		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		for (int i = 0; i < SWAP_FRAMES; i++) {
@@ -818,9 +863,11 @@ namespace citrus::graphics {
 			renderThreads[t] = std::thread(&system::renderFunc, this, t);
 		}
 
-		sequences.resize(renderThreads.size());
+		staticRanges.resize(renderThreads.size());
+		aniRanges.resize(renderThreads.size());
 		for (int i = 0; i < renderThreads.size(); i++) {
-			sequences[i].resize(models.size());
+			staticRanges[i].resize(staticModels.size());
+			aniRanges[i].resize(aniModels.size());
 		}
 	}
 	void system::freeThreads() {
@@ -841,15 +888,15 @@ namespace citrus::graphics {
 			vkDestroyCommandPool(inst._device, commandPools[t], nullptr);
 		}
 	}
-	void system::sequence() {
+	void system::sequence(vector<vector<itemInfo>> const& items, vector<vector<itemDrawRange>> & ranges) {
 		int totalItems = 0;
-		for (int m = 0; m < models.size(); m++)
+		for (int m = 0; m < items.size(); m++)
 			totalItems += items[m].size();
 
 		hptime seqStart = hpclock::now();
 		for (int t = 0; t < renderThreads.size(); t++)
-			for (int m = 0; m < models.size(); m++)
-				sequences[t][m].modelIndex = -1;
+			for (int m = 0; m < items.size(); m++)
+				ranges[t][m].modelIndex = -1;
 
 		int target = totalItems / renderThreads.size() + 1;
 		int modelIndex = 0, itemBegin = 0, threadIndex = 0, threadRangeIndex = 0, itemsInThread = 0;
@@ -863,7 +910,7 @@ namespace citrus::graphics {
 			if (itemBegin == items[modelIndex].size()) {
 				modelIndex++;
 				itemBegin = 0;
-				if (modelIndex == models.size()) break;
+				if (modelIndex == items.size()) break;
 			}
 
 			int toAdd = target;
@@ -874,7 +921,7 @@ namespace citrus::graphics {
 				toAdd = items[modelIndex].size() - itemBegin;
 			}
 
-			sequences[threadIndex][threadRangeIndex] = { modelIndex, itemBegin, itemBegin + toAdd };
+			ranges[threadIndex][threadRangeIndex] = { modelIndex, itemBegin, itemBegin + toAdd };
 			threadRangeIndex++;
 
 			itemBegin += toAdd;
@@ -888,33 +935,30 @@ namespace citrus::graphics {
 			if (renderGo[threadIndex]) {
 				renderPartial(threadIndex);
 				renderGo[threadIndex] = false;
-			}
-			else {
+			} else {
 				//std::this_thread::sleep_for(std::chrono::microseconds(100));
 			}
 		}
 		renderGo[threadIndex] = false;
 		stdioDebug("completed thread " + std::to_string(threadIndex) + "\n");
 	}
-	void system::renderPartial(int threadIndex) {
+	void system::renderPartial(
+		int threadIndex,
+		vector<model> const& models,
+		vector<vector<itemInfo>> const& items,
+		vector<itemDrawRange> const& ranges,
+		VkCommandBuffer & buf) {
 		stdioDebug("\tstarting partial " + std::to_string(threadIndex) + "\n");
 		int vbinds = 0, draws = 0, culls = 0;
 		int frameIndex;
-		{
-			std::shared_lock<std::shared_mutex> lock(startMut);
+		hptime partialStart = hpclock::now();
+
+		{	std::shared_lock<std::shared_mutex> lock(startMut);
 			frameIndex = frameIndex_;
 		}
 
-		hptime partialStart = hpclock::now();
-
-		VkCommandBuffer buf;
-		{
-			std::lock_guard<std::mutex> lock(instMut);
-			if (secondaryBuffers[frameIndex][threadIndex] != VK_NULL_HANDLE) {
-				inst.destroyCommandBuffer(secondaryBuffers[frameIndex][threadIndex], commandPools[threadIndex]);
-			}
+		{	std::lock_guard<std::mutex> lock(instMut);
 			buf = inst.createCommandBuffer(commandPools[threadIndex], true);
-			secondaryBuffers[frameIndex][threadIndex] = buf;
 		}
 
 		VkCommandBufferBeginInfo cmdInfo = {};
@@ -927,30 +971,29 @@ namespace citrus::graphics {
 		vkCmdBindPipeline(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 		vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &texSet, 0, nullptr);
-		for (int s = 0; s < models.size(); s++) {
-			itemDrawRange& dr = sequences[threadIndex][s];
+		for (int s = 0; s < ranges.size(); s++) {
+			itemDrawRange const& dr = ranges[s];
 			if (dr.modelIndex == -1) break;
 
-			vkCmdBindVertexBuffers(buf, 0, RENDER_VERTEX_INPUTS, vertexBuffers, models[dr.modelIndex].vertexOffsets);
-			vkCmdBindIndexBuffer(buf, indexBuffer, models[dr.modelIndex].indexOffset, VK_INDEX_TYPE_UINT16);
+			vkCmdBindVertexBuffers(buf, 0, animated_vertex_inputs, vertexBuffers, aniModels[dr.modelIndex].vertexOffsets);
+			vkCmdBindIndexBuffer(buf, indexBuffer, aniModels[dr.modelIndex].indexOffset, VK_INDEX_TYPE_UINT16);
 			vbinds++;
 
 			for (int i = dr.itemBegin; i < dr.itemEnd; i++) {
-				if (!cullEnabled || frameCull.testSphere(items[dr.modelIndex][i].pos, models[dr.modelIndex].radius)) {
+				if (!cullEnabled || frameCull.testSphere(items[dr.modelIndex][i].pos, aniModels[dr.modelIndex].radius)) {
 					pcData pushData;
-					mat4 modTmp = glm::translate(items[dr.modelIndex][i].pos);
+					mat4 modTmp = glm::translate(aniItems[dr.modelIndex][i].pos);
 					pushData.vertData.model = modTmp;
 					pushData.vertData.mvp = frameVP * modTmp;
-					pushData.fragData.texIndex = items[dr.modelIndex][i].texIndex;
+					pushData.fragData.texIndex = aniItems[dr.modelIndex][i].texIndex;
 					vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcData), &pushData.vertData);
 					vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcData), sizeof(frag_pcData), &pushData.fragData);
 					uint32_t zero = 0;
 					vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboSets[frameIndex], 1, &zero);
 
-					vkCmdDrawIndexed(buf, models[dr.modelIndex].indexCount, 1, 0, 0, 0);
+					vkCmdDrawIndexed(buf, aniModels[dr.modelIndex].indexCount, 1, 0, 0, 0);
 					draws++;
-				}
-				else {
+				} else {
 					culls++;
 				}
 			}
@@ -973,7 +1016,8 @@ namespace citrus::graphics {
 
 		stdioDebug("fence wait took " + std::to_string((hpclock::now() - mainStart).count() * 0.000001) + " ms\n");
 
-		sequence();
+		sequence(staticItems, staticRanges);
+		sequence(aniItems, aniRanges);
 
 		{ //  prepare frame data here
 			std::unique_lock<std::shared_mutex> lock(startMut);
@@ -1094,7 +1138,7 @@ namespace citrus::graphics {
 
 		freeThreads();
 	}
-	system::system(instance& vkinst, string vs, string fs, vector<string> textures, vector<string> models, vector<string> animations) : inst(vkinst) {
+	system::system(instance& vkinst, string vs, string fs, vector<string> textures, vector<string> staticModels, vector<string> models, vector<string> animations) : inst(vkinst) {
 		maxItems = 500;
 
 		initializeAttribsBindings();
@@ -1111,13 +1155,17 @@ namespace citrus::graphics {
 
 		initializeFramebuffers();
 
-		initializeUniformBuffer();
-
 		loadTextures(textures);
 
-		loadModels(models);
+		collectModelInfo();
+
+		loadModels(staticModels, models);
+
+		initializeModelData();
 
 		loadAnimations(animations);
+
+		initializeUniformBuffer();
 
 		initializeThreads(4);
 

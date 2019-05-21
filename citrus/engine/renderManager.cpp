@@ -10,16 +10,44 @@
 //#include <openvr/openvr.h"
 
 namespace citrus::engine {
-	void renderManager::addItem(eleRef<meshFilter> me, int m, int t) {
+	void renderManager::addStatic(eleRef<meshFilter> const& me, int m, int t) {
 		std::lock_guard<std::mutex> lock(_drawableMut);
-		if (m >= sys->models.size()) throw std::runtime_error("model index too large");
+		if (m >= sys->aniModels.size()) throw std::runtime_error("model index too large");
 		if (t >= sys->textures.size()) throw std::runtime_error("shader index too large");
-		for (int i = 0; i < sys->items[m].size(); i++) {
-			if (!sys->items[m][i].enabled) {
+		for (int i = 0; i < sys->staticItems[m].size(); i++) {
+			if (!sys->staticItems[m][i].enabled) {
 				me->systemIndex = i;
-				sys->items[m][i].pos = me->ent().getGlobalTransform().getPosition();
-				sys->items[m][i].ori = me->ent().getGlobalTransform().getOrientation();
-				sys->items[m][i].texIndex = t;
+				sys->staticItems[m][i].pos = me->ent().getGlobalTransform().getPosition();
+				sys->staticItems[m][i].ori = me->ent().getGlobalTransform().getOrientation();
+				sys->staticItems[m][i].texIndex = t;
+				sys->staticItems[m][i].enabled = true;
+				return;
+			}
+		}
+		graphics::system::itemInfo info;
+		info.pos = me->ent().getGlobalTransform().getPosition();
+		info.ori = me->ent().getGlobalTransform().getOrientation();
+		info.texIndex = t;
+		info.enabled = true;
+		me->systemIndex = sys->staticItems[m].size();
+		sys->staticItems[m].push_back(info);
+	}
+	void renderManager::removeStatic(eleRef<meshFilter> const& me, int oldM) {
+		std::lock_guard<std::mutex> lock(_drawableMut);
+		sys->staticItems[oldM][me->systemIndex].enabled = false;
+		me->systemIndex = -1;
+	}
+	void renderManager::addDynamic(eleRef<meshFilter> const& me, int m, int t, int a) {
+		std::lock_guard<std::mutex> lock(_drawableMut);
+		if (m >= sys->aniModels.size()) throw std::runtime_error("model index too large");
+		if (t >= sys->textures.size()) throw std::runtime_error("shader index too large");
+		for (int i = 0; i < sys->aniItems[m].size(); i++) {
+			if (!sys->aniItems[m][i].enabled) {
+				me->systemIndex = i;
+				sys->aniItems[m][i].pos = me->ent().getGlobalTransform().getPosition();
+				sys->aniItems[m][i].ori = me->ent().getGlobalTransform().getOrientation();
+				sys->aniItems[m][i].texIndex = t;
+				sys->aniItems[m][i].enabled = true;
 				return;
 			}
 		}
@@ -28,17 +56,17 @@ namespace citrus::engine {
 		info.pos = me->ent().getGlobalTransform().getPosition();
 		info.texIndex = t;
 		info.enabled = true;
-		me->systemIndex = sys->items[m].size();
-		sys->items[m].push_back(info);
+		me->systemIndex = sys->aniItems[m].size();
+		sys->aniItems[m].push_back(info);
 	}
-	void renderManager::removeItem(eleRef<meshFilter> me, int oldM) {
+	void renderManager::removeDynamic(eleRef<meshFilter> const& me, int oldM) {
 		std::lock_guard<std::mutex> lock(_drawableMut);
-		sys->items[oldM][me->systemIndex].enabled = false;
+		sys->aniItems[oldM][me->systemIndex].enabled = false;
 		me->systemIndex = -1;
 	}
 
-	void renderManager::initSystem(string vs, string fs, vector<string> textures, vector<string> models, vector<string> animations) {
-		sys = new graphics::system(*inst(), vs, fs, textures, models, animations);
+	void renderManager::initSystem(string vs, string fs, vector<string> textures, vector<string> staticModels, vector<string> aniModels, vector<string> animations) {
+		sys = new graphics::system(*inst(), vs, fs, textures, staticModels, aniModels, animations);
 	}
 
 	void renderManager::bindAllAvailableAnimations() {

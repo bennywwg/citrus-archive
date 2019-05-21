@@ -36,7 +36,7 @@ namespace citrus::engine {
 		//try {
 			_renderState.store(render_initializing);
 			_win = nullptr;
-			_win = new graphics::window(1280, 720, "Citrus Engine", "C:\\Users\\Scoobert\\Desktop\\citrus\\res");
+			_win = new graphics::window(1280, 720, "Citrus Engine", "C:\\Users\\benny\\Desktop\\citrus\\res");
 
 			//graphics::image4b img(string("C:\\Users\\benny\\Desktop\\citrus\\res") + "/textures/grid.png");
 
@@ -56,6 +56,11 @@ namespace citrus::engine {
 			long long lastFrameNanos = 0;
 
 			while(!stopped()) {
+				if (_win->shouldClose()) {
+					stop();
+					continue;
+				}
+
 				if((clock::now() - fpsSampleStart) >= std::chrono::seconds(1)) {
 					fpsSampleStart = fpsSampleStart + std::chrono::seconds(1);
 					_framesPerSecond = fpsSample;

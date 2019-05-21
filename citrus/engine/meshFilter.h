@@ -18,7 +18,9 @@ namespace citrus::engine {
 		bool visible = true;;
 		int systemIndex = -1;
 
-		void setState(int m, int t, int a = -1);
+		void setStatic(int m, int t);
+		void setDynamic(int m, int t, int a);
+		void reset();
 		int model() const;
 		int tex() const;
 		int ani() const;

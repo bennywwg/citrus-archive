@@ -7,18 +7,31 @@
 #include "citrus/engine/elementRef.inl"
 
 namespace citrus::engine {
-	void meshFilter::setState(int m, int t, int a) {
+	void meshFilter::setStatic(int m, int t) {
+		if (systemIndex != -1) throw std::runtime_error("mesh already set");
 		auto g = eng()->getAllOfType<renderManager>()[0];
-		if(t != -1) {
-			g->addItem(eleRef<meshFilter>(this), m, t);
-		} else {
-			g->removeItem(eleRef<meshFilter>(this), _model);
-		}
+		g->addStatic(eleRef<meshFilter>(this), m, t);
+		_model = m;
+		_tex = t;
+		_ani = -1;
+	}
+	void meshFilter::setDynamic(int m, int t, int a) {
+		if (systemIndex != -1) throw std::runtime_error("mesh already set");
+		auto g = eng()->getAllOfType<renderManager>()[0];
+		g->addDynamic(eleRef<meshFilter>(this), m, t, a);
 		_model = m;
 		_tex = t;
 		_ani = a;
-		if(a != -1) _mode = graphics::behavior::repeat;
-		util::sout("setState\n");
+	}
+	void meshFilter::reset() {
+		if (systemIndex != -1) {
+			auto g = eng()->getAllOfType<renderManager>()[0];
+			if (_ani == -1) {
+				g->removeStatic(eleRef<meshFilter>(this), _model);
+			} else {
+				g->removeDynamic(eleRef<meshFilter>(this), _model);
+			}
+		}
 	}
 	int meshFilter::model() const {
 		return _model;
@@ -60,9 +73,6 @@ namespace citrus::engine {
 	meshFilter::meshFilter(entityRef ent) : element(ent, typeid(meshFilter)) {
 	}
 	meshFilter::~meshFilter() {
-		if(_tex != -1) {
-			auto g = eng()->getAllOfType<renderManager>()[0];
-			g->removeItem(eleRef<meshFilter>(this), _model);
-		}
+		reset();
 	}
 }

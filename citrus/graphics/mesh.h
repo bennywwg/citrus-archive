@@ -119,6 +119,8 @@ namespace citrus::graphics {
 
 	class mesh {
 	public:
+		string name;
+
 		vector<uint16_t> index;
 		vector<vec3> pos;
 		vector<vec3> norm;
@@ -149,6 +151,7 @@ namespace citrus::graphics {
 		bool hasBones() const;
 
 		void fillEmpty();
+		void clearBones();
 
 		uint64_t vertSizeWithoutPadding() const;
 		uint64_t requiredMemory() const;

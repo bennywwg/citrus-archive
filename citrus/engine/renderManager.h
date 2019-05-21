@@ -21,12 +21,14 @@ namespace citrus::engine {
 	public:
 		eleRef<freeCam> camRef;
 		
-		void addItem(eleRef<meshFilter> mf, int modelIndex, int textureIndex);
-		void removeItem(eleRef<meshFilter> mf, int modelIndex);
+		void addStatic(eleRef<meshFilter> const& mf, int modelIndex, int textureIndex);
+		void addDynamic(eleRef<meshFilter> const& mf, int modelIndex, int textureIndex, int aniIndex);
+		void removeStatic(eleRef<meshFilter> const& mf, int modelIndex);
+		void removeDynamic(eleRef<meshFilter> const& mf, int modelIndex);
 
 		void bindAllAvailableAnimations();
 
-		void initSystem(string vs, string fs, vector<string> textures, vector<string> models, vector<string> animations);
+		void initSystem(string vs, string fs, vector<string> textures, vector<string> staticModels, vector<string> aniModels, vector<string> animations);
 
 		void load(const nlohmann::json& parsed);
 		json save() const;
