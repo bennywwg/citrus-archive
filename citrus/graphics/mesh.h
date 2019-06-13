@@ -94,7 +94,7 @@ namespace citrus::graphics {
 	//it has a list of node indices instead of
 	//node names so it can be used to animate
 	//nodes[i] corresponds to ani->channels[i]
-	struct animationBinding {
+	struct aniBinding {
 		const animation* ani;
 		const nodeContainer* nodeCont;
 		std::vector<int> nodes;
@@ -107,74 +107,95 @@ namespace citrus::graphics {
 		void loadAllAnimations(const aiScene* scene);
 	};
 
+	enum class meshAttributeUsage : uint32_t {
+		positionType =		(1 << 0),
+		normalType =		(1 << 1),
+		tangentType =		(1 << 2),
+		uvType =			(1 << 3),
+		colorType =			(1 << 4),
+		bone0Type =			(1 << 5),
+		bone1Type =			(1 << 6),
+		weight0Type =		(1 << 7),
+		weight1Type =		(1 << 8)
+	};
+
+	// contains metadata about a mesh such as bindings
 	struct meshDescription {
-		vector<VkVertexInputAttributeDescription> attribs;
-		vector<VkVertexInputBindingDescription> bindings;
+		vector<VkVertexInputAttributeDescription>	attribs;	// attribute information
+		vector<VkVertexInputBindingDescription>		bindings;	// binding of each attriute
+		vector<meshAttributeUsage>					usages;		// usage of each attribute
 
-		string toString() const;
+		// return a list of offsets (relative to start of this mesh's data) of each attrib array
+		// start of each attrib array is aligned
+		vector<uint64_t>							getOffsets(uint32_t vertCount, uint32_t alignment) const;
 
-		static meshDescription getLit(bool rigged);
-		static meshDescription getShadeless(bool rigged);
+		// format the attributes similar to GLSL declarations
+		string										toString() const;
+
+		// returns the index into the arrays of a certain usage
+		// returns -1 if usage is not found
+		int											findAttrib(meshAttributeUsage usage) const;
+
+		// return whether or not 
+		bool										supportsAttribs(meshAttributeUsage usage) const;
 	};
 
 	class mesh {
 	public:
-		string name;
+		string					name;
 
-		vector<uint16_t> index;
-		vector<vec3> pos;
-		vector<vec3> norm;
-		vector<vec3> tangent;
-		vector<vec2> uv;
-		vector<int32_t> bone0;
-		vector<int32_t> bone1;
-		vector<float> weight0;
-		vector<float> weight1;
+	private:
+		vector<uint16_t>		index;
+		vector<vec3>			pos;
+		vector<vec3>			norm;
+		vector<vec3>			tangent;
+		vector<vec2>			uv;
+		vector<int32_t>			bone0;
+		vector<int32_t>			bone1;
+		vector<float>			weight0;
+		vector<float>			weight1;
 
-		struct rawVertexData {
-			void* dataStart;
-			uint64_t dataSize;
-			uint64_t elementCount;
-		};
 
-		vector<rawVertexData> getRawData();
+		/*struct rawVertexData {
+			void*				dataStart;
+			uint64_t			dataSize;
+			uint64_t			elementCount;
+		};*/
 
-		nodeContainer nodes;
-		boneContainer bones;
-		std::vector<animationBinding> animations;
+		nodeContainer			nodes;
+		boneContainer			bones;
+		vector<aniBinding>		animations;
 
-		bool valid() const;
+		bool					valid() const;
 
-		bool hasNorm() const;
-		bool hasTangent() const;
-		bool hasUV() const;
-		bool hasBones() const;
+		void					loadNodes(const aiScene* scene, aiMesh* mesh);
+		void					loadBones(const aiScene* scene, aiMesh* mesh);
+		void					loadMesh(const aiScene* scene, aiMesh* mesh);
 
-		void fillEmpty();
-		void clearBones();
+	public:
+		bool					hasNorm() const;
+		bool					hasTangent() const;
+		bool					hasUV() const;
+		bool					hasBones() const;
+		
+		void					fillEmpty();
+		void					clearBones();
 
-		uint64_t vertSizeWithoutPadding() const;
-		uint64_t requiredMemory() const;
-		void constructContinuous(void* data) const;
-		void constructInterleaved(void* data) const;
-		vector<uint64_t> offsets() const;
+		// number of bytes required to store mesh, each attribute beginning aligned
+		uint64_t				requiredMemory(uint32_t alignment) const;
 
-		//used for constructing constructing shaders and such
-		meshDescription getDescription() const;
+		// fill data with 
+		meshDescription			constructContinuous(void* data) const;
 
-		//used to check if meshes and shaders share the same attributes
-		uint64_t getDescriptionCode() const;
+		void					calculateAnimationTransforms(int animationIndex, vector<mat4>& data, double time, behavior mode) const;
+		bool					bindAnimation(const animation& ani);
 
-		void calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4>& data, double time, behavior mode) const;
-		bool bindAnimation(const animation& ani);
+		static void				convertAnimationFromCollada(string location, string outLocation);
 
-		void loadMesh(const aiScene* scene, aiMesh* mesh);
-		void loadNodes(const aiScene* scene, aiMesh* mesh);
-		void loadBones(const aiScene* scene, aiMesh* mesh);
-
-		static void convertAnimationFromCollada(std::string location, std::string outLocation);
-
+		// create an empty mesh
 		mesh();
-		mesh(std::string path);
+
+		// load collada from file
+		mesh(string path);
 	};
 }

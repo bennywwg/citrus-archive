@@ -610,7 +610,7 @@ namespace citrus::graphics {
 	}
 
 	void mesh::calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4> & data, double time, behavior mode) const {
-		const animationBinding& ani = animations[animationIndex];
+		const aniBinding& ani = animations[animationIndex];
 
 		//localTransforms[i] corresponds to bones.bones[i]
 		std::vector<glm::mat4> localTransforms(nodes.nodes.size());
@@ -705,7 +705,7 @@ namespace citrus::graphics {
 	}
 
 	bool mesh::bindAnimation(const animation & ani) {
-		animationBinding binding;
+		aniBinding binding;
 		binding.ani = &ani;
 		binding.nodes.resize(ani.channels.size());
 		for (int i = 0; i < ani.channels.size(); i++) {
@@ -780,24 +780,16 @@ namespace citrus::graphics {
 	string meshDescription::toString() const {
 		string res;
 		for (int i = 0; i < attribs.size(); i++) {
-			res += "layout(location = " + std::to_string(attribs[i].location) + ") in [...] binding" + std::to_string(attribs[i].binding) + ";\n";
+			res += "layout(location = " + std::to_string(attribs[i].location) + ")" +
+				" in [...] binding" + std::to_string(attribs[i].binding) + ";" +
+				" // " + std::to_string((uint32_t)usages[i]) + "\n";
 		}
 		return res;
 	}
-	meshDescription meshDescription::getLit(bool rigged) {
-		mesh m;
-		m.pos.push_back(vec3(0, 0, 0));
-		m.norm.push_back(vec3(0, 0, 0));
-		m.tangent.push_back(vec3(0, 0, 0));
-		m.uv.push_back(vec2(0, 0));
-		if (rigged) m.bone0.push_back(0);
-		return m.getDescription();
-	}
-	meshDescription meshDescription::getShadeless(bool rigged) {
-		mesh m;
-		m.pos.push_back(vec3(0, 0, 0));
-		m.uv.push_back(vec2(0, 0));
-		if (rigged) m.bone0.push_back(0);
-		return m.getDescription();
+	int meshDescription::findAttrib(meshAttributeUsage usage) const {
+		for (int i = 0; i < usages.size(); i++) {
+			if (usages[i] == usage) return i;
+		}
+		return -1;
 	}
 }

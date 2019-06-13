@@ -20,9 +20,25 @@
 #define static_vertex_inputs 4
 
 namespace citrus::graphics {
-	class system {
+	
+	class renderPass;
+
+	struct vertexElementArray {
+		uint32_t						location;							// location in shader (ie, layout(location = ...) ...)
+		uint32_t						binding;							// binding
+		VkDeviceAddress					memOffset;							// start of data in vertex memory
+	};
+
+	//
+	class modelView {
+	public:
+		vector<vertexElementArray>		elements;							// elements of this model
+	};
+
+	class passMaterial {
 	public:
 		instance& inst;
+		VkRenderPass& pass;
 
 		//initializeDescriptorLayouts
 		VkDescriptorSetLayout uboLayout;
@@ -37,11 +53,67 @@ namespace citrus::graphics {
 		VkDescriptorPool	texPool;
 		VkDescriptorSet		texSet;
 
-		//initializeRenderPass
-		VkRenderPass		renderPass;
-
 		//initializePipeline
 		VkPipeline			pipeline;
+
+		//
+		uint64_t			code;
+		inline bool supportsMesh(uint64_t meshCode) {
+			return (code & meshCode) == code;
+		}
+
+		struct pcData {
+			mat4						mvp;
+			mat4x3						model;
+			uvec4						uints;
+		};
+		static_assert(sizeof(pcData) == 128, "pcData must be 128 bytes");
+
+		uint8_t *uniformMapped;
+
+		struct threadData {
+			uint32_t					offset;		//offset into uniform buffer for this thread
+			uint32_t					size;		//size of thread's data
+		};
+		vector<threadData>				threadRanges;
+
+		/*
+		 * represents a set of items to draw
+		 * for example, { 1, 4, 68 } represents items 4 through 67 of model index 1
+		 */
+		struct itemDrawRange {
+			int							modelIndex; //index of model
+			int							itemBegin;	//first item
+			int							itemEnd;	//one past end, ie use <
+		};
+
+		/*
+		 *	ranges.size() = threadCount
+		 *	ranges[n].size() = modelCount
+		 */
+		vector<vector<itemDrawRange>>	ranges;
+
+		struct itemInfo {
+			vec3						pos;
+			quat						ori;
+			uint32_t					texIndex;
+			uint32_t					uniformOffset;
+			uint32_t					uniformSize;
+			bool						enabled;
+		};
+
+		/*
+		 *	items.size() = modelCount
+		 *	items[n].size() = number of instances of that model
+		 */
+		vector<vector<itemInfo>>		items;
+
+		passMaterial(renderPass const& pass, vector<string> const& paths);
+	};
+
+	class system {
+	public:
+		instance& inst;
 
 		struct frame {
 			VkImage			color;											// color image
@@ -104,24 +176,6 @@ namespace citrus::graphics {
 			VkSampler		samp;
 		};
 
-		struct dynamicData {
-			vec4			nothing;
-		};
-		static_assert(sizeof(dynamicData) >= 0, "dynamicData must not be zero sized");
-
-		struct vert_pcData {
-			mat4			mvp;
-			glm::mat4x3		model;
-		};
-		struct frag_pcData {
-			uint32_t		texIndex;
-		};
-		struct pcData {
-			vert_pcData vertData;
-			frag_pcData fragData;
-		};
-		static_assert(sizeof(pcData) <= 128, "pcData must be smaller than push constant min size");
-
 		void createModules(
 			string const& vertLoc, string const& fragLoc,
 			VkShaderModule& vertModule, VkShaderModule& fragModule,
@@ -160,24 +214,6 @@ namespace citrus::graphics {
 
 		void initializeUniformBuffer();
 		void freeUniformBuffer();
-
-		struct itemInfo {
-			vec3 pos;
-			quat ori;
-			int texIndex;
-			bool enabled;
-		};
-
-		vector<vector<itemInfo>> staticItems;
-		vector<vector<itemInfo>> aniItems;
-
-		struct itemDrawRange {
-			int modelIndex;
-			int itemBegin;
-			int itemEnd; //one past end, ie use <
-		};
-		vector<vector<itemDrawRange>> staticRanges;
-		vector<vector<itemDrawRange>> aniRanges;
 
 		std::shared_mutex		startMut;
 		std::mutex				instMut;

@@ -47,6 +47,7 @@ namespace citrus {
 	using glm::uvec4;
 	using glm::mat3;
 	using glm::mat4;
+	using glm::mat4x3;
 
 	using glm::translate;
 	using glm::inverse;
