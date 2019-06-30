@@ -326,27 +326,6 @@ namespace citrus::graphics {
 		}
 	}
 
-	vector<mesh::rawVertexData> mesh::getRawData() {
-		vector<rawVertexData> res;
-		res.push_back({ pos.data(), pos.size() * sizeof(vec3), pos.size() });
-		if (hasNorm()) {
-			res.push_back({ norm.data(), norm.size() * sizeof(vec3), norm.size() });
-		}
-		if (hasTangent()) {
-			res.push_back({ tangent.data(), tangent.size() * sizeof(vec3), tangent.size() });
-		}
-		if (hasUV()) {
-			res.push_back({ uv.data(), uv.size() * sizeof(vec2), uv.size() });
-		}
-		if (hasBones()) {
-			res.push_back({ bone0.data(), bone0.size() * sizeof(int32_t), bone0.size() });
-			res.push_back({ bone1.data(), bone1.size() * sizeof(int32_t), bone1.size() });
-			res.push_back({ weight0.data(), weight0.size() * sizeof(float), weight0.size() });
-			res.push_back({ weight1.data(), weight1.size() * sizeof(float), weight1.size() });
-		}
-		return res;
-	}
-
 	bool mesh::valid() const {
 		auto const psize = pos.size();
 		if (!norm.empty() && norm.size() != psize) return false;
@@ -374,6 +353,9 @@ namespace citrus::graphics {
 	bool mesh::hasUV() const {
 		return !uv.empty();
 	}
+	bool mesh::hasColor() const {
+		return !color.empty();
+	}
 	bool mesh::hasBones() const {
 		return !bone0.empty();
 	}
@@ -396,217 +378,77 @@ namespace citrus::graphics {
 		weight1.clear();
 	}
 
-	uint64_t mesh::vertSizeWithoutPadding() const {
-		uint64_t vertSize = sizeof(vec3);
-		if (hasNorm()) vertSize += sizeof(vec3);
-		if (hasTangent()) vertSize += sizeof(vec3);
-		if (hasUV()) vertSize += sizeof(vec2);
-		if (hasBones()) vertSize += (sizeof(int) + sizeof(int) + sizeof(float) + sizeof(float));
-		return vertSize;
+	meshDescription mesh::getDescription(uint64_t vertStart, uint64_t vertAlign, uint64_t indexStart, uint64_t indexAlign) const {
+		vector<VkVertexInputAttributeDescription> attribs;
+		vector<VkVertexInputBindingDescription> bindings;
+		vector<meshAttributeUsage> usages;
+		vector<uint64_t> offsets;
+		uint32_t currentBindingLocation = 0; {
+			usages.push_back(meshAttributeUsage::positionType);
+		}
+		if (hasNorm()) {
+			usages.push_back(meshAttributeUsage::normalType);
+		}
+		if (hasTangent()) {
+			usages.push_back(meshAttributeUsage::tangentType);
+		}
+		if (hasUV()) {
+			usages.push_back(meshAttributeUsage::uvType);
+		}
+		if (hasColor()) {
+			usages.push_back(meshAttributeUsage::uvType);
+		}
+		if (hasBones()) {
+			usages.push_back(meshAttributeUsage::bone0Type);
+			usages.push_back(meshAttributeUsage::bone1Type);
+			usages.push_back(meshAttributeUsage::weight0Type);
+			usages.push_back(meshAttributeUsage::weight1Type);
+		}
+		meshAttributeUsage allUsage = meshAttributeUsage::none;
+		for (int i = 0; i < usages.size(); i++) {
+			allUsage = (meshAttributeUsage) ((uint32_t)allUsage | (uint32_t)usages[i]);
+		}
+		for (int i = 0; i < usages.size(); i++) {
+			vertStart = util::roundUpAlign(vertStart, vertAlign);
+			offsets.push_back(vertStart);
+			vertStart += bindings[i].stride * pos.size();
+		}
+		return meshDescription{
+			usages,
+			allUsage,
+			offsets,																		// vert starts
+			vertStart,																		// vert end
+			util::roundUpAlign(indexStart, indexAlign),										// index start
+			util::roundUpAlign(indexStart, indexAlign) + index.size() * sizeof(uint16_t),	// index end
+			pos.size(),																		// vert count
+			index.size()																	// index count
+		};
 	}
-	uint64_t mesh::requiredMemory() const {
-		return pos.size()* vertSizeWithoutPadding();
+	float mesh::getMaxRadius() const {
+		float l2m = 0;
+		for (vec3 const& v : pos) {
+			float l2 = glm::length2(v);
+			if (l2 > l2m) l2m = l2;
+		}
+		return l2m;
 	}
-	void mesh::constructContinuous(void* vdata) const {
+	void mesh::fillVertexData(void* vdata, meshDescription desc) const {
 		uint8_t* data = (uint8_t*)vdata;
-		uint64_t offset = 0;
-		memcpy(data + offset, pos.data(), pos.size() * sizeof(vec3));
-		offset += pos.size() * sizeof(vec3);
-		if (hasNorm()) {
-			memcpy(data + offset, norm.data(), norm.size() * sizeof(vec3));
-			offset += norm.size() * sizeof(vec3);
-		}
-		if (hasTangent()) {
-			memcpy(data + offset, tangent.data(), tangent.size() * sizeof(vec3));
-			offset += tangent.size() * sizeof(vec3);
-		}
-		if (hasUV()) {
-			memcpy(data + offset, uv.data(), uv.size() * sizeof(vec2));
-			offset += uv.size() * sizeof(vec2);
-		}
+		memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::positionType)], pos.data(), pos.size() * sizeof(vec3));
+		if (hasNorm()) memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::normalType)], norm.data(), norm.size() * sizeof(vec3));
+		if (hasTangent()) memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::tangentType)], tangent.data(), tangent.size() * sizeof(vec3));
+		if (hasUV()) memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::uvType)], uv.data(), uv.size() * sizeof(vec2));
+		if (hasColor()) memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::colorType)], color.data(), color.size() * sizeof(vec3));
 		if (hasBones()) {
-			memcpy(data + offset, bone0.data(), bone0.size() * sizeof(int32_t));
-			offset += bone0.size() * sizeof(int32_t);
-
-			memcpy(data + offset, bone1.data(), bone1.size() * sizeof(int32_t));
-			offset += bone1.size() * sizeof(int32_t);
-
-			memcpy(data + offset, weight0.data(), weight0.size() * sizeof(float));
-			offset += weight0.size() * sizeof(float);
-
-			memcpy(data + offset, weight1.data(), weight1.size() * sizeof(int32_t));
-			offset += weight1.size() * sizeof(float);
+			memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::bone0Type)], bone0.data(), bone0.size() * sizeof(int32_t));
+			memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::bone1Type)], bone1.data(), bone1.size() * sizeof(int32_t));
+			memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::weight0Type)], weight0.data(), weight0.size() * sizeof(float));
+			memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::weight1Type)], weight1.data(), weight1.size() * sizeof(float));
 		}
 	}
-	void mesh::constructInterleaved(void* vdata) const {
+	void mesh::fillIndexData(void* vdata, meshDescription desc) const {
 		uint8_t* data = (uint8_t*)vdata;
-		uint64_t stride = vertSizeWithoutPadding();
-		uint64_t voffset = 0;
-		for (int i = 0; i < pos.size(); i++)
-			* (vec3*)(data + i * stride) = pos[i];
-		voffset += sizeof(vec3);
-
-		if (hasNorm()) {
-			for (int i = 0; i < pos.size(); i++)
-				* (vec3*)(data + i * stride + voffset) = norm[i];
-			voffset += sizeof(vec3);
-		}
-
-		if (hasTangent()) {
-			for (int i = 0; i < pos.size(); i++)
-				* (vec3*)(data + i * stride + voffset) = tangent[i];
-			voffset += sizeof(vec3);
-		}
-
-		if (hasUV()) {
-			for (int i = 0; i < pos.size(); i++)
-				* (vec2*)(data + i * stride + voffset) = uv[i];
-			voffset += sizeof(vec2);
-		}
-
-		if (hasBones()) {
-			for (int i = 0; i < pos.size(); i++) {
-				*(int32_t*)(data + i * stride) = bone0[i];
-			}
-			voffset += sizeof(int);
-
-			for (int i = 0; i < pos.size(); i++) {
-				*(int32_t*)(data + i * stride) = bone1[i];
-			}
-			voffset += sizeof(int);
-
-			for (int i = 0; i < pos.size(); i++) {
-				*(float*)(data + i * stride) = weight0[i];
-			}
-			voffset += sizeof(float);
-
-			for (int i = 0; i < pos.size(); i++) {
-				*(float*)(data + i * stride) = weight1[i];
-			}
-			voffset += sizeof(float);
-		}
-	}
-	vector<uint64_t> mesh::offsets() const {
-		vector<uint64_t> res;
-
-		uint64_t offset = 0;
-		res.push_back(offset);
-
-		offset += pos.size() * sizeof(vec3);
-		if (hasNorm()) {
-			res.push_back(offset);
-			offset += norm.size() * sizeof(vec3);
-		}
-		if (hasTangent()) {
-			res.push_back(offset);
-			offset += tangent.size() * sizeof(vec3);
-		}
-		if (hasUV()) {
-			res.push_back(offset);
-			offset += uv.size() * sizeof(vec2);
-		}
-		if (hasBones()) {
-			res.push_back(offset);
-			offset += bone0.size() * sizeof(int32_t);
-
-			res.push_back(offset);
-			offset += bone1.size() * sizeof(int32_t);
-
-			res.push_back(offset);
-			offset += weight0.size() * sizeof(float);
-
-			res.push_back(offset);
-			offset += weight1.size() * sizeof(float);
-		}
-
-		return res;
-	}
-
-	meshDescription mesh::getDescription() const {
-		meshDescription res;
-		vector<VkVertexInputAttributeDescription>& attribs = res.attribs;
-		vector<VkVertexInputBindingDescription>& bindings = res.bindings;
-		{
-			VkVertexInputAttributeDescription attrib = { };
-			attrib.binding = 0;
-			attrib.location = 0;
-			attrib.format = VK_FORMAT_R32G32B32_SFLOAT;
-			attrib.offset = 0;
-			attribs.push_back(attrib);
-
-			VkVertexInputBindingDescription binding = { };
-			binding.binding = 0;
-			binding.stride = sizeof(vec3);
-			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			bindings.push_back(binding);
-		}
-		if (hasNorm()) {
-			VkVertexInputAttributeDescription attrib = { };
-			attrib.binding = 1;
-			attrib.location = 1;
-			attrib.format = VK_FORMAT_R32G32B32_SFLOAT;
-			attrib.offset = 0;
-			attribs.push_back(attrib);
-
-			VkVertexInputBindingDescription binding = { };
-			binding.binding = 1;
-			binding.stride = sizeof(vec3);
-			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			bindings.push_back(binding);
-		}
-		if (hasTangent()) {
-			VkVertexInputAttributeDescription attrib = { };
-			attrib.binding = 2;
-			attrib.location = 2;
-			attrib.format = VK_FORMAT_R32G32B32_SFLOAT;
-			attrib.offset = 0;
-			attribs.push_back(attrib);
-
-			VkVertexInputBindingDescription binding = { };
-			binding.binding = 2;
-			binding.stride = sizeof(vec3);
-			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			bindings.push_back(binding);
-		}
-		if (hasUV()) {
-			VkVertexInputAttributeDescription attrib = { };
-			attrib.binding = 3;
-			attrib.location = 3;
-			attrib.format = VK_FORMAT_R32G32_SFLOAT;
-			attrib.offset = 0;
-			attribs.push_back(attrib);
-
-			VkVertexInputBindingDescription binding = { };
-			binding.binding = 3;
-			binding.stride = sizeof(vec2);
-			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			bindings.push_back(binding);
-		}
-		if (hasBones()) {
-			for (int i = 0; i < 4; i++) {
-				VkVertexInputAttributeDescription attrib = { };
-				attrib.binding = 4 + i;
-				attrib.location = 4 + i;
-				attrib.format = (i < 2) ? VK_FORMAT_R32_SINT : VK_FORMAT_R32_SFLOAT;
-				attrib.offset = 0;
-				attribs.push_back(attrib);
-
-				VkVertexInputBindingDescription binding = { };
-				binding.binding = 4 + i;
-				binding.stride = (i < 2) ? sizeof(int32_t) : sizeof(float);
-				binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-				bindings.push_back(binding);
-			}
-		}
-		return res;
-	}
-	uint64_t mesh::getDescriptionCode() const {
-		uint64_t res = 0;
-		if (hasNorm())		res |= (1 << 1);
-		if (hasTangent())	res |= (1 << 2);
-		if (hasUV()) 		res |= (1 << 3);
-		if (hasBones())		res |= (1 << 4);
-		return res;
+		memcpy(data + desc.indexOffset, index.data(), index.size() * sizeof(decltype(index)::value_type));
 	}
 
 	void mesh::calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4> & data, double time, behavior mode) const {
@@ -777,19 +619,152 @@ namespace citrus::graphics {
 
 		imp.FreeScene();
 	}
-	string meshDescription::toString() const {
-		string res;
-		for (int i = 0; i < attribs.size(); i++) {
-			res += "layout(location = " + std::to_string(attribs[i].location) + ")" +
-				" in [...] binding" + std::to_string(attribs[i].binding) + ";" +
-				" // " + std::to_string((uint32_t)usages[i]) + "\n";
+
+	uint32_t meshAttributeUtils::getAttribSize(meshAttributeUsage usage) {
+		if (usage == meshAttributeUsage::positionType) {
+			return sizeof(vec3);
+		} else if (usage == meshAttributeUsage::normalType) {
+			return sizeof(vec3);
+		} else if (usage == meshAttributeUsage::tangentType) {
+			return sizeof(vec3);
+		} else if (usage == meshAttributeUsage::uvType) {
+			return sizeof(vec2);
+		} else if (usage == meshAttributeUsage::colorType) {
+			return sizeof(vec3);
+		} else if (usage == meshAttributeUsage::bone0Type) {
+			return sizeof(uint32_t);
+		} else if (usage == meshAttributeUsage::bone1Type) {
+			return sizeof(uint32_t);
+		} else if (usage == meshAttributeUsage::weight0Type) {
+			return sizeof(float);
+		} else if (usage == meshAttributeUsage::weight1Type) {
+			return sizeof(float);
+		} else {
+			return 0;
 		}
-		return res;
 	}
+	VkFormat meshAttributeUtils::getAttribFormat(meshAttributeUsage usage) {
+		if (usage == meshAttributeUsage::positionType) {
+			return VK_FORMAT_R32G32B32_SFLOAT;
+		}
+		else if (usage == meshAttributeUsage::normalType) {
+			return VK_FORMAT_R32G32B32_SFLOAT;
+		}
+		else if (usage == meshAttributeUsage::tangentType) {
+			return VK_FORMAT_R32G32B32_SFLOAT;
+		}
+		else if (usage == meshAttributeUsage::uvType) {
+			return VK_FORMAT_R32G32_SFLOAT;
+		}
+		else if (usage == meshAttributeUsage::colorType) {
+			return VK_FORMAT_R32G32B32_SFLOAT;
+		}
+		else if (usage == meshAttributeUsage::bone0Type) {
+			return VK_FORMAT_R32_SINT;
+		}
+		else if (usage == meshAttributeUsage::bone1Type) {
+			return VK_FORMAT_R32_SINT;
+		}
+		else if (usage == meshAttributeUsage::weight0Type) {
+			return VK_FORMAT_R32_SFLOAT;
+		}
+		else if (usage == meshAttributeUsage::weight1Type) {
+			return VK_FORMAT_R32_SFLOAT;
+		}
+		else {
+			return VK_FORMAT_UNDEFINED;
+		}
+	}
+	string meshAttributeUtils::toString(meshAttributeUsage usage) {
+		if (usage == meshAttributeUsage::positionType) {
+			return "position";
+		}
+		else if (usage == meshAttributeUsage::normalType) {
+			return "normal";
+		}
+		else if (usage == meshAttributeUsage::tangentType) {
+			return "tangnent";
+		}
+		else if (usage == meshAttributeUsage::uvType) {
+			return "uv";
+		}
+		else if (usage == meshAttributeUsage::colorType) {
+			return "color";
+		}
+		else if (usage == meshAttributeUsage::bone0Type) {
+			return "bone0";
+		}
+		else if (usage == meshAttributeUsage::bone1Type) {
+			return "bone1";
+		}
+		else if (usage == meshAttributeUsage::weight0Type) {
+			return "weight0";
+		}
+		else if (usage == meshAttributeUsage::weight1Type) {
+			return "weight1";
+		}
+		else {
+			return "undefined";
+		}
+	}
+	string meshAttributeUtils::getAttribTypeName(meshAttributeUsage usage) {
+		if (usage == meshAttributeUsage::positionType) {
+			return "vec3";
+		} else if (usage == meshAttributeUsage::normalType) {
+			return "vec3";
+		} else if (usage == meshAttributeUsage::tangentType) {
+			return "vec3";
+		} else if (usage == meshAttributeUsage::uvType) {
+			return "vec2";
+		} else if (usage == meshAttributeUsage::colorType) {
+			return "vec3";
+		} else if (usage == meshAttributeUsage::bone0Type) {
+			return "int";
+		} else if (usage == meshAttributeUsage::bone1Type) {
+			return "int";
+		} else if (usage == meshAttributeUsage::weight0Type) {
+			return "float";
+		} else if (usage == meshAttributeUsage::weight1Type) {
+			return "float";
+		} else {
+			return "undefined";
+		}
+	}
+
 	int meshDescription::findAttrib(meshAttributeUsage usage) const {
 		for (int i = 0; i < usages.size(); i++) {
 			if (usages[i] == usage) return i;
 		}
 		return -1;
+	}
+	int meshDescriptionMapping::findAttrib(meshAttributeUsage usage) const {
+		for (int i = 0; i < usages.size(); i++) {
+			if (usages[i] == usage) return i;
+		}
+		return -1;
+	}
+	meshDescriptionMapping::meshDescriptionMapping(map<meshAttributeUsage, uint32_t> mapping) {
+		usages.reserve(mapping.size());
+		attribs.reserve(mapping.size());
+		bindings.reserve(mapping.size());
+		uint32_t currentBinding = 0;
+		for (auto const& it : mapping) {
+			usages.push_back(it.first);
+
+			VkVertexInputAttributeDescription attrib = { };
+			attrib.location = it.second;
+			attrib.binding = currentBinding;
+			attrib.format = meshAttributeUtils::getAttribFormat(it.first);
+			attrib.offset = 0;
+			attribs.push_back(attrib);
+
+			VkVertexInputBindingDescription binding = { };
+			binding.binding = currentBinding;
+			binding.stride = meshAttributeUtils::getAttribSize(it.first);
+			binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			bindings.push_back(binding);
+
+			currentBinding++;
+		}
 	}
 }

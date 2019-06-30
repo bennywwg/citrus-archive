@@ -108,6 +108,7 @@ namespace citrus::graphics {
 	};
 
 	enum class meshAttributeUsage : uint32_t {
+		none =				0,
 		positionType =		(1 << 0),
 		normalType =		(1 << 1),
 		tangentType =		(1 << 2),
@@ -119,25 +120,42 @@ namespace citrus::graphics {
 		weight1Type =		(1 << 8)
 	};
 
-	// contains metadata about a mesh such as bindings
+	class meshAttributeUtils {
+	public:
+		static uint32_t getAttribSize(meshAttributeUsage usage);
+		static VkFormat getAttribFormat(meshAttributeUsage usage);
+		static string	toString(meshAttributeUsage usage);
+		static string	getAttribTypeName(meshAttributeUsage usage);
+	};
+
+	// describes a mesh in terms of how its data is structured in memory
+	// contains binding metadata for a mesh and associated utilities
 	struct meshDescription {
-		vector<VkVertexInputAttributeDescription>	attribs;	// attribute information
-		vector<VkVertexInputBindingDescription>		bindings;	// binding of each attriute
-		vector<meshAttributeUsage>					usages;		// usage of each attribute
+		vector<meshAttributeUsage> 					usages;			// usage of each attribute
+		meshAttributeUsage 							allUsage;		// bitwise or of all usages
+		vector<uint64_t> 							offsets;		// offsets in vertex memory
+		uint64_t 									nextFree;		// next free vertex memory address
+		uint64_t 									indexOffset;	// offset in index memory
+		uint64_t 									nextFreeIndex;	// next free index memory address
+		uint64_t 									vertCount;		// O_O
+		uint64_t 									indexCount;		// O_O
 
-		// return a list of offsets (relative to start of this mesh's data) of each attrib array
-		// start of each attrib array is aligned
-		vector<uint64_t>							getOffsets(uint32_t vertCount, uint32_t alignment) const;
+		// returns the index into the arrays of a certain usage
+		// returns -1 if usage is not found
+		int											findAttrib(meshAttributeUsage usage) const;
+	};
 
-		// format the attributes similar to GLSL declarations
-		string										toString() const;
+	struct meshDescriptionMapping {
+		vector<meshAttributeUsage> 					usages;			// usage of each attribute
+		vector<VkVertexInputAttributeDescription> 	attribs;		// attribute information
+		vector<VkVertexInputBindingDescription> 	bindings;		// binding of each attriute
 
 		// returns the index into the arrays of a certain usage
 		// returns -1 if usage is not found
 		int											findAttrib(meshAttributeUsage usage) const;
 
-		// return whether or not 
-		bool										supportsAttribs(meshAttributeUsage usage) const;
+		// mapping is from usage type to shader location
+		meshDescriptionMapping(map<meshAttributeUsage, uint32_t> mapping);
 	};
 
 	class mesh {
@@ -150,17 +168,11 @@ namespace citrus::graphics {
 		vector<vec3>			norm;
 		vector<vec3>			tangent;
 		vector<vec2>			uv;
+		vector<vec3>			color;
 		vector<int32_t>			bone0;
 		vector<int32_t>			bone1;
 		vector<float>			weight0;
 		vector<float>			weight1;
-
-
-		/*struct rawVertexData {
-			void*				dataStart;
-			uint64_t			dataSize;
-			uint64_t			elementCount;
-		};*/
 
 		nodeContainer			nodes;
 		boneContainer			bones;
@@ -176,16 +188,19 @@ namespace citrus::graphics {
 		bool					hasNorm() const;
 		bool					hasTangent() const;
 		bool					hasUV() const;
+		bool					hasColor() const;
 		bool					hasBones() const;
 		
 		void					fillEmpty();
 		void					clearBones();
 
-		// number of bytes required to store mesh, each attribute beginning aligned
-		uint64_t				requiredMemory(uint32_t alignment) const;
+		// get description of mesh
+		meshDescription			getDescription(uint64_t vertStart, uint64_t vertAlign, uint64_t indexStart, uint64_t indexAlign) const;
+		float					getMaxRadius() const; // largest distance from origin
 
-		// fill data with 
-		meshDescription			constructContinuous(void* data) const;
+		// fill data
+		void					fillVertexData(void* data, meshDescription desc) const;
+		void					fillIndexData(void* data, meshDescription desc) const;
 
 		void					calculateAnimationTransforms(int animationIndex, vector<mat4>& data, double time, behavior mode) const;
 		bool					bindAnimation(const animation& ani);

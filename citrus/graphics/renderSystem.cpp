@@ -2,49 +2,75 @@
 #include <fstream>
 
 namespace citrus::graphics {
-	void system::createModules(string const& vertLoc, string const& fragLoc, VkShaderModule& vertModule, VkShaderModule& fragModule, VkPipelineShaderStageCreateInfo& vertInfo, VkPipelineShaderStageCreateInfo& fragInfo) {
-		try {
-			{
-				string src = util::loadEntireFile(vertLoc);
+	passMaterial::passMaterial(system & sys, string const& vertLoc, string const& fragLoc) : sys(sys) {
+		VkShaderModule vertModule, fragModule;
+		VkPipelineShaderStageCreateInfo vertInfo, fragInfo;
+		{
+			string src = util::loadEntireFile(vertLoc);
 
-				VkShaderModuleCreateInfo createInfo = {};
-				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-				createInfo.codeSize = src.size();
-				createInfo.pCode = reinterpret_cast<const uint32_t*>(src.data());
+			VkShaderModuleCreateInfo createInfo = {};
+			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			createInfo.codeSize = src.size();
+			createInfo.pCode = reinterpret_cast<const uint32_t*>(src.data());
 
-				if (vkCreateShaderModule(inst._device, &createInfo, nullptr, &vertModule) != VK_SUCCESS) {
-					vertModule = VK_NULL_HANDLE;
-					throw std::runtime_error("Failed to create vert shader module");
-				}
-
-				vertInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-				vertInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-				vertInfo.module = vertModule;
-				vertInfo.pName = "main";
+			if (vkCreateShaderModule(sys.inst._device, &createInfo, nullptr, &vertModule) != VK_SUCCESS) {
+				vertModule = VK_NULL_HANDLE;
+				throw std::runtime_error("Failed to create vert shader module");
 			}
-			{
-				string src = util::loadEntireFile(fragLoc);
 
-				VkShaderModuleCreateInfo createInfo = {};
-				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-				createInfo.codeSize = src.size();
-				createInfo.pCode = reinterpret_cast<const uint32_t*>(src.data());
-
-				if (vkCreateShaderModule(inst._device, &createInfo, nullptr, &fragModule) != VK_SUCCESS) {
-					fragModule = VK_NULL_HANDLE;
-					throw std::runtime_error("Failed to create frag shader module");
-				}
-
-				fragInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-				fragInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-				fragInfo.module = fragModule;
-				fragInfo.pName = "main";
-			}
+			vertInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			vertInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+			vertInfo.module = vertModule;
+			vertInfo.pName = "main";
 		}
-		catch (std::runtime_error & rt) {
-			util::sout("yooooo!\n");
+		{
+			string src = util::loadEntireFile(fragLoc);
+
+			VkShaderModuleCreateInfo createInfo = {};
+			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			createInfo.codeSize = src.size();
+			createInfo.pCode = reinterpret_cast<const uint32_t*>(src.data());
+
+			if (vkCreateShaderModule(sys.inst._device, &createInfo, nullptr, &fragModule) != VK_SUCCESS) {
+				fragModule = VK_NULL_HANDLE;
+				throw std::runtime_error("Failed to create frag shader module");
+			}
+
+			fragInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			fragInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+			fragInfo.module = fragModule;
+			fragInfo.pName = "main";
 		}
 	}
+
+	void passMateriall::initializePipeline() {
+		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+		uboLayoutBinding.binding = 0;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+		uboLayoutBinding.descriptorCount = 1;
+		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+		VkDescriptorSetLayoutCreateInfo uboLayoutInfo = {};
+		uboLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		uboLayoutInfo.bindingCount = 1;
+		uboLayoutInfo.pBindings = &uboLayoutBinding;
+
+		if (vkCreateDescriptorSetLayout(sys.inst._device, &uboLayoutInfo, nullptr, &uboLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
+
+		VkDescriptorSetLayoutBinding texLayoutBinding = {};
+		texLayoutBinding.binding = 0;
+		texLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		texLayoutBinding.descriptorCount = (uint32_t)texCount;
+		texLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		VkDescriptorSetLayoutCreateInfo texLayoutInfo = {};
+		texLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		texLayoutInfo.bindingCount = 1;
+		texLayoutInfo.pBindings = &texLayoutBinding;
+
+		if (vkCreateDescriptorSetLayout(inst._device, &texLayoutInfo, nullptr, &texLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
+	}
+
 	void system::initializeAttribsBindings() {
 		VkFormat formats[] = {
 			VK_FORMAT_R32G32B32_SFLOAT,
@@ -78,31 +104,7 @@ namespace citrus::graphics {
 		}
 	}
 	void system::initializeDescriptorLayouts(int texCount) {
-		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-		uboLayoutBinding.descriptorCount = 1;
-		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-		VkDescriptorSetLayoutCreateInfo uboLayoutInfo = {};
-		uboLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		uboLayoutInfo.bindingCount = 1;
-		uboLayoutInfo.pBindings = &uboLayoutBinding;
-
-		if (vkCreateDescriptorSetLayout(inst._device, &uboLayoutInfo, nullptr, &uboLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
-
-		VkDescriptorSetLayoutBinding texLayoutBinding = {};
-		texLayoutBinding.binding = 0;
-		texLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		texLayoutBinding.descriptorCount = (uint32_t)texCount;
-		texLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		VkDescriptorSetLayoutCreateInfo texLayoutInfo = {};
-		texLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		texLayoutInfo.bindingCount = 1;
-		texLayoutInfo.pBindings = &texLayoutBinding;
-
-		if (vkCreateDescriptorSetLayout(inst._device, &texLayoutInfo, nullptr, &texLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
+		
 	}
 	void system::freeDescriptorLayouts() {
 		vkDestroyDescriptorSetLayout(inst._device, uboLayout, nullptr);
@@ -372,7 +374,8 @@ namespace citrus::graphics {
 	void system::freePipeline() {
 		vkDestroyPipeline(inst._device, pipeline, nullptr);
 	}
-	void system::initializeFramebuffers() {
+
+	void system::createFramebufferData() {
 		VkImageCreateInfo colorInfo = {};
 		colorInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		colorInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -470,9 +473,10 @@ namespace citrus::graphics {
 			sampInfo.minLod = 0.0f;
 			sampInfo.maxLod = 0.0f;
 
-			vkCreateSampler(inst._device, &sampInfo, nullptr, &frames[i].samp);
+			vkCreateSampler(inst._device, &sampInfo, nullptr, &frames[i].colorSamp);
+			frames[i].depthSamp = VK_NULL_HANDLE;
 
-			VkFramebufferCreateInfo fbInfo = {};
+			/*VkFramebufferCreateInfo fbInfo = {};
 			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			fbInfo.width = inst.width;
 			fbInfo.height = inst.height;
@@ -481,13 +485,14 @@ namespace citrus::graphics {
 			fbInfo.attachmentCount = 2;
 			fbInfo.pAttachments = views;
 
-			vkCreateFramebuffer(inst._device, &fbInfo, nullptr, &frames[i].frameBuffer);
+			vkCreateFramebuffer(inst._device, &fbInfo, nullptr, &frames[i].frameBuffer);*/
 		}
 	}
-	void system::freeFramebuffers() {
+	void system::freeFramebufferData() {
 		for (int i = 0; i < SWAP_FRAMES; i++) {
-			vkDestroyFramebuffer(inst._device, frames[i].frameBuffer, nullptr);
-			vkDestroySampler(inst._device, frames[i].samp, nullptr);
+			//vkDestroyFramebuffer(inst._device, frames[i].frameBuffer, nullptr);
+			//vkDestroySampler(inst._device, frames[i].depthSamp, nullptr);
+			vkDestroySampler(inst._device, frames[i].colorSamp, nullptr);
 			vkDestroyImageView(inst._device, frames[i].colorView, nullptr);
 			vkDestroyImageView(inst._device, frames[i].depthView, nullptr);
 			vkDestroyImage(inst._device, frames[i].color, nullptr);
@@ -496,13 +501,13 @@ namespace citrus::graphics {
 			vkFreeMemory(inst._device, frames[i].depthMem, nullptr);
 		}
 	}
-	void system::loadTextures(vector<string> paths) {
+	void system::loadTextures() {
 		uint64_t addr = 0;
 		uint32_t typeBits = 0;
-		for (int i = 0; i < paths.size(); i++) {
+		for (int i = 0; i < texturePaths.size(); i++) {
 			textures.push_back({});
 
-			textures[i].data = std::move(image4b(paths[i]));
+			textures[i].data = std::move(image4b(texturePaths[i]));
 
 			textures[i].format = VK_FORMAT_R8G8B8A8_UNORM;
 
@@ -539,7 +544,7 @@ namespace citrus::graphics {
 		memInfo.memoryTypeIndex = inst.findMemoryType(typeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		vkAllocateMemory(inst._device, &memInfo, nullptr, &textureMem);
 
-		for (int i = 0; i < paths.size(); i++) {
+		for (int i = 0; i < texturePaths.size(); i++) {
 			vkBindImageMemory(inst._device, textures[i].img, textureMem, textures[i].off);
 
 			inst.pipelineBarrierLayoutChange(textures[i].img,
@@ -591,7 +596,7 @@ namespace citrus::graphics {
 		}
 
 		vector<VkDescriptorImageInfo> imageInfos;
-		for (int i = 0; i < paths.size(); i++) {
+		for (int i = 0; i < texturePaths.size(); i++) {
 			imageInfos.push_back({});
 			imageInfos[i].sampler = textures[i].samp;
 			imageInfos[i].imageView = textures[i].view;
@@ -600,7 +605,7 @@ namespace citrus::graphics {
 
 		VkWriteDescriptorSet write = {};
 		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write.descriptorCount = (uint32_t)paths.size();
+		write.descriptorCount = (uint32_t)texturePaths.size();
 		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		write.dstBinding = 0;
 		write.dstSet = texSet;
@@ -616,6 +621,7 @@ namespace citrus::graphics {
 			vkDestroyImage(inst._device, textures[t].img, nullptr);
 		}
 	}
+
 	void system::collectModelInfo() {
 		VkBufferCreateInfo vertexInfo = {};
 		vertexInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -639,83 +645,20 @@ namespace citrus::graphics {
 		vkDestroyBuffer(inst._device, tmpVertexBuf, nullptr);
 		vkDestroyBuffer(inst._device, tmpIndexBuf, nullptr);
 	}
-	void system::loadModels(vector<string> staticPaths, vector<string> aniPaths) {
+	void system::loadModels() {
 		uint64_t vertexAddr = 0, indexAddr = 0;
 
-		staticModels.resize(staticPaths.size());
-		aniModels.resize(aniPaths.size());
-		staticItems.resize(staticPaths.size());
-		aniItems.resize(aniPaths.size());
+		models.resize(modelPaths.size());
 
-		for (int i = 0; i < staticPaths.size(); i++) {
-			staticModels[i].data = mesh(staticPaths[i]);
-			staticModels[i].data.fillEmpty();
-			staticModels[i].data.clearBones();
-			vector<mesh::rawVertexData> vInfo = staticModels[i].data.getRawData();
-			if (vInfo.size() != static_vertex_inputs) throw std::runtime_error("invalid mesh");
-
-			// generate radius info for culling
-			staticModels[i].radius = 0;
-			for (int j = 0; j < staticModels[i].data.pos.size(); j++) {
-				float l2 = glm::length2(staticModels[i].data.pos[j]);
-				if (l2 > staticModels[i].radius) staticModels[i].radius = l2;
-			}
-			staticModels[i].radius = glm::sqrt(staticModels[i].radius);
-
-			for (int j = 0; j < static_vertex_inputs; j++) {
-				staticModels[i].vertexOffsets[j] = vertexAddr;
-				vertexAddr += vInfo[j].dataSize;
-				vertexAddr = util::roundUpAlign(vertexAddr, vertexRequirements.alignment);
-			}
-			staticModels[i].vertexSize = vertexAddr - staticModels[i].vertexOffsets[0];
-
-			staticModels[i].indexCount = staticModels[i].data.index.size();
-			staticModels[i].indexOffset = indexAddr;
-			indexAddr += staticModels[i].data.index.size() * sizeof(decltype(mesh::index)::value_type);
-			indexAddr = util::roundUpAlign(indexAddr, indexRequirements.alignment);
-			staticModels[i].indexSize = indexAddr - staticModels[i].indexOffset;
-		}
-		for (int i = 0; i < aniPaths.size(); i++) {
-			aniModels[i].data = mesh(aniPaths[i]);
-			aniModels[i].data.fillEmpty();
-			vector<mesh::rawVertexData> vInfo = aniModels[i].data.getRawData();
-			if (vInfo.size() != animated_vertex_inputs) throw std::runtime_error("invalid animesh");
-
-			// generate radius info for culling
-			aniModels[i].radius = 0;
-			for (int j = 0; j < aniModels[i].data.pos.size(); j++) {
-				float l2 = glm::length2(aniModels[i].data.pos[j]);
-				if (l2 > aniModels[i].radius) aniModels[i].radius = l2;
-			}
-			aniModels[i].radius = glm::sqrt(aniModels[i].radius);
-
-			for (int j = 0; j < animated_vertex_inputs; j++) {
-				aniModels[i].vertexOffsets[j] = vertexAddr;
-				vertexAddr += vInfo[j].dataSize;
-				vertexAddr = util::roundUpAlign(vertexAddr, vertexRequirements.alignment);
-			}
-			aniModels[i].vertexSize = vertexAddr - aniModels[i].vertexOffsets[0];
-
-			aniModels[i].indexCount = aniModels[i].data.index.size();
-			aniModels[i].indexOffset = indexAddr;
-			indexAddr += aniModels[i].data.index.size() * sizeof(decltype(mesh::index)::value_type);
-			indexAddr = util::roundUpAlign(indexAddr, indexRequirements.alignment);
-			aniModels[i].indexSize = indexAddr - aniModels[i].indexOffset;
+		for (int i = 0; i < modelPaths.size(); i++) {
+			models[i].m = mesh(modelPaths[i]);
+			models[i].desc = models[i].m.getDescription(vertexAddr, vertexRequirements.alignment, indexAddr, indexRequirements.alignment);
+			models[i].radius = models[i].data[0].m.getMaxRadius();
 		}
 	}
 	void system::initializeModelData() {
-		VkDeviceAddress totalVertexSize =
-			(aniModels.empty() ?
-				(staticModels.empty() ?
-					0 :
-					(staticModels.back().vertexOffsets[static_vertex_inputs - 1] + staticModels.back().vertexSize)) :
-				(aniModels.back().vertexOffsets[animated_vertex_inputs - 1] + aniModels.back().vertexSize));
-		VkDeviceAddress totalIndexSize =
-			(aniModels.empty() ?
-				(staticModels.empty() ?
-					0 :
-					(staticModels.back().indexOffset + staticModels.back().indexSize)) :
-				(aniModels.back().indexOffset + aniModels.back().indexSize));
+		VkDeviceAddress totalVertexSize = models.back().data.back().desc.nextFree;
+		VkDeviceAddress totalIndexSize = models.back().data.back().desc.nextFreeIndex;
 
 		VkBufferCreateInfo vertexInfo = { };
 		vertexInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -724,6 +667,7 @@ namespace citrus::graphics {
 		vertexInfo.size = totalVertexSize;
 
 		vkCreateBuffer(inst._device, &vertexInfo, nullptr, &vertexBuffer);
+		for (int i = 0; i < (sizeof(vertexBuffers) / sizeof(vertexBuffers[0])); i++) vertexBuffers[i] = vertexBuffer;
 
 		VkMemoryRequirements vertexRequirements;
 		vkGetBufferMemoryRequirements(inst._device, vertexBuffer, &vertexRequirements);
@@ -756,26 +700,25 @@ namespace citrus::graphics {
 		vkBindBufferMemory(inst._device, vertexBuffer, vertexMemory, 0);
 		vkBindBufferMemory(inst._device, indexBuffer, indexMemory, 0);
 
-		for (int i = 0; i < staticModels.size(); i++) {
-			vector<mesh::rawVertexData> vData = aniModels[i].data.getRawData();
-			for (int j = 0; j < vData.size(); j++) {
-				uint64_t secSize = vData[j].dataSize;
-				uint64_t secAddr = inst.stagingMem.alloc(secSize);
-				inst.mapUnmapMemory(inst.stagingMem.mem, secSize, secAddr, vData[j].dataStart);
-				inst.copyBuffer(inst.stagingMem.buf, vertexBuffer, secSize, secAddr, aniModels[i].vertexOffsets[j]);
-				inst.stagingMem.free(secAddr);
-			}
-
-			uint64_t indexSize = aniModels[i].data.index.size() * sizeof(uint16_t);
-			uint64_t indexAddr = inst.stagingMem.alloc(indexSize);
-			inst.mapUnmapMemory(inst.stagingMem.mem, indexSize, indexAddr, aniModels[i].data.index.data());
-			inst.copyBuffer(inst.stagingMem.buf, indexBuffer, indexSize, indexAddr, aniModels[i].indexOffset);
-			inst.stagingMem.free(indexAddr);
+		uint64_t vertexStaging = inst.stagingMem.alloc(totalVertexSize);
+		void* vertexScratch = malloc(totalVertexSize);
+		for (int i = 0; i < models.size(); i++) {
+			models[i].data[0].m.fillVertexData(vertexScratch, models[i].data[0].desc);
 		}
+		inst.mapUnmapMemory(inst.stagingMem.mem, totalVertexSize, vertexStaging, vertexScratch);
+		inst.copyBuffer(inst.stagingMem.buf, vertexBuffer, totalVertexSize, vertexStaging, 0);
+		inst.stagingMem.free(vertexStaging);
+		free(vertexScratch);
 
-		for (int i = 0; i < animated_vertex_inputs; i++) {
-			vertexBuffers[i] = vertexBuffer;
+		uint64_t indexStaging = inst.stagingMem.alloc(totalIndexSize);
+		void* indexScratch = malloc(totalIndexSize);
+		for (int i = 0; i < models.size(); i++) {
+			models[i].data[0].m.fillIndexData(indexScratch, models[i].data[0].desc);
 		}
+		inst.mapUnmapMemory(inst.stagingMem.mem, totalIndexSize, indexStaging, indexScratch);
+		inst.copyBuffer(inst.stagingMem.buf, indexBuffer, totalIndexSize, indexStaging, 0);
+		inst.stagingMem.free(indexStaging);
+		free(indexScratch);
 	}
 	void system::freeModels() {
 		vkFreeMemory(inst._device, vertexMemory, nullptr);
@@ -783,63 +726,21 @@ namespace citrus::graphics {
 		vkDestroyBuffer(inst._device, vertexBuffer, nullptr);
 		vkDestroyBuffer(inst._device, indexBuffer, nullptr);
 	}
-	void system::loadAnimations(vector<string> anis) {
-		for (int i = 0; i < anis.size(); i++) {
-			std::ifstream f(anis[i]);
+	void system::loadAnimations() {
+		for (int i = 0; i < animationPaths.size(); i++) {
+			std::ifstream f(animationPaths[i]);
 			animation ani;
 			ani.read(f);
 			animations.push_back(ani);
 		}
 		for (int i = 0; i < animations.size(); i++) {
-			for (int j = 0; j < aniModels.size(); j++) {
-				bool success = aniModels[j].data.bindAnimation(animations[i]);
-				if (success) util::sout("animation bound: model " + std::to_string(j) + ", ani " + std::to_string(i) + "\n");
+			for (int j = 0; j < models.size(); j++) {
+				bool success = models[j].data[0].m.bindAnimation(animations[i]);
+				if (success) util::sout("animation bound: model " + std::to_string(j) + " lod 0, ani " + std::to_string(i) + "\n");
 			}
 		}
 	}
-	void system::initializeUniformBuffer() {
-		uniformAlignment = inst.minUniformBufferOffsetAlignment();
 
-		uint64_t dataSize = 0;
-		for (int i = 0; i < animations.size(); i++) {
-			dataSize += util::roundUpAlign(animations[i].channels.size() * sizeof(mat4), uniformAlignment);
-		}
-
-		VkBufferCreateInfo bufferInfo = {};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = dataSize;
-		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		for (int i = 0; i < SWAP_FRAMES; i++) {
-			if (vkCreateBuffer(inst._device, &bufferInfo, nullptr, &uniformBuffers[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create memory buffer!");
-			}
-
-			VkMemoryRequirements memRequirements;
-			vkGetBufferMemoryRequirements(inst._device, uniformBuffers[i], &memRequirements);
-
-			VkMemoryAllocateInfo allocInfo = {};
-			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			allocInfo.allocationSize = memRequirements.size;
-			allocInfo.memoryTypeIndex = inst.findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-
-			if (vkAllocateMemory(inst._device, &allocInfo, nullptr, &uniformMemories[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to allocate buffer memory!");
-			}
-
-			vkBindBufferMemory(inst._device, uniformBuffers[i], uniformMemories[i], 0);
-
-			vkMapMemory(inst._device, uniformMemories[i], 0, dataSize, 0, &uniformMapped[i]);
-		}
-	}
-	void system::freeUniformBuffer() {
-		for (int i = 0; i < SWAP_FRAMES; i++) {
-			vkUnmapMemory(inst._device, uniformMemories[i]);
-			vkDestroyBuffer(inst._device, uniformBuffers[i], nullptr);
-			vkFreeMemory(inst._device, uniformMemories[i], nullptr);
-		}
-	}
 	void system::initializeThreads(int threadCount) {
 		if (threadCount < 1) threadCount = 1;
 		else if (threadCount > 32) threadCount = 32;
@@ -888,6 +789,46 @@ namespace citrus::graphics {
 			vkDestroyCommandPool(inst._device, commandPools[t], nullptr);
 		}
 	}
+
+	void system::initializeUniformData() {
+		uniformAlignment = inst.minUniformBufferOffsetAlignment();
+
+		VkBufferCreateInfo bufferInfo = {};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = uniformSize;
+		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		for (int i = 0; i < SWAP_FRAMES; i++) {
+			if (vkCreateBuffer(inst._device, &bufferInfo, nullptr, &uniformBuffers[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create memory buffer!");
+			}
+
+			VkMemoryRequirements memRequirements;
+			vkGetBufferMemoryRequirements(inst._device, uniformBuffers[i], &memRequirements);
+
+			VkMemoryAllocateInfo allocInfo = {};
+			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			allocInfo.allocationSize = memRequirements.size;
+			allocInfo.memoryTypeIndex = inst.findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+			if (vkAllocateMemory(inst._device, &allocInfo, nullptr, &uniformMemories[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to allocate buffer memory!");
+			}
+
+			vkBindBufferMemory(inst._device, uniformBuffers[i], uniformMemories[i], 0);
+
+			vkMapMemory(inst._device, uniformMemories[i], 0, uniformSize, 0, (void**)&uniformMapped[i]);
+		}
+	}
+	void system::freeUniformData() {
+		for (int i = 0; i < SWAP_FRAMES; i++) {
+			vkUnmapMemory(inst._device, uniformMemories[i]);
+			vkDestroyBuffer(inst._device, uniformBuffers[i], nullptr);
+			vkFreeMemory(inst._device, uniformMemories[i], nullptr);
+		}
+	}
+
 	void system::sequence(vector<vector<itemInfo>> const& items, vector<vector<itemDrawRange>> & ranges) {
 		int totalItems = 0;
 		for (int m = 0; m < items.size(); m++)
@@ -1115,7 +1056,24 @@ namespace citrus::graphics {
 		inst._finalPass->fillCommandBuffer(windowSwapIndex, colorInfo, depthInfo);
 		inst._finalPass->submit(windowSwapIndex, waits, signal);
 	}
-	void system::cleanup() {
+	system::system(instance& vkinst, vector<string> textures, vector<string> models, vector<string> animations) : inst(vkinst) {
+		texturePaths = textures;
+		modelPaths = models;
+		animationPaths = animations;
+		uniformSize = 1024 * 1024 * 16;
+
+		createFramebufferData();
+
+		loadTextures();
+
+		collectModelInfo();
+		loadModels();
+		initializeModelData();
+		loadAnimations();
+
+		stopped = false;
+	}
+	system::~system() {
 		stopped = true;
 
 		freeUniformBuffer();
@@ -1124,54 +1082,8 @@ namespace citrus::graphics {
 
 		freeModels();
 
-		freeDescriptorLayouts();
-
-		freeDescriptorSets();
-
-		freeFramebuffers();
-
-		freeRenderPass();
-
-		freePipeline();
-
-		freePipelineLayout();
+		freeFramebufferData();
 
 		freeThreads();
-	}
-	system::system(instance& vkinst, string vs, string fs, vector<string> textures, vector<string> staticModels, vector<string> models, vector<string> animations) : inst(vkinst) {
-		maxItems = 500;
-
-		initializeAttribsBindings();
-
-		initializeDescriptorLayouts(textures.size());
-
-		initializePipelineLayout();
-
-		initializeRenderPass();
-
-		initializePipeline(vs, fs);
-
-		initializeDescriptorSets(textures.size());
-
-		initializeFramebuffers();
-
-		loadTextures(textures);
-
-		collectModelInfo();
-
-		loadModels(staticModels, models);
-
-		initializeModelData();
-
-		loadAnimations(animations);
-
-		initializeUniformBuffer();
-
-		initializeThreads(4);
-
-		stopped = false;
-	}
-	system::~system() {
-		cleanup();
 	}
 }
