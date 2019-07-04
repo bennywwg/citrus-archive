@@ -2,48 +2,7 @@
 #include <fstream>
 
 namespace citrus::graphics {
-	passMaterial::passMaterial(system & sys, string const& vertLoc, string const& fragLoc) : sys(sys) {
-		VkShaderModule vertModule, fragModule;
-		VkPipelineShaderStageCreateInfo vertInfo, fragInfo;
-		{
-			string src = util::loadEntireFile(vertLoc);
-
-			VkShaderModuleCreateInfo createInfo = {};
-			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			createInfo.codeSize = src.size();
-			createInfo.pCode = reinterpret_cast<const uint32_t*>(src.data());
-
-			if (vkCreateShaderModule(sys.inst._device, &createInfo, nullptr, &vertModule) != VK_SUCCESS) {
-				vertModule = VK_NULL_HANDLE;
-				throw std::runtime_error("Failed to create vert shader module");
-			}
-
-			vertInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			vertInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-			vertInfo.module = vertModule;
-			vertInfo.pName = "main";
-		}
-		{
-			string src = util::loadEntireFile(fragLoc);
-
-			VkShaderModuleCreateInfo createInfo = {};
-			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			createInfo.codeSize = src.size();
-			createInfo.pCode = reinterpret_cast<const uint32_t*>(src.data());
-
-			if (vkCreateShaderModule(sys.inst._device, &createInfo, nullptr, &fragModule) != VK_SUCCESS) {
-				fragModule = VK_NULL_HANDLE;
-				throw std::runtime_error("Failed to create frag shader module");
-			}
-
-			fragInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			fragInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-			fragInfo.module = fragModule;
-			fragInfo.pName = "main";
-		}
-	}
-
-	void passMateriall::initializePipeline() {
+	void meshPass::initializeDescriptors() {s
 		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
 		uboLayoutBinding.binding = 0;
 		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
@@ -70,6 +29,221 @@ namespace citrus::graphics {
 
 		if (vkCreateDescriptorSetLayout(inst._device, &texLayoutInfo, nullptr, &texLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
 	}
+	void meshPass::initializePipelineLayout() {
+		VkPushConstantRange pcRange = { };
+		pcRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		pcRange.size = sizeof(vert_pcData);
+		pcRange.offset = 0;
+
+		VkPushConstantRange frag_pcRange = { };
+		frag_pcRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		frag_pcRange.size = sizeof(frag_pcData);
+		frag_pcRange.offset = sizeof(vert_pcData);
+
+		VkPushConstantRange ranges[2] = { pcRange, frag_pcRange };
+
+		VkDescriptorSetLayout setLayouts[2] = { uboLayout, texLayout };
+
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo = { };
+		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutInfo.pushConstantRangeCount = 2;
+		pipelineLayoutInfo.pPushConstantRanges = ranges;
+		pipelineLayoutInfo.setLayoutCount = 2;
+		pipelineLayoutInfo.pSetLayouts = setLayouts;
+
+		if (vkCreatePipelineLayout(inst._device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) throw std::runtime_error("failed to create pipeline layout");
+	}
+	void meshPass::initializePipeline() {
+
+		VkShaderModule vertModule, fragModule;
+		VkPipelineShaderStageCreateInfo vertInfo, fragInfo;
+		{
+			string src = util::loadEntireFile(vert);
+
+			VkShaderModuleCreateInfo createInfo = {};
+			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			createInfo.codeSize = src.size();
+			createInfo.pCode = reinterpret_cast<const uint32_t*>(src.data());
+
+			if (vkCreateShaderModule(sys.inst._device, &createInfo, nullptr, &vertModule) != VK_SUCCESS) {
+				vertModule = VK_NULL_HANDLE;
+				throw std::runtime_error("Failed to create vert shader module");
+			}
+
+			vertInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			vertInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+			vertInfo.module = vertModule;
+			vertInfo.pName = "main";
+		}
+		{
+			string src = util::loadEntireFile(frag);
+
+			VkShaderModuleCreateInfo createInfo = {};
+			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			createInfo.codeSize = src.size();
+			createInfo.pCode = reinterpret_cast<const uint32_t*>(src.data());
+
+			if (vkCreateShaderModule(sys.inst._device, &createInfo, nullptr, &fragModule) != VK_SUCCESS) {
+				fragModule = VK_NULL_HANDLE;
+				throw std::runtime_error("Failed to create frag shader module");
+			}
+
+			fragInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			fragInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+			fragInfo.module = fragModule;
+			fragInfo.pName = "main";
+		}
+		
+		VkPipelineShaderStageCreateInfo stages[] = { vertInfo, fragInfo };
+
+		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
+		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		vertexInputInfo.vertexBindingDescriptionCount = animated_vertex_inputs;
+		vertexInputInfo.vertexAttributeDescriptionCount = animated_vertex_inputs;
+		vertexInputInfo.pVertexBindingDescriptions = bindings;
+		vertexInputInfo.pVertexAttributeDescriptions = attribs;
+
+		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
+		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+		VkViewport viewport = {};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = (float)inst.width;
+		viewport.height = (float)inst.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor = {};
+		scissor.offset = { 0, 0 };
+		scissor.extent = { inst.width, inst.height };
+
+		VkPipelineViewportStateCreateInfo viewportState = {};
+		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewportState.viewportCount = 1;
+		viewportState.pViewports = &viewport;
+		viewportState.scissorCount = 1;
+		viewportState.pScissors = &scissor;
+
+		VkPipelineRasterizationStateCreateInfo rasterizer = {};
+		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizer.depthClampEnable = VK_FALSE;
+		rasterizer.rasterizerDiscardEnable = VK_FALSE;
+		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizer.lineWidth = 1.0f;
+		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.depthBiasEnable = VK_FALSE;
+		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
+		rasterizer.depthBiasClamp = 0.0f; // Optional
+		rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
+
+		VkPipelineMultisampleStateCreateInfo multisampling = {};
+		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multisampling.sampleShadingEnable = VK_FALSE;
+		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		multisampling.minSampleShading = 1.0f; // Optional
+		multisampling.pSampleMask = nullptr; // Optional
+		multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
+		multisampling.alphaToOneEnable = VK_FALSE; // Optional
+
+		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.blendEnable = VK_FALSE;
+		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+															 /*colorBlendAttachment.blendEnable = VK_TRUE;
+															 colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+															 colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+															 colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+															 colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+															 colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+															 colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;*/
+
+		VkPipelineColorBlendStateCreateInfo colorBlending = {};
+		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colorBlending.logicOpEnable = VK_FALSE;
+		colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
+		colorBlending.attachmentCount = 1;
+		colorBlending.pAttachments = &colorBlendAttachment;
+		colorBlending.blendConstants[0] = 0.0f; // Optional
+		colorBlending.blendConstants[1] = 0.0f; // Optional
+		colorBlending.blendConstants[2] = 0.0f; // Optional
+		colorBlending.blendConstants[3] = 0.0f; // Optional
+
+		VkPipelineDepthStencilStateCreateInfo depthStateInfo = {};
+		depthStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthStateInfo.stencilTestEnable = VK_FALSE;
+		depthStateInfo.minDepthBounds = 0.0f;
+		depthStateInfo.maxDepthBounds = 1.0f;
+		depthStateInfo.depthWriteEnable = VK_TRUE;
+		depthStateInfo.depthTestEnable = VK_TRUE;
+		depthStateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+		depthStateInfo.back = {};
+		depthStateInfo.front = {};
+		depthStateInfo.depthBoundsTestEnable = VK_FALSE;
+
+		VkGraphicsPipelineCreateInfo pipelineInfo = {};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineInfo.stageCount = 2;
+		pipelineInfo.pStages = stages;
+		pipelineInfo.pVertexInputState = &vertexInputInfo;
+		pipelineInfo.pInputAssemblyState = &inputAssembly;
+		pipelineInfo.pViewportState = &viewportState;
+		pipelineInfo.pRasterizationState = &rasterizer;
+		pipelineInfo.pMultisampleState = &multisampling;
+		pipelineInfo.pDepthStencilState = &depthStateInfo; // Optional
+		pipelineInfo.pColorBlendState = &colorBlending;
+		pipelineInfo.pDynamicState = nullptr; // Optional
+		pipelineInfo.layout = pipelineLayout;
+		pipelineInfo.renderPass = renderPass;
+		pipelineInfo.subpass = 0;
+		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+		pipelineInfo.basePipelineIndex = -1; // Optional
+
+		if (vkCreateGraphicsPipelines(inst._device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) throw std::runtime_error("failed to create graphics pipeline!");
+
+		vkDestroyShaderModule(inst._device, vertInfo.module, nullptr);
+		vkDestroyShaderModule(inst._device, fragInfo.module, nullptr);
+	}
+	void meshPass::mapModels() {
+
+		// check if attribs are supported
+		// just copy memory structure description and remove unneeded usages
+		uint32_t reqUse = (uint32_t)requiredUsages;
+		for(int i = 0; i < sys.models.size(); i++) {
+			uint32_t modelUse = (uint32_t)sys.models[i].desc.allUsage;
+			if((modelUse & reqUse) != reqUse) continue;
+
+			models.push_back(meshMappings.makePartialStructureView(sys.models[i].desc));
+		}
+	}
+	
+	meshPass::meshPass(system & sys, string const& vertLoc, string const& fragLoc) : passBase(sys) {
+		vert = vertLoc;
+		frag = fragLoc;
+
+		map<meshAttributeUsage, uint32_t> locMap;
+		locMap[meshAttributeUsage::positionType] = 0;
+		locMap[meshAttributeUsage::normalType] = 1;
+		locMap[meshAttributeUsage::uvType] = 2;
+		meshMappings = meshUsageLocationMapping(locMap);
+
+		initializeDescriptors();
+		initializePipelineLayout();
+		initializePipeline();
+		initializeRenderPass();
+		initializeFramebuffers();
+		mapModels();
+	}
+
+	
 
 	void system::initializeAttribsBindings() {
 		VkFormat formats[] = {
@@ -111,12 +285,12 @@ namespace citrus::graphics {
 		vkDestroyDescriptorSetLayout(inst._device, texLayout, nullptr);
 	}
 	void system::initializePipelineLayout() {
-		VkPushConstantRange pcRange = {};
+		VkPushConstantRange pcRange = { };
 		pcRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		pcRange.size = sizeof(vert_pcData);
 		pcRange.offset = 0;
 
-		VkPushConstantRange frag_pcRange = {};
+		VkPushConstantRange frag_pcRange = { };
 		frag_pcRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		frag_pcRange.size = sizeof(frag_pcData);
 		frag_pcRange.offset = sizeof(vert_pcData);
@@ -125,7 +299,7 @@ namespace citrus::graphics {
 
 		VkDescriptorSetLayout setLayouts[2] = { uboLayout, texLayout };
 
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo = { };
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.pushConstantRangeCount = 2;
 		pipelineLayoutInfo.pPushConstantRanges = ranges;
@@ -138,11 +312,11 @@ namespace citrus::graphics {
 		vkDestroyPipelineLayout(inst._device, pipelineLayout, nullptr);
 	}
 	void system::initializeDescriptorSets(int texCount) {
-		VkDescriptorPoolSize uboSize = {};
+		VkDescriptorPoolSize uboSize = { };
 		uboSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
 		uboSize.descriptorCount = SWAP_FRAMES;
 
-		VkDescriptorPoolCreateInfo uboPoolInfo = {};
+		VkDescriptorPoolCreateInfo uboPoolInfo = { };
 		uboPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		uboPoolInfo.poolSizeCount = 1;
 		uboPoolInfo.pPoolSizes = &uboSize;
@@ -153,7 +327,7 @@ namespace citrus::graphics {
 		}
 
 		VkDescriptorSetLayout uboLayouts[4] = { uboLayout, uboLayout, uboLayout, uboLayout };
-		VkDescriptorSetAllocateInfo uboInfo = {};
+		VkDescriptorSetAllocateInfo uboInfo = { };
 		uboInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		uboInfo.descriptorPool = uboPool;
 		uboInfo.descriptorSetCount = SWAP_FRAMES;
@@ -161,11 +335,11 @@ namespace citrus::graphics {
 
 		if (vkAllocateDescriptorSets(inst._device, &uboInfo, uboSets) != VK_SUCCESS) throw std::runtime_error("failed to allocated ubo sets");
 
-		VkDescriptorPoolSize texSize = {};
+		VkDescriptorPoolSize texSize = { };
 		texSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		texSize.descriptorCount = texCount;
 
-		VkDescriptorPoolCreateInfo texPoolInfo = {};
+		VkDescriptorPoolCreateInfo texPoolInfo = { };
 		texPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		texPoolInfo.poolSizeCount = 1;
 		texPoolInfo.pPoolSizes = &texSize;

@@ -128,9 +128,19 @@ namespace citrus::graphics {
 		static string	getAttribTypeName(meshAttributeUsage usage);
 	};
 
+	// these following structs warrant an explanation
+	// the idea is the following steps are taken:
+	// 1) load a mesh
+	// 2) create a meshMemoryStructure
+	// 3) use the meshMemoryStructure to load mesh onto GPU
+	// 4) create meshUsageLocationMapping in accordance with shader attribs
+	// 5) narrow meshMemoryStructure with meshUsageLocationMapping to only contain needed attribs
+	// 6) draw
+
 	// describes a mesh in terms of how its data is structured in memory
 	// contains binding metadata for a mesh and associated utilities
-	struct meshDescription {
+	// there is no guarantee that offsets are ordered in any way
+	struct meshMemoryStructure {
 		vector<meshAttributeUsage> 					usages;			// usage of each attribute
 		meshAttributeUsage 							allUsage;		// bitwise or of all usages
 		vector<uint64_t> 							offsets;		// offsets in vertex memory
@@ -140,13 +150,14 @@ namespace citrus::graphics {
 		uint64_t 									vertCount;		// O_O
 		uint64_t 									indexCount;		// O_O
 
-		// returns the index into the arrays of a certain usage
+		// returns the index into usages and offsets of a certain usage
 		// returns -1 if usage is not found
 		int											findAttrib(meshAttributeUsage usage) const;
 	};
 
-	struct meshDescriptionMapping {
+	struct meshUsageLocationMapping {
 		vector<meshAttributeUsage> 					usages;			// usage of each attribute
+		meshAttributeUsage 							allUsage;		// bitwise or of all usages
 		vector<VkVertexInputAttributeDescription> 	attribs;		// attribute information
 		vector<VkVertexInputBindingDescription> 	bindings;		// binding of each attriute
 
@@ -154,8 +165,12 @@ namespace citrus::graphics {
 		// returns -1 if usage is not found
 		int											findAttrib(meshAttributeUsage usage) const;
 
+		// copy meshMemoryStructure but reorder its usages and offsets
+		// to be the same usages, and eliminate any unneeded usages and offsets
+		meshMemoryStructure							makePartialStructureView(meshMemoryStructure memStruct) const;
+
 		// mapping is from usage type to shader location
-		meshDescriptionMapping(map<meshAttributeUsage, uint32_t> mapping);
+		meshUsageLocationMapping(map<meshAttributeUsage, uint32_t> mapping);
 	};
 
 	class mesh {
@@ -195,12 +210,12 @@ namespace citrus::graphics {
 		void					clearBones();
 
 		// get description of mesh
-		meshDescription			getDescription(uint64_t vertStart, uint64_t vertAlign, uint64_t indexStart, uint64_t indexAlign) const;
+		meshMemoryStructure			getDescription(uint64_t vertStart, uint64_t vertAlign, uint64_t indexStart, uint64_t indexAlign) const;
 		float					getMaxRadius() const; // largest distance from origin
 
 		// fill data
-		void					fillVertexData(void* data, meshDescription desc) const;
-		void					fillIndexData(void* data, meshDescription desc) const;
+		void					fillVertexData(void* data, meshMemoryStructure desc) const;
+		void					fillIndexData(void* data, meshMemoryStructure desc) const;
 
 		void					calculateAnimationTransforms(int animationIndex, vector<mat4>& data, double time, behavior mode) const;
 		bool					bindAnimation(const animation& ani);

@@ -32,7 +32,8 @@ namespace citrus::graphics {
 
 	class meshPass : public passBase {
 	public:
-		system& sys;
+		#pragma region(pipeline stuff)
+		string vert, frag;
 
 		VkDescriptorSetLayout	uboLayout;
 		VkDescriptorSetLayout	texLayout;
@@ -44,25 +45,23 @@ namespace citrus::graphics {
 		VkRenderPass			pass;
 		VkFramebuffer			fbos[SWAP_FRAMES];
 
+		meshUsageLocationMapping meshMappings;
+		
+		virtual void			initializeDescriptors();
+		virtual void			initializePipelineLayout();
+		virtual void			initializePipeline();
+		virtual void			initializeRenderPass();
+		virtual void			initializeFramebuffers();
+		virtual void			freePipeline();
+		#pragma endergion
+
+		#pragma region(item stuff)
 		struct pcData {
 			mat4				mvp;
 			mat4x3				model;
 			uvec4				uints;
 		};
 		static_assert(sizeof(pcData) == 128, "pcData must be 128 bytes");
-
-		struct threadData {
-			uint32_t			offset;		//offset into uniform buffer for this thread
-			uint32_t			size;		//size of thread's data
-		};
-		vector<threadData>		threadRanges;
-
-		struct itemDrawRange {
-			int					modelIndex;	// index of model
-			int					begin;		// first item
-			int					end;		// one past end, ie use <
-		};
-		vector<itemDrawRange>	ranges;
 
 		struct itemInfo {
 			vec3				pos;
@@ -75,20 +74,39 @@ namespace citrus::graphics {
 		};
 		vector<itemInfo>		items;
 
+		struct threadData {
+			uint32_t			offset;		//offset into uniform buffer for this thread
+			uint32_t			size;		//size of thread's data
+			uint32_t			begin;		// first item
+			uint32_t			end;		// one past end, ie use <
+		};
+		vector<threadData>		ranges;
+		#pragma endregion
+
+		#pragma region(model stuff)
+
 		//mappings to models in system
 		struct modelMapping {
 			int modelIndex;
-			meshDescriptionMapping mapping;
+			meshMemoryStructure desc;
 		};
 		vector<modelMapping>	mappings;
 
-		virtual void			initializeDescriptors();
-		void					freeDescriptors();
+		vector<meshAttributeUsage> requiredUsages;
+
+		virtual void			mapModels();
+		#pragma endregion
+
+		virtual void preRender(uint32_t const& threadCount);
+		virtual void renderPartial(uint32_t const& threadIndex);
 		
 		meshPass(system & sys, string const& vert, string const& frag);
 		~meshPass();
 	};
 
+	// the intention is to ultimately replace the model, texture, uniform sections
+	// with their own objects so individual system components can
+	// maintain their own texture or object or uniform resources
 	class system {
 	public:
 		instance& inst;
@@ -139,7 +157,7 @@ namespace citrus::graphics {
 		// level of detail information
 		struct model {
 			mesh			m;												// mesh
-			meshDescription desc;											// mesh description
+			meshMemoryStructure desc;										// mesh description
 			float			radius;											// vertex distance farther from origin
 		};
 

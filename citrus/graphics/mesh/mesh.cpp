@@ -731,25 +731,46 @@ namespace citrus::graphics {
 		}
 	}
 
-	int meshDescription::findAttrib(meshAttributeUsage usage) const {
+	int meshMemoryStructure::findAttrib(meshAttributeUsage usage) const {
 		for (int i = 0; i < usages.size(); i++) {
 			if (usages[i] == usage) return i;
 		}
 		return -1;
 	}
-	int meshDescriptionMapping::findAttrib(meshAttributeUsage usage) const {
+	int meshUsageLocationMapping::findAttrib(meshAttributeUsage usage) const {
 		for (int i = 0; i < usages.size(); i++) {
 			if (usages[i] == usage) return i;
 		}
 		return -1;
 	}
-	meshDescriptionMapping::meshDescriptionMapping(map<meshAttributeUsage, uint32_t> mapping) {
+	meshMemoryStructure meshUsageLocationMapping::makePartialStructureView(meshMemoryStructure desc) const {
+		if((desc.allUsage & allUsage) != allUsage) throw std::runtime_error("cannot make partial structure view, source missing attribute usages");
+
+		vector<uint64_t> newOffsets;
+		
+		for(int j = 0; j < usages.size(); j++) {
+			int id = desc.findAttrib(usages[j]);
+
+			if(id == -1) throw std::runtime_error("malformed meshMemoryStructure");
+
+			newOffsets.push_back(desc.offsets[id]);
+		}
+
+		desc.usages usages;
+		desc.allUsage = allUsage;
+		desc.offsets = newOffsets;
+
+		return desc;
+	}
+	meshUsageLocationMapping::meshUsageLocationMapping(map<meshAttributeUsage, uint32_t> mapping) {
 		usages.reserve(mapping.size());
 		attribs.reserve(mapping.size());
 		bindings.reserve(mapping.size());
 		uint32_t currentBinding = 0;
+		allUsage = meshAttributeUsage::none;
 		for (auto const& it : mapping) {
 			usages.push_back(it.first);
+			allUsage = (meshAttributeUsage)((uint32_t)it.first | (uint32_t)allUsage);
 
 			VkVertexInputAttributeDescription attrib = { };
 			attrib.location = it.second;
