@@ -213,9 +213,7 @@ namespace citrus::graphics {
 		vkDestroyShaderModule(inst._device, fragInfo.module, nullptr);
 	}
 	void meshPass::mapModels() {
-
 		// check if attribs are supported
-		// just copy memory structure description and remove unneeded usages
 		uint32_t reqUse = (uint32_t)requiredUsages;
 		for(int i = 0; i < sys.models.size(); i++) {
 			uint32_t modelUse = (uint32_t)sys.models[i].desc.allUsage;

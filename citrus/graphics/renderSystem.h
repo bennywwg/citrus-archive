@@ -24,8 +24,12 @@ namespace citrus::graphics {
 	public:
 		system& sys;
 
+		// prepare for actual rendering, ie assign each thread item range
 		virtual void	preRender(uint32_t const& numThreads) = 0;
+		
+		// render for a certain thread, invoked multiple times concurrently
 		virtual void	renderPartial(uint32_t const& threadIndex) = 0;
+
 		inline			passBase(system& sys) : sys(sys) { }
 		virtual			~passBase() = 0;
 	};
@@ -53,7 +57,7 @@ namespace citrus::graphics {
 		virtual void			initializeRenderPass();
 		virtual void			initializeFramebuffers();
 		virtual void			freePipeline();
-		#pragma endergion
+		#pragma endregion
 
 		#pragma region(item stuff)
 		struct pcData {
@@ -97,8 +101,8 @@ namespace citrus::graphics {
 		virtual void			mapModels();
 		#pragma endregion
 
-		virtual void preRender(uint32_t const& threadCount);
-		virtual void renderPartial(uint32_t const& threadIndex);
+		virtual void			preRender(uint32_t const& threadCount);
+		virtual void 			renderPartial(uint32_t const& threadIndex);
 		
 		meshPass(system & sys, string const& vert, string const& frag);
 		~meshPass();
@@ -154,7 +158,6 @@ namespace citrus::graphics {
 		#pragma endregion
 
 		#pragma region(model stuff)
-		// level of detail information
 		struct model {
 			mesh			m;												// mesh
 			meshMemoryStructure desc;										// mesh description
