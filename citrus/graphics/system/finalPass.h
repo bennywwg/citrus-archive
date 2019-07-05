@@ -1,6 +1,6 @@
 #pragma once
 
-#include "citrus/graphics/instance.h"
+#include "citrus/graphics/system/instance.h"
 
 namespace citrus::graphics {
 	class finalPassShader {

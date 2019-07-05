@@ -7,7 +7,6 @@
 #include "citrus/graphics/image.h"
 #include "citrus/graphics/mesh.h"
 #include "citrus/graphics/camera.h"
-#include "citrus/graphics/finalPassShader.h"
 
 #if false
 #define stdioDebug(str) util::sout(str)
@@ -20,92 +19,29 @@
 namespace citrus::graphics {
 	class system;
 
+	enum class passType : uint32_t {
+		nonePass =		0,
+		drawPass =		1 << 0,
+		postPass =		1 << 1,
+		computePass =	1 << 2
+	};
+
 	class passBase {
 	public:
-		system& sys;
+		system&			sys;
 
-		// prepare for actual rendering, ie assign each thread item range
+		// prepare for rendering proper, ie assign each thread item range
+		// return value: number of invocations of renderPartial
 		virtual void	preRender(uint32_t const& numThreads) = 0;
 		
 		// render for a certain thread, invoked multiple times concurrently
 		virtual void	renderPartial(uint32_t const& threadIndex) = 0;
 
+		// after all renderPartials complete
+		virtual void	postRender(uint32_t const& numThreads) = 0;
+
 		inline			passBase(system& sys) : sys(sys) { }
 		virtual			~passBase() = 0;
-	};
-
-	class meshPass : public passBase {
-	public:
-		#pragma region(pipeline stuff)
-		string vert, frag;
-
-		VkDescriptorSetLayout	uboLayout;
-		VkDescriptorSetLayout	texLayout;
-		VkDescriptorPool		uboPool;
-		VkDescriptorSet			uboSets;
-
-		VkPipelineLayout		pipelineLayout;
-		VkPipeline				pipeline;
-		VkRenderPass			pass;
-		VkFramebuffer			fbos[SWAP_FRAMES];
-
-		meshUsageLocationMapping meshMappings;
-		
-		virtual void			initializeDescriptors();
-		virtual void			initializePipelineLayout();
-		virtual void			initializePipeline();
-		virtual void			initializeRenderPass();
-		virtual void			initializeFramebuffers();
-		virtual void			freePipeline();
-		#pragma endregion
-
-		#pragma region(item stuff)
-		struct pcData {
-			mat4				mvp;
-			mat4x3				model;
-			uvec4				uints;
-		};
-		static_assert(sizeof(pcData) == 128, "pcData must be 128 bytes");
-
-		struct itemInfo {
-			vec3				pos;
-			quat				ori;
-			uint32_t			modelIndex;
-			uint32_t			texIndex;
-			uint32_t			uniformOffset;
-			uint32_t			uniformSize;
-			bool				enabled;
-		};
-		vector<itemInfo>		items;
-
-		struct threadData {
-			uint32_t			offset;		//offset into uniform buffer for this thread
-			uint32_t			size;		//size of thread's data
-			uint32_t			begin;		// first item
-			uint32_t			end;		// one past end, ie use <
-		};
-		vector<threadData>		ranges;
-		#pragma endregion
-
-		#pragma region(model stuff)
-
-		//mappings to models in system
-		struct modelMapping {
-			int modelIndex;
-			meshMemoryStructure desc;
-		};
-		vector<modelMapping>	mappings;
-
-		vector<meshAttributeUsage> requiredUsages;
-
-		virtual void			mapModels();
-		#pragma endregion
-
-		virtual void			preRender(uint32_t const& threadCount);
-		virtual void 			renderPartial(uint32_t const& threadIndex);
-		
-		meshPass(system & sys, string const& vert, string const& frag);
-		~meshPass();
 	};
 
 	// the intention is to ultimately replace the model, texture, uniform sections
@@ -198,6 +134,7 @@ namespace citrus::graphics {
 		std::mutex				instMut;		// access to vulkan shared functions synchronised with this
 
 		std::shared_mutex		startMut;		// objects below synchronised with this
+		uint32_t				currentPass;	// which pass is currently being invoked (index into passes)
 		camera					frameCam;		// camera
 		frustrumCullInfo		frameCull;		// camera cull info cache
 		mat4					frameVP;		// projection * view
@@ -213,13 +150,17 @@ namespace citrus::graphics {
 		void					freeUniformData();
 		#pragma endregion
 
+		#pragma region(rendertime stuff)
+
+		vector<passBase*>	passes;
+
+		#pragma endregion
 	private:
 		void				renderDone();
 		void				postProcess(int frameIndex, int windowSwapIndex, vector<VkSemaphore> waits, VkSemaphore signal);
 	public:
 
 		void				render(VkSemaphore signal);
-
 
 		system(instance & vkinst,
 			vector<string> textures,

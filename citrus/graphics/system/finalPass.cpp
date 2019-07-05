@@ -1,4 +1,4 @@
-#include "citrus/graphics/finalPassShader.h"
+#include "citrus/graphics/system/finalPass.h"
 #include <exception>
 #include <stdexcept>
 #include <iostream>
