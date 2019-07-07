@@ -1,6 +1,5 @@
 #include "citrus/engine/freeCam.h"
 #include "citrus/engine/engine.h"
-#include "citrus/engine/renderManager.h"
 #include "citrus/graphics/window.h"
 
 #include "citrus/util.h"

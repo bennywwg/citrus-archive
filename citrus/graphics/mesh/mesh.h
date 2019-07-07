@@ -6,7 +6,7 @@
 #include <assimp/scene.h>
 
 #include "citrus/util.h"
-#include "citrus/graphics/instance.h"
+#include "citrus/graphics/system/instance.h"
 
 namespace citrus::graphics {
 	struct node {
@@ -169,6 +169,7 @@ namespace citrus::graphics {
 		// to be the same usages, and eliminate any unneeded usages and offsets
 		meshMemoryStructure							makePartialStructureView(meshMemoryStructure memStruct) const;
 
+		meshUsageLocationMapping();
 		// mapping is from usage type to shader location
 		meshUsageLocationMapping(map<meshAttributeUsage, uint32_t> mapping);
 	};

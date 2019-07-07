@@ -7,8 +7,6 @@
 
 namespace citrus::graphics {
 
-	class finalPassShader;
-
 	class instance;
 
 	struct ctTexture {
@@ -58,8 +56,6 @@ namespace citrus::graphics {
 		vector<VkImageView> _swapChainImageViews;
 		VkCommandPool _commandPool;
 		VkSemaphore _imgAvailableSemaphore, _renderFinishedSemaphore;
-
-		finalPassShader* _finalPass;
 
 
 		void initInstance(string name);

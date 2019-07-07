@@ -8,7 +8,7 @@
 #include "citrus/engine/elementRef.inl"
 #include "citrus/engine/entityRef.inl"
 
-#include "citrus/graphics/mesh.h"
+#include "citrus/graphics/mesh/mesh.h"
 
 namespace citrus::engine {
 	void playerController::cameraStuff() {
@@ -77,7 +77,7 @@ namespace citrus::engine {
 						p.ent().setLocalScale(glm::vec3(0.1f, 0.1f, 0.1f));
 					}),
 					eleInit<meshFilter>::run([e](meshFilter& m) {
-						m.setStatic(0, 0);
+						//m.setStatic(0, 0);
 						m.color = glm::vec3(1.0f, 0.5f, 0.5f);
 					}),
 					eleInit<sensorEle>::run([e](sensorEle& s) {

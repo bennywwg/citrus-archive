@@ -3,26 +3,41 @@
 #include <shared_mutex>
 #include <atomic>
 
-#include "citrus/graphics/system/instance.h"
+#include "citrus/graphics/system/renderSystem.h"
 #include "citrus/graphics/image.h"
 #include "citrus/graphics/mesh/mesh.h"
 #include "citrus/graphics/camera.h"
 
 namespace citrus::graphics {
     class meshPass : public passBase {
+		#pragma region(config stuff)
+	public:
+		bool					wireframe = false;
+		bool					cullBack = true;
+		bool					ccw = true;
+		bool					cullObscured = true;
+		bool					texturesEnabled = true;
+		bool					animated = false;
+		#pragma endregion
+
 		#pragma region(pipeline stuff)
     protected:
 		string vert, frag;
 
-		VkDescriptorSetLayout	uboLayout;
-		VkDescriptorSetLayout	texLayout;
-		VkDescriptorPool		uboPool;
-		VkDescriptorSet			uboSets;
+		VkDescriptorSetLayout	uboLayout, texLayout;
+		VkDescriptorPool		uboPool, texPool;
+		VkDescriptorSet			uboSets[SWAP_FRAMES];
+		VkDescriptorSet			texSet;
 
 		VkRenderPass			pass;
 		VkPipelineLayout		pipelineLayout;
 		VkPipeline				pipeline;
 		VkFramebuffer			fbos[SWAP_FRAMES];
+		VkCommandBuffer			priBufs[SWAP_FRAMES];
+		vector<VkCommandBuffer>	secBufs[SWAP_FRAMES];
+		VkSemaphore				startSem[SWAP_FRAMES];
+		VkSemaphore				doneSem[SWAP_FRAMES];
+		VkFence					waitFences[SWAP_FRAMES];
 
 		meshUsageLocationMapping meshMappings;
 		
@@ -41,6 +56,8 @@ namespace citrus::graphics {
 			mat4x3				model;
 			uvec4				uints;
 		};
+		const uint32_t pcVertSize = 128 - 16;
+		const uint32_t pcFragSize = 16;
 		static_assert(sizeof(pcData) == 128, "pcData must be 128 bytes");
     public:
 
@@ -75,6 +92,7 @@ namespace citrus::graphics {
 		};
 		vector<modelMapping>	mappings;
 		vector<meshAttributeUsage> requiredUsages;
+		meshAttributeUsage		allUsages;
 
 		virtual void			mapModels();
     public:

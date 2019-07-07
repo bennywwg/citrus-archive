@@ -16,7 +16,6 @@ namespace citrus {
 	
 	namespace editor {
 		using ::citrus::engine::entityRef;
-		using ::citrus::engine::renderManager;
 		using ::citrus::engine::camera;
 
 		struct guiFloating {
@@ -57,8 +56,8 @@ namespace citrus {
 
 			void click(ivec2 cursor);
 
-			void update(renderManager& man, graphics::camera& cam);
-			void render(renderManager& man, graphics::camera& cam);
+			void update(graphics::camera& cam);
+			void render(graphics::camera& cam);
 
 			ctEditor();
 		};

@@ -2,7 +2,7 @@
 
 #include "citrus/engine/element.h"
 #include "citrus/engine/engine.h"
-#include "citrus/graphics/mesh.h"
+#include "citrus/graphics/mesh/mesh.h"
 
 namespace citrus::engine {
 	class meshFilter : public element {
@@ -17,9 +17,7 @@ namespace citrus::engine {
 		glm::vec3 color;
 		bool visible = true;;
 		int systemIndex = -1;
-
-		void setStatic(int m, int t);
-		void setDynamic(int m, int t, int a);
+		
 		void reset();
 		int model() const;
 		int tex() const;

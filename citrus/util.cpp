@@ -2,134 +2,143 @@
 
 #include "citrus/util.h"
 
-#include <nfd.h>
+//#include <nfd.h>
 #include <thread>
 #include <sstream>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 
-#include <png.h>
+//#include <png.h>
 
 namespace citrus::util {
 	bool loadPngImage(const char *name, int &outWidth, int &outHeight, bool &outHasAlpha, std::vector<unsigned char>& res) {
-		res.clear();
-		png_structp png_ptr;
-		png_infop info_ptr;
-		unsigned int sig_read = 0;
-		int color_type, interlace_type;
-		FILE *fp;
-	 
-		if ((fp = fopen(name, "rb")) == NULL)
-			return false;
-	 
-		/* Create and initialize the png_struct
-		 * with the desired error handler
-		 * functions.  If you want to use the
-		 * default stderr and longjump method,
-		 * you can supply NULL for the last
-		 * three parameters.  We also supply the
-		 * the compiler header file version, so
-		 * that we know if the application
-		 * was compiled with a compatible version
-		 * of the library.  REQUIRED
-		 */
-		png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	 
-		if (png_ptr == NULL) {
-			fclose(fp);
-			return false;
-		}
-	 
-		/* Allocate/initialize the memory
-		 * for image information.  REQUIRED. */
-		info_ptr = png_create_info_struct(png_ptr);
-		if (info_ptr == NULL) {
-			fclose(fp);
-			png_destroy_read_struct(&png_ptr, NULL, NULL);
-			return false;
-		}
-	 
-		/* Set error handling if you are
-		 * using the setjmp/longjmp method
-		 * (this is the normal method of
-		 * doing things with libpng).
-		 * REQUIRED unless you  set up
-		 * your own error handlers in
-		 * the png_create_read_struct()
-		 * earlier.
-		 */
-		if (setjmp(png_jmpbuf(png_ptr))) {
-			/* Free all of the memory associated
-			 * with the png_ptr and info_ptr */
-			png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-			fclose(fp);
-			/* If we get here, we had a
-			 * problem reading the file */
-			return false;
-		}
-	 
-		/* Set up the output control if
-		 * you are using standard C streams */
-		png_init_io(png_ptr, fp);
-	 
-		/* If we have already
-		 * read some of the signature */
-		png_set_sig_bytes(png_ptr, sig_read);
-	 
-		/*
-		 * If you have enough memory to read
-		 * in the entire image at once, and
-		 * you need to specify only
-		 * transforms that can be controlled
-		 * with one of the PNG_TRANSFORM_*
-		 * bits (this presently excludes
-		 * dithering, filling, setting
-		 * background, and doing gamma
-		 * adjustment), then you can read the
-		 * entire image (including pixels)
-		 * into the info structure with this
-		 * call
-		 *
-		 * PNG_TRANSFORM_STRIP_16 |
-		 * PNG_TRANSFORM_PACKING  forces 8 bit
-		 * PNG_TRANSFORM_EXPAND forces to
-		 *  expand a palette into RGB
-		 */
-		png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING | PNG_TRANSFORM_EXPAND, NULL);
-	 
-		png_uint_32 width, height;
-		int bit_depth;
-		png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type,
-					 &interlace_type, NULL, NULL);
-		outWidth = int(width);
-		outHeight = int(height);
-		outHasAlpha = color_type & PNG_COLOR_MASK_ALPHA;
-	 
-		unsigned int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
-		res.resize(outHeight * row_bytes);
-		unsigned char* outData = res.data();
-	 
-		png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
+		outWidth = 512;
+		outHeight = 512;
+		outHasAlpha = false;
 		
-				 
-		for (int i = 0; i < outHeight; i++) {
-			// note that png is ordered top to
-			// bottom, but OpenGL expect it bottom to top
-			// so the order or swapped
-			memcpy(outData+(row_bytes * (i)), row_pointers[i], row_bytes);
-		}
-		
-	 
-		/* Clean up after the read,
-		 * and free any memory allocated */
-		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-	 
-		/* Close the file */
-		fclose(fp);
-	 
-		/* That's it */
+		res = vector<unsigned char>();
+		res.resize(512 * 512 * 3, 255);
+
 		return true;
+
+		//res.clear();
+		//png_structp png_ptr;
+		//png_infop info_ptr;
+		//unsigned int sig_read = 0;
+		//int color_type, interlace_type;
+		//FILE *fp;
+	 //
+		//if ((fp = fopen(name, "rb")) == NULL)
+		//	return false;
+	 //
+		///* Create and initialize the png_struct
+		// * with the desired error handler
+		// * functions.  If you want to use the
+		// * default stderr and longjump method,
+		// * you can supply NULL for the last
+		// * three parameters.  We also supply the
+		// * the compiler header file version, so
+		// * that we know if the application
+		// * was compiled with a compatible version
+		// * of the library.  REQUIRED
+		// */
+		//png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	 //
+		//if (png_ptr == NULL) {
+		//	fclose(fp);
+		//	return false;
+		//}
+	 //
+		///* Allocate/initialize the memory
+		// * for image information.  REQUIRED. */
+		//info_ptr = png_create_info_struct(png_ptr);
+		//if (info_ptr == NULL) {
+		//	fclose(fp);
+		//	png_destroy_read_struct(&png_ptr, NULL, NULL);
+		//	return false;
+		//}
+	 //
+		///* Set error handling if you are
+		// * using the setjmp/longjmp method
+		// * (this is the normal method of
+		// * doing things with libpng).
+		// * REQUIRED unless you  set up
+		// * your own error handlers in
+		// * the png_create_read_struct()
+		// * earlier.
+		// */
+		//if (setjmp(png_jmpbuf(png_ptr))) {
+		//	/* Free all of the memory associated
+		//	 * with the png_ptr and info_ptr */
+		//	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+		//	fclose(fp);
+		//	/* If we get here, we had a
+		//	 * problem reading the file */
+		//	return false;
+		//}
+	 //
+		///* Set up the output control if
+		// * you are using standard C streams */
+		//png_init_io(png_ptr, fp);
+	 //
+		///* If we have already
+		// * read some of the signature */
+		//png_set_sig_bytes(png_ptr, sig_read);
+	 //
+		///*
+		// * If you have enough memory to read
+		// * in the entire image at once, and
+		// * you need to specify only
+		// * transforms that can be controlled
+		// * with one of the PNG_TRANSFORM_*
+		// * bits (this presently excludes
+		// * dithering, filling, setting
+		// * background, and doing gamma
+		// * adjustment), then you can read the
+		// * entire image (including pixels)
+		// * into the info structure with this
+		// * call
+		// *
+		// * PNG_TRANSFORM_STRIP_16 |
+		// * PNG_TRANSFORM_PACKING  forces 8 bit
+		// * PNG_TRANSFORM_EXPAND forces to
+		// *  expand a palette into RGB
+		// */
+		//png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING | PNG_TRANSFORM_EXPAND, NULL);
+	 //
+		//png_uint_32 width, height;
+		//int bit_depth;
+		//png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type,
+		//			 &interlace_type, NULL, NULL);
+		//outWidth = int(width);
+		//outHeight = int(height);
+		//outHasAlpha = color_type & PNG_COLOR_MASK_ALPHA;
+	 //
+		//unsigned int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+		//res.resize(outHeight * row_bytes);
+		//unsigned char* outData = res.data();
+	 //
+		//png_bytepp row_pointers = png_get_rows(png_ptr, info_ptr);
+		//
+		//		 
+		//for (int i = 0; i < outHeight; i++) {
+		//	// note that png is ordered top to
+		//	// bottom, but OpenGL expect it bottom to top
+		//	// so the order or swapped
+		//	memcpy(outData+(row_bytes * (i)), row_pointers[i], row_bytes);
+		//}
+		//
+	 //
+		///* Clean up after the read,
+		// * and free any memory allocated */
+		//png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+	 //
+		///* Close the file */
+		//fclose(fp);
+	 //
+		///* That's it */
+		//return true;
 	}
 	
 	uint64_t roundUpAlign(uint64_t val, uint64_t align) {
@@ -145,7 +154,8 @@ namespace citrus::util {
 	int _currentID = 0;
 
 	string selectFolder() {
-		nfdchar_t *outPath = nullptr;
+		return "";
+		/*nfdchar_t *outPath = nullptr;
 		nfdresult_t result = NFD_PickFolder(nullptr, &outPath);
 
 		if(result == NFD_OKAY) {
@@ -156,21 +166,22 @@ namespace citrus::util {
 			return "";
 		} else {
 			return "";
-		}			
+		}*/
 	}
 	string selectFile(string filter) {
-		nfdchar_t *outPath = nullptr;
-		nfdresult_t result = NFD_OpenDialog(filter.empty() ? nullptr : filter.c_str(), nullptr, &outPath);
+		return "";
+/*nfdchar_t *outPath = nullptr;
+nfdresult_t result = NFD_OpenDialog(filter.empty() ? nullptr : filter.c_str(), nullptr, &outPath);
 
-		if(result == NFD_OKAY) {
-			string res = outPath;
-			free(outPath);
-			return res;
-		} else if(result == NFD_CANCEL) {
-			return "";
-		} else {
-			return "";
-		}
+if(result == NFD_OKAY) {
+	string res = outPath;
+	free(outPath);
+	return res;
+} else if(result == NFD_CANCEL) {
+	return "";
+} else {
+	return "";
+}*/
 	}
 
 	int nextID() {
@@ -198,11 +209,11 @@ namespace citrus::util {
 	btTransform glmToBt(transform tr) {
 		return btTransform(glmToBt(tr.getOrientation()), glmToBt(tr.getPosition()));
 	}
-	
+
 	vector<btVector3> glmToBtVector(const vector<vec3>& verts) {
 		vector<btVector3> btVerts;
 		btVerts.resize(verts.size());
-		for(size_t i = 0; i < verts.size(); i++) {
+		for (size_t i = 0; i < verts.size(); i++) {
 			btVerts[i] = btVector3(verts[i].x, verts[i].y, verts[i].z);
 		}
 		return btVerts;
@@ -254,6 +265,18 @@ namespace citrus::util {
 
 	bool isPowerOfTwo(unsigned int val) {
 		return (val != 0) && ((val & (val - 1)) == 0);
+	}
+
+	vector<fpath> filesInDirectory(fpath path) {
+		vector<fpath> res;
+		if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
+			for(std::filesystem::directory_iterator it(path); !it._At_end(); it++) {
+				if (!(*it).is_directory()) {
+					res.push_back((*it).path());
+				}
+			}
+		}
+		return res;
 	}
 
 	string loadEntireFile(string path) {

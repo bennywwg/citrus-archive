@@ -5,7 +5,6 @@
 #include "citrus/engine/manager.inl"
 #include "citrus/engine/elementRef.inl"
 
-#include "citrus/engine/renderManager.h"
 #include <memory>
 
 namespace citrus::engine {

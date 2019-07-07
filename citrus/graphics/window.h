@@ -10,7 +10,7 @@
 #include <iostream>
 #include <vector>
 
-#include "citrus/graphics/instance.h"
+#include "citrus/graphics/system/instance.h"
 
 struct GLFWwindow;
 

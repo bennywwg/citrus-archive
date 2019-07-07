@@ -1,5 +1,6 @@
-#include "citrus/graphics/renderSystem.h"
+#include "citrus/graphics/system/renderSystem.h"
 #include <fstream>
+#include <shared_mutex>
 
 namespace citrus::graphics {
 	void system::createFramebufferData() {
@@ -80,8 +81,6 @@ namespace citrus::graphics {
 			vkCreateImageView(inst._device, &colorViewInfo, nullptr, &frames[i].colorView);
 			vkCreateImageView(inst._device, &depthViewInfo, nullptr, &frames[i].depthView);
 
-			VkImageView views[2] = { frames[i].colorView, frames[i].depthView };
-
 			VkSamplerCreateInfo sampInfo = {};
 			sampInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 			sampInfo.magFilter = VK_FILTER_NEAREST;
@@ -102,17 +101,6 @@ namespace citrus::graphics {
 
 			vkCreateSampler(inst._device, &sampInfo, nullptr, &frames[i].colorSamp);
 			frames[i].depthSamp = VK_NULL_HANDLE;
-
-			/*VkFramebufferCreateInfo fbInfo = {};
-			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			fbInfo.width = inst.width;
-			fbInfo.height = inst.height;
-			fbInfo.layers = 1;
-			fbInfo.renderPass = renderPass;
-			fbInfo.attachmentCount = 2;
-			fbInfo.pAttachments = views;
-
-			vkCreateFramebuffer(inst._device, &fbInfo, nullptr, &frames[i].frameBuffer);*/
 		}
 	}
 	void system::freeFramebufferData() {
@@ -134,7 +122,7 @@ namespace citrus::graphics {
 		for (int i = 0; i < texturePaths.size(); i++) {
 			textures.push_back({});
 
-			textures[i].data = std::move(image4b(texturePaths[i]));
+			textures[i].data = std::move(image4b(texturePaths[i].string()));
 
 			textures[i].format = VK_FORMAT_R8G8B8A8_UNORM;
 
@@ -221,24 +209,6 @@ namespace citrus::graphics {
 
 			vkCreateSampler(inst._device, &samplerInfo, nullptr, &textures[i].samp);
 		}
-
-		vector<VkDescriptorImageInfo> imageInfos;
-		for (int i = 0; i < texturePaths.size(); i++) {
-			imageInfos.push_back({});
-			imageInfos[i].sampler = textures[i].samp;
-			imageInfos[i].imageView = textures[i].view;
-			imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		}
-
-		VkWriteDescriptorSet write = {};
-		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		write.descriptorCount = (uint32_t)texturePaths.size();
-		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		write.dstBinding = 0;
-		write.dstSet = texSet;
-		write.pImageInfo = imageInfos.data();
-
-		vkUpdateDescriptorSets(inst._device, 1, &write, 0, nullptr);
 	}
 	void system::freeTextures() {
 		vkFreeMemory(inst._device, textureMem, nullptr);
@@ -278,14 +248,14 @@ namespace citrus::graphics {
 		models.resize(modelPaths.size());
 
 		for (int i = 0; i < modelPaths.size(); i++) {
-			models[i].m = mesh(modelPaths[i]);
+			models[i].m = mesh(modelPaths[i].string());
 			models[i].desc = models[i].m.getDescription(vertexAddr, vertexRequirements.alignment, indexAddr, indexRequirements.alignment);
-			models[i].radius = models[i].data[0].m.getMaxRadius();
+			models[i].radius = models[i].m.getMaxRadius();
 		}
 	}
 	void system::initializeModelData() {
-		VkDeviceAddress totalVertexSize = models.back().data.back().desc.nextFree;
-		VkDeviceAddress totalIndexSize = models.back().data.back().desc.nextFreeIndex;
+		VkDeviceAddress totalVertexSize = models.back().desc.nextFree;
+		VkDeviceAddress totalIndexSize = models.back().desc.nextFreeIndex;
 
 		VkBufferCreateInfo vertexInfo = { };
 		vertexInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -330,7 +300,7 @@ namespace citrus::graphics {
 		uint64_t vertexStaging = inst.stagingMem.alloc(totalVertexSize);
 		void* vertexScratch = malloc(totalVertexSize);
 		for (int i = 0; i < models.size(); i++) {
-			models[i].data[0].m.fillVertexData(vertexScratch, models[i].data[0].desc);
+			models[i].m.fillVertexData(vertexScratch, models[i].desc);
 		}
 		inst.mapUnmapMemory(inst.stagingMem.mem, totalVertexSize, vertexStaging, vertexScratch);
 		inst.copyBuffer(inst.stagingMem.buf, vertexBuffer, totalVertexSize, vertexStaging, 0);
@@ -340,7 +310,7 @@ namespace citrus::graphics {
 		uint64_t indexStaging = inst.stagingMem.alloc(totalIndexSize);
 		void* indexScratch = malloc(totalIndexSize);
 		for (int i = 0; i < models.size(); i++) {
-			models[i].data[0].m.fillIndexData(indexScratch, models[i].data[0].desc);
+			models[i].m.fillIndexData(indexScratch, models[i].desc);
 		}
 		inst.mapUnmapMemory(inst.stagingMem.mem, totalIndexSize, indexStaging, indexScratch);
 		inst.copyBuffer(inst.stagingMem.buf, indexBuffer, totalIndexSize, indexStaging, 0);
@@ -362,40 +332,28 @@ namespace citrus::graphics {
 		}
 		for (int i = 0; i < animations.size(); i++) {
 			for (int j = 0; j < models.size(); j++) {
-				bool success = models[j].data[0].m.bindAnimation(animations[i]);
+				bool success = models[j].m.bindAnimation(animations[i]);
 				if (success) util::sout("animation bound: model " + std::to_string(j) + " lod 0, ani " + std::to_string(i) + "\n");
 			}
 		}
 	}
 
-	void system::initializeThreads(int threadCount) {
+	void system::initializeThreads(uint32_t threadCount) {
 		if (threadCount < 1) threadCount = 1;
-		else if (threadCount > 32) threadCount = 32;
+		else if (threadCount > 256) threadCount = 256;
 
 		renderThreads.resize(threadCount);
 		for (size_t i = 0; i < SWAP_FRAMES; i++) {
 			primaryBuffers[i] = VK_NULL_HANDLE;
-			waitFences[i] = inst.createFence(true);
-			secondaryBuffers[i].resize(renderThreads.size());
 		}
 		commandPools.resize(renderThreads.size());
 		for (size_t t = 0; t < renderThreads.size(); t++) {
 			renderGo[t] = false;
 			commandPools[t] = inst.createCommandPool();
-			for (int i = 0; i < SWAP_FRAMES; i++) {
-				secondaryBuffers[i][t] = VK_NULL_HANDLE;
-			}
 		}
 
 		for (size_t t = 1; t < renderThreads.size(); t++) {
 			renderThreads[t] = std::thread(&system::renderFunc, this, t);
-		}
-
-		staticRanges.resize(renderThreads.size());
-		aniRanges.resize(renderThreads.size());
-		for (int i = 0; i < renderThreads.size(); i++) {
-			staticRanges[i].resize(staticModels.size());
-			aniRanges[i].resize(aniModels.size());
 		}
 	}
 	void system::freeThreads() {
@@ -404,15 +362,10 @@ namespace citrus::graphics {
 		}
 		stdioDebug("all threads joined\n");
 
-		inst.waitForFence(waitFences[frameIndex_]);
 		for (int i = 0; i < SWAP_FRAMES; i++) {
 			if (primaryBuffers[i] != VK_NULL_HANDLE) vkFreeCommandBuffers(inst._device, inst._commandPool, 1, &primaryBuffers[i]);
-			vkDestroyFence(inst._device, waitFences[i], nullptr);
 		}
 		for (int t = 0; t < renderThreads.size(); t++) {
-			for (int i = 0; i < SWAP_FRAMES; i++) {
-				if (secondaryBuffers[i][t] != VK_NULL_HANDLE) vkFreeCommandBuffers(inst._device, commandPools[t], 1, &secondaryBuffers[i][t]);
-			}
 			vkDestroyCommandPool(inst._device, commandPools[t], nullptr);
 		}
 	}
@@ -456,7 +409,7 @@ namespace citrus::graphics {
 		}
 	}
 
-	void system::sequence(vector<vector<itemInfo>> const& items, vector<vector<itemDrawRange>> & ranges) {
+	/*void system::sequence(vector<vector<itemInfo>> const& items, vector<vector<itemDrawRange>> & ranges) {
 		int totalItems = 0;
 		for (int m = 0; m < items.size(); m++)
 			totalItems += items[m].size();
@@ -496,12 +449,12 @@ namespace citrus::graphics {
 			itemsInThread += toAdd;
 		}
 		stdioDebug("sequencing took " + std::to_string((hpclock::now() - seqStart).count() * 0.000001) + " ms\n");
-	}
-	void system::renderFunc(int threadIndex) {
+	}*/
+	void system::renderFunc(uint32_t threadIndex) {
 		if (threadIndex == 0) throw std::runtime_error("started thread 0 (should happen on main thread)");
 		while (!stopped) {
 			if (renderGo[threadIndex]) {
-				renderPartial(threadIndex);
+				passes[currentPass]->renderPartial(threadIndex);
 				renderGo[threadIndex] = false;
 			} else {
 				//std::this_thread::sleep_for(std::chrono::microseconds(100));
@@ -510,167 +463,14 @@ namespace citrus::graphics {
 		renderGo[threadIndex] = false;
 		stdioDebug("completed thread " + std::to_string(threadIndex) + "\n");
 	}
-	void system::renderPartial(
-		int threadIndex,
-		vector<model> const& models,
-		vector<vector<itemInfo>> const& items,
-		vector<itemDrawRange> const& ranges,
-		VkCommandBuffer & buf) {
-		stdioDebug("\tstarting partial " + std::to_string(threadIndex) + "\n");
-		int vbinds = 0, draws = 0, culls = 0;
-		int frameIndex;
-		hptime partialStart = hpclock::now();
-
-		{	std::shared_lock<std::shared_mutex> lock(startMut);
-			frameIndex = frameIndex_;
-		}
-
-		{	std::lock_guard<std::mutex> lock(instMut);
-			buf = inst.createCommandBuffer(commandPools[threadIndex], true);
-		}
-
-		VkCommandBufferBeginInfo cmdInfo = {};
-		cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		cmdInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-		cmdInfo.pInheritanceInfo = &inheritanceInfos[frameIndex];
-
-		vkBeginCommandBuffer(buf, &cmdInfo);
-
-		vkCmdBindPipeline(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-		vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &texSet, 0, nullptr);
-		for (int s = 0; s < ranges.size(); s++) {
-			itemDrawRange const& dr = ranges[s];
-			if (dr.modelIndex == -1) break;
-
-			vkCmdBindVertexBuffers(buf, 0, animated_vertex_inputs, vertexBuffers, aniModels[dr.modelIndex].vertexOffsets);
-			vkCmdBindIndexBuffer(buf, indexBuffer, aniModels[dr.modelIndex].indexOffset, VK_INDEX_TYPE_UINT16);
-			vbinds++;
-
-			for (int i = dr.itemBegin; i < dr.itemEnd; i++) {
-				if (!cullEnabled || frameCull.testSphere(items[dr.modelIndex][i].pos, aniModels[dr.modelIndex].radius)) {
-					pcData pushData;
-					mat4 modTmp = glm::translate(aniItems[dr.modelIndex][i].pos);
-					pushData.vertData.model = modTmp;
-					pushData.vertData.mvp = frameVP * modTmp;
-					pushData.fragData.texIndex = aniItems[dr.modelIndex][i].texIndex;
-					vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(vert_pcData), &pushData.vertData);
-					vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(vert_pcData), sizeof(frag_pcData), &pushData.fragData);
-					uint32_t zero = 0;
-					vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboSets[frameIndex], 1, &zero);
-
-					vkCmdDrawIndexed(buf, aniModels[dr.modelIndex].indexCount, 1, 0, 0, 0);
-					draws++;
-				} else {
-					culls++;
-				}
-			}
-		}
-
-		vkEndCommandBuffer(buf);
-
-		auto time = (hpclock::now() - partialStart).count();
-
-		stdioDebug("\tpartial " + std::to_string(threadIndex) + " culled " + std::to_string(culls) + "\n");
-
-		stdioDebug("\tpartial " + std::to_string(threadIndex) + " took " + std::to_string(time * 0.000001) + " ms [" + std::to_string(vbinds) + " " + std::to_string(draws) + "]\n");
-	}
-	void system::render(int frameIndex, VkSemaphore signal, camera const& cam) {
-		stdioDebug("starting main\n");
-		hptime mainStart = hpclock::now();
-
-		inst.waitForFence(waitFences[frameIndex]);
-		inst.resetFence(waitFences[frameIndex]);
-
-		stdioDebug("fence wait took " + std::to_string((hpclock::now() - mainStart).count() * 0.000001) + " ms\n");
-
-		sequence(staticItems, staticRanges);
-		sequence(aniItems, aniRanges);
-
-		{ //  prepare frame data here
-			std::unique_lock<std::shared_mutex> lock(startMut);
-
-			memset(&inheritanceInfos[frameIndex], 0, sizeof(VkCommandBufferInheritanceInfo));
-			inheritanceInfos[frameIndex].sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-			inheritanceInfos[frameIndex].renderPass = renderPass;
-			inheritanceInfos[frameIndex].framebuffer = frames[frameIndex].frameBuffer;
-
-			frameIndex_ = frameIndex;
-
-			frameCam = cam;
-			frameCull = cam.genFrustrumInfo();
-			frameVP = cam.getViewProjectionMatrix();
-
-			cullEnabled = false;
-		}
-
-		hptime mainRenderStart = hpclock::now();
-
-		for (int i = 0; i < renderThreads.size(); i++) {
-			renderGo[i] = true;
-		}
-
-		renderPartial(0);
-
-		renderGo[0] = false;
-
-		while (!renderDone()) {
-			//std::this_thread::sleep_for(std::chrono::microseconds(100));
-		}
-
-		hptime mainRenderDone = hpclock::now();
-		stdioDebug("main render all threads took " + std::to_string((mainRenderDone - mainRenderStart).count() * 0.000001) + " ms\n");
-
-		if (primaryBuffers[frameIndex] != VK_NULL_HANDLE) inst.destroyCommandBuffer(primaryBuffers[frameIndex], inst._commandPool);
-		primaryBuffers[frameIndex] = inst.createCommandBuffer(inst._commandPool, false);
-
-		VkCommandBufferBeginInfo beginInfo = { };
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		vkBeginCommandBuffer(primaryBuffers[frameIndex], &beginInfo);
-
-		VkClearValue clearValues[2] = { };
-		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
-		clearValues[1].depthStencil = { 1.0f, 0 };
-		VkRenderPassBeginInfo renderPassInfo = { };
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = renderPass;
-		renderPassInfo.framebuffer = frames[frameIndex].frameBuffer;
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = inst._extent;
-		renderPassInfo.clearValueCount = 2;
-		renderPassInfo.pClearValues = clearValues;
-
-		vkCmdBeginRenderPass(primaryBuffers[frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-
-		vkCmdExecuteCommands(primaryBuffers[frameIndex], renderThreads.size(), secondaryBuffers[frameIndex].data());
-
-		vkCmdEndRenderPass(primaryBuffers[frameIndex]);
-
-		vkEndCommandBuffer(primaryBuffers[frameIndex]);
-
-		VkSubmitInfo subInfo = { };
-		subInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		subInfo.commandBufferCount = 1;
-		subInfo.pCommandBuffers = &primaryBuffers[frameIndex];
-		subInfo.signalSemaphoreCount = 1;
-		subInfo.pSignalSemaphores = &signal;
-
-		vkQueueSubmit(inst._graphicsQueue, 1, &subInfo, waitFences[frameIndex]);
-
-		auto time = hpclock::now();
-		stdioDebug("submitting all buffers took " + std::to_string((time - mainRenderDone).count() * 0.000001) + " ms\n");
-		stdioDebug("main render took " + std::to_string((time - mainStart).count() * 0.000001) + " ms (avg " + std::to_string(RENDER_ITEMS * RENDER_MODELS / ((time - mainStart).count() * 0.000001)) + " items / ms)\n");
-	}
-	bool system::renderDone() {
+	bool system::renderDone() const {
 		for (int i = 0; i < renderThreads.size(); i++) {
 			if (renderGo[i] == true) return false;
 		}
 		return true;
 	}
 	void system::postProcess(int frameIndex, int windowSwapIndex, vector<VkSemaphore> waits, VkSemaphore signal) {
-		VkDescriptorImageInfo colorInfo = {};
+		/*VkDescriptorImageInfo colorInfo = {};
 		colorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		colorInfo.imageView = frames[frameIndex].colorView;
 		colorInfo.sampler = frames[frameIndex].samp;
@@ -681,18 +481,19 @@ namespace citrus::graphics {
 		depthInfo.sampler = frames[frameIndex].samp;
 
 		inst._finalPass->fillCommandBuffer(windowSwapIndex, colorInfo, depthInfo);
-		inst._finalPass->submit(windowSwapIndex, waits, signal);
+		inst._finalPass->submit(windowSwapIndex, waits, signal);*/
 	}
-	void system::render(VkSemaphore sem) {
-		for(uint32_t i = 0; i < passes.size(); i++) {
-			{ std::exclusive_lock<std::shared_mutex> lock(startMut);
-				currentPass = i;
-				frameCam = cam;
-				frameCull = cam.genFrustrumInfo();
-				frameVP = cam.getViewProjectionMatrix();
+	void system::render(VkSemaphore sem, camera const& cam) {
+		{ std::unique_lock<std::shared_mutex> lock(startMut);
+			frameCam = cam;
+			frameCull = cam.genFrustrumInfo();
+			frameVP = cam.getViewProjectionMatrix();
+		}
 
-				pass->preRender(renderThreads.size());
-			}
+		for(uint32_t i = 0; i < passes.size(); i++) {
+			currentPass = i;
+
+			passes[i]->preRender(renderThreads.size());
 
 			for(int j = 1; j < renderThreads.size(); j++) {
 				renderGo[j] = true;
@@ -706,13 +507,13 @@ namespace citrus::graphics {
 				//std::this_thread::sleep_for(std::chrono::microseconds(100));
 			}
 
-			passes[i]->postRender(renderThreads.size());
+			passes[i]->postRender((uint32_t) renderThreads.size());
 		}
 	}
-	system::system(instance& vkinst, vector<string> textures, vector<string> models, vector<string> animations) : inst(vkinst) {
-		texturePaths = textures;
-		modelPaths = models;
-		animationPaths = animations;
+	system::system(instance& vkinst, fpath texturePath, fpath modelPath, fpath animationPath) : inst(vkinst) {
+		texturePaths = util::filesInDirectory(texturePath);
+		modelPaths = util::filesInDirectory(modelPath);
+		animationPaths = util::filesInDirectory(animationPath);
 		uniformSize = 1024 * 1024 * 16;
 
 		createFramebufferData();
@@ -728,8 +529,6 @@ namespace citrus::graphics {
 	}
 	system::~system() {
 		stopped = true;
-
-		freeUniformBuffer();
 
 		freeTextures();
 

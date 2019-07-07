@@ -5,7 +5,7 @@
 #include "citrus/graphics/window.h"
 #include "citrus/editor/gui.h"
 #include <vector>
-#include "citrus/graphics/finalPassShader.h"
+#include "citrus/graphics/system/finalPass.h"
 #include "citrus/graphics/image.h"
 
 namespace citrus::engine {
@@ -37,6 +37,8 @@ namespace citrus::engine {
 			_renderState.store(render_initializing);
 			_win = nullptr;
 			_win = new graphics::window(1280, 720, "Citrus Engine", "C:\\Users\\benny\\Desktop\\citrus\\res");
+
+			sys = new graphics::system(*_win->inst(), resDir / "meshes", resDir / "meshes", resDir / "animations");
 
 			//graphics::image4b img(string("C:\\Users\\benny\\Desktop\\citrus\\res") + "/textures/grid.png");
 
@@ -144,7 +146,7 @@ namespace citrus::engine {
 		return _win->getKey(but);
 	}
 
-	void engine::loadLevel(citrus::path levelPath) {
+	void engine::loadLevel(fpath levelPath) {
 		/*for(auto& it : std::experimental::filesystem::directory_iterator(levelPath)) {
 			if(!std::experimental::filesystem::is_directory(it.path())) {
 				std::string path = it.path().string();
@@ -152,7 +154,6 @@ namespace citrus::engine {
 					std::string read = util::loadEntireFile(path);
 					json parsed = json::parse(read);
 					std::string type = parsed["type"].get<std::string>();
-
 
 				} catch(std::exception ex) {
 					Log("Couldn't load resource " + path + ", " + ex.what() + "\n");

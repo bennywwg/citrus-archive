@@ -1,6 +1,6 @@
-#include "citrus/graphics/mesh.h"
+#include "citrus/graphics/mesh/mesh.h"
 
-#include "citrus/graphics/instance.h"
+#include "citrus/graphics/system/instance.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -24,13 +24,13 @@ namespace citrus::graphics {
 	}
 
 	int nodeContainer::addNodes(const aiNode* n, int parent) {
-		int ci = nodes.size();
+		uint32_t ci = nodes.size();
 		nodes.emplace_back();
 		nodes[ci].name = n->mName.C_Str();
 		nodes[ci].parent = parent;
 		nodes[ci].transform = convertMat(n->mTransformation);
 		nodes[ci].children.resize(n->mNumChildren);
-		for (int i = 0; i < n->mNumChildren; i++) {
+		for (size_t i = 0; i < n->mNumChildren; i++) {
 			int childIndex = addNodes(n->mChildren[i], ci);
 			nodes[ci].children[i] = childIndex;
 		}
@@ -38,7 +38,7 @@ namespace citrus::graphics {
 	}
 	void nodeContainer::loadAllNodes(const aiScene* scene) {
 		addNodes(scene->mRootNode);
-		for (int i = 0; i < nodes.size(); i++) {
+		for (uint32_t i = 0; i < nodes.size(); i++) {
 			nameMap[nodes[i].name] = i;
 		}
 	}
@@ -99,7 +99,7 @@ namespace citrus::graphics {
 				weights[j][inBone.mWeights[k].mVertexId] = inBone.mWeights[k].mWeight;
 			}
 
-			nameMap[name] = j;
+			nameMap[name] = int(j);
 		}
 	}
 
@@ -194,35 +194,35 @@ namespace citrus::graphics {
 				double time;
 				if (mode == 'p') {
 					float x, y, z;
-					int s0 = line.find_first_of(' ', 0);
+					size_t s0 = line.find_first_of(' ', 0);
 					time = std::stod(line.substr(0, s0));
-					int s1 = line.find_first_of(' ', s0 + 1);
+					size_t s1 = line.find_first_of(' ', s0 + 1);
 					x = std::stof(line.substr(s0 + 1));
-					int s2 = line.find_first_of(' ', s1 + 1);
+					size_t s2 = line.find_first_of(' ', s1 + 1);
 					y = std::stof(line.substr(s1 + 1));
 					z = std::stof(line.substr(s2 + 1));
 					positions.emplace_back(time, glm::vec3(x, y, z));
 				}
 				else if (mode == 'o') {
 					float w, x, y, z;
-					int s0 = line.find_first_of(' ', 0);
+					size_t s0 = line.find_first_of(' ', 0);
 					time = std::stod(line.substr(0, s0));
-					int s1 = line.find_first_of(' ', s0 + 1);
+					size_t s1 = line.find_first_of(' ', s0 + 1);
 					w = std::stof(line.substr(s0 + 1));
-					int s2 = line.find_first_of(' ', s1 + 1);
+					size_t s2 = line.find_first_of(' ', s1 + 1);
 					x = std::stof(line.substr(s1 + 1));
-					int s3 = line.find_first_of(' ', s2 + 1);
+					size_t s3 = line.find_first_of(' ', s2 + 1);
 					y = std::stof(line.substr(s2 + 1));
 					z = std::stof(line.substr(s3 + 1));
 					orientations.emplace_back(time, glm::quat(w, x, y, z));
 				}
 				else if (mode == 's') {
 					float x, y, z;
-					int s0 = line.find_first_of(' ', 0);
+					size_t s0 = line.find_first_of(' ', 0);
 					time = std::stod(line.substr(0, s0));
-					int s1 = line.find_first_of(' ', s0 + 1);
+					size_t s1 = line.find_first_of(' ', s0 + 1);
 					x = std::stof(line.substr(s0 + 1));
-					int s2 = line.find_first_of(' ', s1 + 1);
+					size_t s2 = line.find_first_of(' ', s1 + 1);
 					y = std::stof(line.substr(s1 + 1));
 					z = std::stof(line.substr(s2 + 1));
 					scalings.emplace_back(time, glm::vec3(x, y, z));
@@ -243,7 +243,7 @@ namespace citrus::graphics {
 		}
 	}
 	void animationContainer::loadAllAnimations(const aiScene * scene) {
-		for (int i = 0; i < scene->mNumAnimations; i++) {
+		for (size_t i = 0; i < scene->mNumAnimations; i++) {
 			aiAnimation* ani = scene->mAnimations[i];
 			std::string name = ani->mName.C_Str();
 
@@ -252,7 +252,7 @@ namespace citrus::graphics {
 			a.name = name;
 			//a.duration = ani->mDuration;
 
-			for (int j = 0; j < ani->mNumChannels; j++) {
+			for (size_t j = 0; j < ani->mNumChannels; j++) {
 				aiNodeAnim* ch = ani->mChannels[j];
 
 				string nodeName = ch->mNodeName.C_Str();
@@ -263,7 +263,7 @@ namespace citrus::graphics {
 				c.nodeName = nodeName;
 
 				c.positions.reserve(ch->mNumPositionKeys);
-				for (int k = 0; k < ch->mNumPositionKeys; k++) {
+				for (size_t k = 0; k < ch->mNumPositionKeys; k++) {
 					glm::vec3 v = {
 						ch->mPositionKeys[k].mValue.x,
 						ch->mPositionKeys[k].mValue.y,
@@ -273,7 +273,7 @@ namespace citrus::graphics {
 				}
 
 				c.orientations.reserve(ch->mNumRotationKeys);
-				for (int k = 0; k < ch->mNumRotationKeys; k++) {
+				for (size_t k = 0; k < ch->mNumRotationKeys; k++) {
 					glm::quat r(
 						ch->mRotationKeys[k].mValue.w,
 						ch->mRotationKeys[k].mValue.x,
@@ -284,7 +284,7 @@ namespace citrus::graphics {
 				}
 
 				c.scalings.reserve(ch->mNumScalingKeys);
-				for (int k = 0; k < ch->mNumScalingKeys; k++) {
+				for (size_t k = 0; k < ch->mNumScalingKeys; k++) {
 					glm::vec3 s = {
 						ch->mScalingKeys[k].mValue.x,
 						ch->mScalingKeys[k].mValue.y,
@@ -294,7 +294,7 @@ namespace citrus::graphics {
 				}
 
 			}
-			nameMap[name] = i;
+			nameMap[name] = int(i);
 		}
 	}
 	template vec3 animation::channel::get(double, std::vector<key<vec3>>const&) const;
@@ -378,7 +378,7 @@ namespace citrus::graphics {
 		weight1.clear();
 	}
 
-	meshDescription mesh::getDescription(uint64_t vertStart, uint64_t vertAlign, uint64_t indexStart, uint64_t indexAlign) const {
+	meshMemoryStructure mesh::getDescription(uint64_t vertStart, uint64_t vertAlign, uint64_t indexStart, uint64_t indexAlign) const {
 		vector<VkVertexInputAttributeDescription> attribs;
 		vector<VkVertexInputBindingDescription> bindings;
 		vector<meshAttributeUsage> usages;
@@ -413,7 +413,7 @@ namespace citrus::graphics {
 			offsets.push_back(vertStart);
 			vertStart += bindings[i].stride * pos.size();
 		}
-		return meshDescription{
+		return meshMemoryStructure {
 			usages,
 			allUsage,
 			offsets,																		// vert starts
@@ -432,7 +432,7 @@ namespace citrus::graphics {
 		}
 		return l2m;
 	}
-	void mesh::fillVertexData(void* vdata, meshDescription desc) const {
+	void mesh::fillVertexData(void* vdata, meshMemoryStructure desc) const {
 		uint8_t* data = (uint8_t*)vdata;
 		memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::positionType)], pos.data(), pos.size() * sizeof(vec3));
 		if (hasNorm()) memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::normalType)], norm.data(), norm.size() * sizeof(vec3));
@@ -446,7 +446,7 @@ namespace citrus::graphics {
 			memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::weight1Type)], weight1.data(), weight1.size() * sizeof(float));
 		}
 	}
-	void mesh::fillIndexData(void* vdata, meshDescription desc) const {
+	void mesh::fillIndexData(void* vdata, meshMemoryStructure desc) const {
 		uint8_t* data = (uint8_t*)vdata;
 		memcpy(data + desc.indexOffset, index.data(), index.size() * sizeof(decltype(index)::value_type));
 	}
@@ -744,7 +744,7 @@ namespace citrus::graphics {
 		return -1;
 	}
 	meshMemoryStructure meshUsageLocationMapping::makePartialStructureView(meshMemoryStructure desc) const {
-		if((desc.allUsage & allUsage) != allUsage) throw std::runtime_error("cannot make partial structure view, source missing attribute usages");
+		if(((uint32_t) desc.allUsage & (uint32_t) allUsage) != (uint32_t) allUsage) throw std::runtime_error("cannot make partial structure view, source missing attribute usages");
 
 		vector<uint64_t> newOffsets;
 		
@@ -756,11 +756,14 @@ namespace citrus::graphics {
 			newOffsets.push_back(desc.offsets[id]);
 		}
 
-		desc.usages usages;
+		desc.usages = usages;
 		desc.allUsage = allUsage;
 		desc.offsets = newOffsets;
 
 		return desc;
+	}
+	meshUsageLocationMapping::meshUsageLocationMapping() {
+		allUsage = meshAttributeUsage::none;
 	}
 	meshUsageLocationMapping::meshUsageLocationMapping(map<meshAttributeUsage, uint32_t> mapping) {
 		usages.reserve(mapping.size());

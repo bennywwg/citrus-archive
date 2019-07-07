@@ -12,7 +12,8 @@
 #include <memory>
 #include "citrus/graphics/tilemapFont.h"
 #include "citrus/graphics/camera.h"
-
+#include "citrus/graphics/system/renderSystem.h"
+#include <atomic>
 
 namespace citrus {
 	namespace graphics {
@@ -102,12 +103,15 @@ namespace citrus {
 
 			void setOrder(std::vector<std::type_index> order);
 
-			void loadLevel(citrus::path levelPath);
+			void loadLevel(fpath levelPath);
 
 			//semaphore signals when swapchain image is ready to be drawn to
 			VkSemaphore getImageReadySemaphore();
 			//signal semaphore to indicate render to present swapchain image
 			VkSemaphore getPresentSemaphore();
+
+			fpath resDir;
+			graphics::system* sys;
 
 			//lifetiem events
 			void start();

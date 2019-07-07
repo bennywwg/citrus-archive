@@ -7,7 +7,7 @@
 #include <functional>
 #include <mutex>
 #include <chrono>
-#include <experimental/filesystem>
+#include <filesystem>
 
 #ifdef _WIN32
 #include <nlohmann/json.hpp>
@@ -29,6 +29,7 @@
 			private:\
 				classname(const classname&) = delete;\
 				classname& operator=(const classname&) = delete;\
+
 
 namespace citrus {
 	class transform;
@@ -54,8 +55,6 @@ namespace citrus {
 	using glm::toMat4;
 	using glm::toQuat;
 
-	using path = std::experimental::filesystem::path;
-
 	using std::string;
 	using std::vector;
 	using std::map;
@@ -68,8 +67,12 @@ namespace citrus {
 	using hpclock = std::chrono::high_resolution_clock;
 	using hptime = hpclock::time_point;
 
+	using fpath = std::filesystem::path;
+
 	namespace util {
 		bool isPowerOfTwo(unsigned int val);
+
+		vector<fpath> filesInDirectory(fpath path);
 
 		string loadEntireFile(string path);
 

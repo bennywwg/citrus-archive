@@ -1,6 +1,6 @@
 #include "citrus/editor/editor.h"
 #include "citrus/graphics/camera.h"
-#include "citrus/engine/renderManager.h"
+#include "citrus/engine/engine.h"
 
 namespace citrus::editor {
 
@@ -45,8 +45,8 @@ namespace citrus::editor {
 		}
 	}
 
-	void ctEditor::update(renderManager& rm, graphics::camera& cam) {
-		bool clickedThisFrame = false;
+	void ctEditor::update(graphics::camera& cam) {
+		/*bool clickedThisFrame = false;
 		if(rm.eng()->getKey(graphics::windowInput::leftMouse)) {
 			if(!dragged) {
 				clickedThisFrame = true;
@@ -56,14 +56,6 @@ namespace citrus::editor {
 
 				click(rm.eng()->getWindow()->getCursorPos());
 			}
-
-
-
-
-
-
-
-
 		} else {
 			dragged = false;
 		}
@@ -94,10 +86,10 @@ namespace citrus::editor {
 			}
 		}
 
-		if(clickedThisFrame) selected = hovered;
+		if(clickedThisFrame) selected = hovered;*/
 	}
 
-	void ctEditor::render(renderManager& rm, graphics::camera& cam) {
+	void ctEditor::render(graphics::camera& cam) {
 		//graphics::shader& colorSh = *rm.drawable[2].sh;
 		//graphics::vertexArray& sphereVao = rm.eng()->getAllOfType<meshManager>()[0]->getModel(6);
 

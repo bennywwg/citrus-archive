@@ -12,7 +12,7 @@
 
 #include "citrus/editor/gui.h"
 #include "citrus/graphics/window.h"
-#include "citrus/graphics/instance.h"
+#include "citrus/graphics/system/instance.h"
 
 namespace citrus::engine {
 	class engine;

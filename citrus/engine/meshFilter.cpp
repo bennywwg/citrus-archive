@@ -1,37 +1,12 @@
 #include "citrus/engine/meshFilter.h"
 
-#include "citrus/engine/renderManager.h"
-
 #include "citrus/engine/manager.inl"
 
 #include "citrus/engine/elementRef.inl"
 
 namespace citrus::engine {
-	void meshFilter::setStatic(int m, int t) {
-		if (systemIndex != -1) throw std::runtime_error("mesh already set");
-		auto g = eng()->getAllOfType<renderManager>()[0];
-		g->addStatic(eleRef<meshFilter>(this), m, t);
-		_model = m;
-		_tex = t;
-		_ani = -1;
-	}
-	void meshFilter::setDynamic(int m, int t, int a) {
-		if (systemIndex != -1) throw std::runtime_error("mesh already set");
-		auto g = eng()->getAllOfType<renderManager>()[0];
-		g->addDynamic(eleRef<meshFilter>(this), m, t, a);
-		_model = m;
-		_tex = t;
-		_ani = a;
-	}
 	void meshFilter::reset() {
-		if (systemIndex != -1) {
-			auto g = eng()->getAllOfType<renderManager>()[0];
-			if (_ani == -1) {
-				g->removeStatic(eleRef<meshFilter>(this), _model);
-			} else {
-				g->removeDynamic(eleRef<meshFilter>(this), _model);
-			}
-		}
+		
 	}
 	int meshFilter::model() const {
 		return _model;

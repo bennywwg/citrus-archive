@@ -3,10 +3,11 @@
 #include <shared_mutex>
 #include <atomic>
 
-#include "citrus/graphics/instance.h"
+#include "citrus/graphics/system/instance.h"
 #include "citrus/graphics/image.h"
-#include "citrus/graphics/mesh.h"
+#include "citrus/graphics/mesh/mesh.h"
 #include "citrus/graphics/camera.h"
+#include "citrus/util.h"
 
 #if false
 #define stdioDebug(str) util::sout(str)
@@ -30,6 +31,9 @@ namespace citrus::graphics {
 	public:
 		system&			sys;
 
+		// semaphore that (if not VK_NULL_HANDLE) is signaled when rendering done
+		VkSemaphore		signalSem;
+
 		// prepare for rendering proper, ie assign each thread item range
 		// return value: number of invocations of renderPartial
 		virtual void	preRender(uint32_t const& numThreads) = 0;
@@ -41,7 +45,7 @@ namespace citrus::graphics {
 		virtual void	postRender(uint32_t const& numThreads) = 0;
 
 		inline			passBase(system& sys) : sys(sys) { }
-		virtual			~passBase() = 0;
+		virtual inline	~passBase() { }
 	};
 
 	// the intention is to ultimately replace the model, texture, uniform sections
@@ -53,9 +57,9 @@ namespace citrus::graphics {
 
 		#pragma region(initialization state)
 		uint64_t			uniformSize;
-		vector<string>		texturePaths;
-		vector<string>		modelPaths;
-		vector<string>		animationPaths;
+		vector<fpath>		texturePaths;
+		vector<fpath>		modelPaths;
+		vector<fpath>		animationPaths;
 		#pragma endregion
 
 		#pragma region(framebuffer stuff)
@@ -122,7 +126,6 @@ namespace citrus::graphics {
 		#pragma region(rendering stuff)
 		VkCommandBuffer			primaryBuffers[SWAP_FRAMES];
 		vector<VkCommandPool>	commandPools;
-		vector<VkCommandBuffer>	secondaryBuffers[SWAP_FRAMES];
 		VkCommandBufferInheritanceInfo inheritanceInfos[SWAP_FRAMES];
 
 		int						frameIndex;		// index of frame  [0, SWAP_FRAMES)
@@ -156,16 +159,19 @@ namespace citrus::graphics {
 
 		#pragma endregion
 	private:
-		void				renderDone();
 		void				postProcess(int frameIndex, int windowSwapIndex, vector<VkSemaphore> waits, VkSemaphore signal);
 	public:
+		void				initializeThreads(uint32_t numThreads);
+		void				freeThreads();
+		bool				renderDone() const;
+		void				renderFunc(uint32_t threadIndex);
 
-		void				render(VkSemaphore signal);
+		void				render(VkSemaphore signal, camera const& cam);
 
 		system(instance & vkinst,
-			vector<string> textures,
-			vector<string> models,
-			vector<string> animations);
+			fpath texturePath,
+			fpath modelPath,
+			fpath animationPath);
 		~system();
 	};
 }

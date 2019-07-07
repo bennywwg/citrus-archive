@@ -17,7 +17,6 @@ using optional_t = std::optional<T>;
 #include <cstdlib>
 #include <set>
 #include <algorithm>
-#include "citrus/graphics/finalPassShader.h"
 
 namespace citrus::graphics {
 	struct QueueFamilyIndices {
@@ -1162,11 +1161,6 @@ namespace citrus::graphics {
 		initCommandPool();
 		initSemaphores();
 		initMemory();
-		_finalPass = new finalPassShader(*this,
-			_swapChainImageViews,
-			width, height,
-			resFolder + "/shaders/finalpass.vert.spv",
-			resFolder + "/shaders/finalpass.frag.spv");
 	}
 	instance::~instance() {
 		vertexMem.freeResources();
@@ -1176,7 +1170,6 @@ namespace citrus::graphics {
 		fboMem.freeResources();
 		stagingMem.freeResources();
 
-		delete _finalPass;
 		destroySemaphores();
 		destroyCommandPool();
 		destroySwapChain();

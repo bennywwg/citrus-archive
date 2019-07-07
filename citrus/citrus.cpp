@@ -1,12 +1,11 @@
 #include "citrus/util.h"
 
-#include "citrus/graphics/instance.h"
+#include "citrus/graphics/system/instance.h"
 
 #include <iomanip>
 
 #include "citrus/engine/engine.h"
 #include "citrus/engine/freeCam.h"
-#include "citrus/engine/renderManager.h"
 #include "citrus/engine/worldManager.h"
 #include "citrus/engine/meshFilter.h"
 #include "citrus/engine/rigidBodyComponent.h"
@@ -43,8 +42,8 @@ int main(int argc, char **argv) {
 	
 	{
 		engine::engine e(1.0 / 100.0);
+		e.resDir = resDir;
 		
-		e.man->registerType<engine::renderManager>("Render Manager", true);
 		e.man->registerType<engine::freeCam>("Free Cam", true);
 		e.man->registerType<engine::meshFilter>("Mesh Filter", false);
 		e.man->registerType<engine::playerController>("Player Controller", true);
@@ -59,7 +58,6 @@ int main(int argc, char **argv) {
 			typeid(engine::freeCam),
 			typeid(engine::playerController),
 			typeid(engine::projectile),
-			typeid(engine::renderManager),
 			typeid(engine::meshFilter)
 		});
 
@@ -74,38 +72,38 @@ int main(int argc, char **argv) {
 		}, util::nextID());
 		
 		auto item = e.man->create("MeshTable", {
-			engine::eleInit<engine::renderManager>::run(
-				[resDir, &cam2](engine::renderManager & man) {
-					man.initSystem(
-						resDir + "/shaders/standard.vert.spv",
-						resDir + "/shaders/standard.frag.spv",
-						{
-							//resDir + "/textures/Natsuki_COLOR.png",
-							resDir + "/textures/gridsmall.png",
-							resDir + "/textures/cement.png",
-							resDir + "/textures/consolas256x256.png",
-						},
-						{
-							resDir + "/meshes/cube1x1x1.dae"
-						},
-						{
-							//resDir + "/meshes/monkas.dae",
-							//resDir + "/meshes/sphere.dae",
-							resDir + "/meshes/cube1x1x1.dae",
-							//resDir + "/meshes/walker.dae",
-							resDir + "/meshes/human.dae",
-							resDir + "/meshes/blast.dae",
-							//resDir + "/meshes/icosphere.dae",
-							//resDir + "/meshes/arrow.dae"
-						},
-						{
-							resDir + "/animations/idle.cta"
-						}
-					);
+			//engine::eleInit<engine::renderManager>::run(
+			//	[resDir, &cam2](engine::renderManager & man) {
+			//		man.initSystem(
+			//			resDir + "/shaders/standard.vert.spv",
+			//			resDir + "/shaders/standard.frag.spv",
+			//			{
+			//				//resDir + "/textures/Natsuki_COLOR.png",
+			//				resDir + "/textures/gridsmall.png",
+			//				resDir + "/textures/cement.png",
+			//				resDir + "/textures/consolas256x256.png",
+			//			},
+			//			{
+			//				resDir + "/meshes/cube1x1x1.dae"
+			//			},
+			//			{
+			//				//resDir + "/meshes/monkas.dae",
+			//				//resDir + "/meshes/sphere.dae",
+			//				resDir + "/meshes/cube1x1x1.dae",
+			//				//resDir + "/meshes/walker.dae",
+			//				resDir + "/meshes/human.dae",
+			//				resDir + "/meshes/blast.dae",
+			//				//resDir + "/meshes/icosphere.dae",
+			//				//resDir + "/meshes/arrow.dae"
+			//			},
+			//			{
+			//				resDir + "/animations/idle.cta"
+			//			}
+			//		);
 
-					man.camRef = cam2.getElement<engine::freeCam>();
-				}
-			)
+			//		man.camRef = cam2.getElement<engine::freeCam>();
+			//	}
+			//)
 			}, util::nextID());
 
 		e.man->create("Physics", {engine::eleInit<engine::worldManager>()}, util::nextID());
@@ -121,7 +119,7 @@ int main(int argc, char **argv) {
 		}, util::nextID());
 		auto playerModel = e.man->create("Player Model", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
-				filt.setDynamic(1, 0, 0);
+				//filt.setDynamic(1, 0, 0);
 				filt.startAnimation(0, graphics::behavior::repeat);
 			})
 		}, util::nextID());
@@ -147,7 +145,7 @@ int main(int argc, char **argv) {
 						cmp.body->dynamic = false;
 					}),
 					engine::eleInit<engine::meshFilter>::run([x,z](engine::meshFilter& m) {
-						m.setStatic(0, 1);
+						//m.setStatic(0, 1);
 						m.visible = true;
 					}),
 					//engine::eleInit<engine::sensorEle>()
