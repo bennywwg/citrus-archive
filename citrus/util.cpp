@@ -2,7 +2,7 @@
 
 #include "citrus/util.h"
 
-//#include <nfd.h>
+#include <nfd.h>
 #include <thread>
 #include <sstream>
 #include <fstream>
@@ -154,8 +154,7 @@ namespace citrus::util {
 	int _currentID = 0;
 
 	string selectFolder() {
-		return "";
-		/*nfdchar_t *outPath = nullptr;
+		nfdchar_t *outPath = nullptr;
 		nfdresult_t result = NFD_PickFolder(nullptr, &outPath);
 
 		if(result == NFD_OKAY) {
@@ -166,22 +165,21 @@ namespace citrus::util {
 			return "";
 		} else {
 			return "";
-		}*/
+		}
 	}
 	string selectFile(string filter) {
-		return "";
-/*nfdchar_t *outPath = nullptr;
-nfdresult_t result = NFD_OpenDialog(filter.empty() ? nullptr : filter.c_str(), nullptr, &outPath);
+		nfdchar_t *outPath = nullptr;
+		nfdresult_t result = NFD_OpenDialog(filter.empty() ? nullptr : filter.c_str(), nullptr, &outPath);
 
-if(result == NFD_OKAY) {
-	string res = outPath;
-	free(outPath);
-	return res;
-} else if(result == NFD_CANCEL) {
-	return "";
-} else {
-	return "";
-}*/
+		if(result == NFD_OKAY) {
+			string res = outPath;
+			free(outPath);
+			return res;
+		} else if(result == NFD_CANCEL) {
+			return "";
+		} else {
+			return "";
+		}
 	}
 
 	int nextID() {
@@ -267,12 +265,12 @@ if(result == NFD_OKAY) {
 		return (val != 0) && ((val & (val - 1)) == 0);
 	}
 
-	vector<fpath> filesInDirectory(fpath path) {
+	vector<fpath> filesInDirectory(fpath path, string suffix) {
 		vector<fpath> res;
 		if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
-			for(std::filesystem::directory_iterator it(path); !it._At_end(); it++) {
-				if (!(*it).is_directory()) {
-					res.push_back((*it).path());
+			for(std::filesystem::directory_iterator it(path); !it._At_end(); ++it) {
+				if (!it->is_directory() && it->path().extension() == suffix) {
+					res.push_back(it->path());
 				}
 			}
 		}

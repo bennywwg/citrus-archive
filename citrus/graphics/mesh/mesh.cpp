@@ -411,7 +411,7 @@ namespace citrus::graphics {
 		for (int i = 0; i < usages.size(); i++) {
 			vertStart = util::roundUpAlign(vertStart, vertAlign);
 			offsets.push_back(vertStart);
-			vertStart += bindings[i].stride * pos.size();
+			vertStart += meshAttributeUtils::getAttribSize(usages[i]) * pos.size();
 		}
 		return meshMemoryStructure {
 			usages,

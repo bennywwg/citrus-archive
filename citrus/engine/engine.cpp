@@ -38,8 +38,12 @@ namespace citrus::engine {
 			_win = nullptr;
 			_win = new graphics::window(1280, 720, "Citrus Engine", "C:\\Users\\benny\\Desktop\\citrus\\res");
 
-			sys = new graphics::system(*_win->inst(), resDir / "meshes", resDir / "meshes", resDir / "animations");
-
+			try {
+				sys = new graphics::system(*_win->inst(), resDir / "textures", resDir / "meshes", resDir / "animations");
+			} catch (std::runtime_error const& re) {
+				util::sout(string(re.what()) + "\n");
+				throw re;
+			}
 			//graphics::image4b img(string("C:\\Users\\benny\\Desktop\\citrus\\res") + "/textures/grid.png");
 
 			//graphics::ctTexture tx = _win->inst()->createTexture4b(img.width(), img.height(), false, img.data());

@@ -117,6 +117,7 @@ namespace citrus::graphics {
 		}
 	}
 	void system::loadTextures() {
+		if (texturePaths.size() == 0) throw std::runtime_error("there must be at least one texture to load");
 		uint64_t addr = 0;
 		uint32_t typeBits = 0;
 		for (int i = 0; i < texturePaths.size(); i++) {
@@ -511,9 +512,9 @@ namespace citrus::graphics {
 		}
 	}
 	system::system(instance& vkinst, fpath texturePath, fpath modelPath, fpath animationPath) : inst(vkinst) {
-		texturePaths = util::filesInDirectory(texturePath);
-		modelPaths = util::filesInDirectory(modelPath);
-		animationPaths = util::filesInDirectory(animationPath);
+		texturePaths = util::filesInDirectory(texturePath, ".png");
+		modelPaths = util::filesInDirectory(modelPath, ".dae");
+		animationPaths = util::filesInDirectory(animationPath, ".cta");
 		uniformSize = 1024 * 1024 * 16;
 
 		createFramebufferData();

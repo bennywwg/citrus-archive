@@ -72,7 +72,7 @@ namespace citrus {
 	namespace util {
 		bool isPowerOfTwo(unsigned int val);
 
-		vector<fpath> filesInDirectory(fpath path);
+		vector<fpath> filesInDirectory(fpath path, string suffix = "");
 
 		string loadEntireFile(string path);
 
