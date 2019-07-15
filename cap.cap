@@ -2,11 +2,12 @@
     "rdocCaptureSettings": 1,
     "settings": {
         "autoStart": true,
-        "commandLine": "",
+        "commandLine": "C:\\Users\\benny\\Build\\citrus\\res",
         "environment": [
         ],
-        "executable": "/home/benny/Desktop/citrus/build/ctvk",
+        "executable": "C:\\Users\\benny\\Build\\citrus\\windows\\Debug\\ctvk.exe",
         "inject": false,
+        "numQueuedFrames": 1,
         "options": {
             "allowFullscreen": true,
             "allowVSync": true,
@@ -18,8 +19,9 @@
             "delayForDebugger": 0,
             "hookIntoChildren": true,
             "refAllResources": true,
-            "verifyMapWrites": true
+            "verifyBufferAccess": true
         },
-        "workingDir": "/home/benny/Desktop/citrus"
+        "queuedFrameCap": 1,
+        "workingDir": "C:\\Users\\benny\\Build\\citrus\\windows\\Debug"
     }
 }

@@ -5,17 +5,46 @@
 #include "citrus/engine/elementRef.inl"
 
 namespace citrus::engine {
-	void meshFilter::reset() {
+	void meshFilter::setState(int matIndex, int modelIndex, int texIndex) {
+		reset();
+
+		this->materialIndex = matIndex;
 		
+		graphics::meshPass& p = *eng()->sys->meshPasses[materialIndex];
+		int foundSlot = -1;
+		for (int i = 0; i < p.items.size(); i++) {
+			if (!p.items[i].enabled) {
+				foundSlot = i;
+				break;
+			}
+		}
+		if (foundSlot == -1) {
+			foundSlot = p.items.size();
+			p.items.push_back({ });
+		}
+		p.items[foundSlot].enabled = true;
+		p.items[foundSlot].modelIndex = modelIndex;
+		p.items[foundSlot].texIndex = texIndex;
+		p.items[foundSlot].pos = ent().getGlobalTransform().getPosition();
+		p.items[foundSlot].ori = ent().getGlobalTransform().getOrientation();
+
+		this->itemIndex = foundSlot;
+	}
+	void meshFilter::reset() {
+		if (materialIndex != -1) {
+			graphics::meshPass& p = *eng()->sys->meshPasses[materialIndex];
+			p.items[itemIndex].enabled = false;
+			materialIndex = -1;
+		}
 	}
 	int meshFilter::model() const {
-		return _model;
+		return (materialIndex == -1) ? -1 : eng()->sys->meshPasses[materialIndex]->items[itemIndex].modelIndex;
 	}
 	int meshFilter::tex() const {
-		return _tex;
+		return (materialIndex == -1) ? -1 : eng()->sys->meshPasses[materialIndex]->items[itemIndex].texIndex;
 	}
 	int meshFilter::ani() const {
-		return _ani;
+		return 0;
 	}
 	graphics::behavior meshFilter::mode() const {
 		return _mode;
@@ -26,7 +55,6 @@ namespace citrus::engine {
 
 	void meshFilter::startAnimation(int ani, graphics::behavior mode) {
 		_aniStart = eng()->time();
-		_ani = ani;
 		_mode = mode;
 	}
 	std::unique_ptr<editor::gui> meshFilter::renderGUI() {

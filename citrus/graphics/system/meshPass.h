@@ -4,12 +4,13 @@
 #include <atomic>
 
 #include "citrus/graphics/system/renderSystem.h"
+#include "citrus/graphics/system/sysNode.h"
 #include "citrus/graphics/image.h"
 #include "citrus/graphics/mesh/mesh.h"
 #include "citrus/graphics/camera.h"
 
 namespace citrus::graphics {
-    class meshPass : public passBase {
+    class meshPass : public sysNode {
 		#pragma region(config stuff)
 	public:
 		bool					wireframe = false;
@@ -22,7 +23,7 @@ namespace citrus::graphics {
 
 		#pragma region(pipeline stuff)
     protected:
-		string vert, frag;
+		fpath vert, frag;
 
 		VkDescriptorSetLayout	uboLayout, texLayout;
 		VkDescriptorPool		uboPool, texPool;
@@ -32,12 +33,26 @@ namespace citrus::graphics {
 		VkRenderPass			pass;
 		VkPipelineLayout		pipelineLayout;
 		VkPipeline				pipeline;
-		VkFramebuffer			fbos[SWAP_FRAMES];
 		VkCommandBuffer			priBufs[SWAP_FRAMES];
 		vector<VkCommandBuffer>	secBufs[SWAP_FRAMES];
 		VkSemaphore				startSem[SWAP_FRAMES];
 		VkSemaphore				doneSem[SWAP_FRAMES];
 		VkFence					waitFences[SWAP_FRAMES];
+
+		struct frame {
+			VkImage			color;					// color image
+			VkImage			depth;					// depth image
+			VkImageView		colorView;				// color view
+			VkImageView		depthView;				// depth view
+			VkSampler		colorSamp;				// color sampler
+			VkSampler		depthSamp;				// color sampler
+			VkDeviceMemory	colorMem;				// color memory
+			VkDeviceMemory	depthMem;				// depth memory
+			VkFramebuffer	fbo;					// framebuffer
+		};
+		frame				frames[SWAP_FRAMES];	// frame info
+
+		VkCommandBufferInheritanceInfo inheritanceInfos[SWAP_FRAMES];
 
 		meshUsageLocationMapping meshMappings;
 		
@@ -98,11 +113,16 @@ namespace citrus::graphics {
     public:
 		#pragma endregion
 
+		// get image info for color buffer
+		VkDescriptorImageInfo	getColorInfo();
+		// get image info for depth buffer
+		VkDescriptorImageInfo	getDepthInfo();
+
 		virtual void			preRender(uint32_t const& threadCount);
 		virtual void 			renderPartial(uint32_t const& threadIndex);
         virtual void            postRender(uint32_t const& threadCount);
 		
-		meshPass(system & sys, string const& vert, string const& frag);
+		meshPass(system & sys, fpath const& vert, fpath const& frag);
 		~meshPass();
 	};
 }

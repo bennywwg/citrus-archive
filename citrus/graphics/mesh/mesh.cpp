@@ -744,7 +744,8 @@ namespace citrus::graphics {
 		return -1;
 	}
 	meshMemoryStructure meshUsageLocationMapping::makePartialStructureView(meshMemoryStructure desc) const {
-		if(((uint32_t) desc.allUsage & (uint32_t) allUsage) != (uint32_t) allUsage) throw std::runtime_error("cannot make partial structure view, source missing attribute usages");
+		if(((uint32_t) desc.allUsage & (uint32_t) allUsage) != (uint32_t) allUsage)
+			throw std::runtime_error("cannot make partial structure view, source missing attribute usages");
 
 		vector<uint64_t> newOffsets;
 		

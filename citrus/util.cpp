@@ -9,18 +9,32 @@
 #include <iomanip>
 #include <iostream>
 
-//#include <png.h>
+#include <lodepng.h>
 
 namespace citrus::util {
 	bool loadPngImage(const char *name, int &outWidth, int &outHeight, bool &outHasAlpha, std::vector<unsigned char>& res) {
-		outWidth = 512;
-		outHeight = 512;
-		outHasAlpha = false;
-		
-		res = vector<unsigned char>();
-		res.resize(512 * 512 * 3, 255);
+		std::vector<unsigned char> png;
+		std::vector<unsigned char> image; //the raw pixels
+		unsigned width = 0, height = 0;
+		lodepng::State state; //optionally customize this one
+
+		unsigned error = lodepng::load_file(png, name); //load the image file with given filename
+		if (!error) error = lodepng::decode(image, width, height, state, png);
+
+		//if there's an error, display it
+		if (error) std::cout << "decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+
+		res = image;
+		outWidth = width;
+		outHeight = height;
+		outHasAlpha = state.info_raw.colortype == LCT_RGBA;
 
 		return true;
+
+		//the pixels are now in the vector "image", 4 bytes per pixel, ordered RGBARGBA..., use it as texture, draw it, ...
+		//State state contains extra information about the PNG such as text chunks, ...
+
+
 
 		//res.clear();
 		//png_structp png_ptr;

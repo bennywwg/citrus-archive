@@ -27,26 +27,9 @@ namespace citrus::graphics {
 		computePass =	1 << 2
 	};
 
-	class passBase {
-	public:
-		system&			sys;
+	class sysNode;
 
-		// semaphore that (if not VK_NULL_HANDLE) is signaled when rendering done
-		VkSemaphore		signalSem;
-
-		// prepare for rendering proper, ie assign each thread item range
-		// return value: number of invocations of renderPartial
-		virtual void	preRender(uint32_t const& numThreads) = 0;
-		
-		// render for a certain thread, invoked multiple times concurrently
-		virtual void	renderPartial(uint32_t const& threadIndex) = 0;
-
-		// after all renderPartials complete
-		virtual void	postRender(uint32_t const& numThreads) = 0;
-
-		inline			passBase(system& sys) : sys(sys) { }
-		virtual inline	~passBase() { }
-	};
+	class meshPass;
 
 	// the intention is to ultimately replace the model, texture, uniform sections
 	// with their own objects so individual system components can
@@ -63,17 +46,6 @@ namespace citrus::graphics {
 		#pragma endregion
 
 		#pragma region(framebuffer stuff)
-		struct frame {
-			VkImage			color;					// color image
-			VkImage			depth;					// depth image
-			VkImageView		colorView;				// color view
-			VkImageView		depthView;				// depth view
-			VkSampler		colorSamp;				// color sampler
-			VkSampler		depthSamp;				// color sampler
-			VkDeviceMemory	colorMem;				// color memory
-			VkDeviceMemory	depthMem;				// depth memory
-		};
-		frame				frames[SWAP_FRAMES];	// frame info
 
 		void				createFramebufferData();
 		void				freeFramebufferData();
@@ -124,9 +96,7 @@ namespace citrus::graphics {
 		#pragma endregion
 
 		#pragma region(rendering stuff)
-		VkCommandBuffer			primaryBuffers[SWAP_FRAMES];
 		vector<VkCommandPool>	commandPools;
-		VkCommandBufferInheritanceInfo inheritanceInfos[SWAP_FRAMES];
 
 		int						frameIndex;		// index of frame  [0, SWAP_FRAMES)
 
@@ -154,9 +124,10 @@ namespace citrus::graphics {
 		#pragma endregion
 
 		#pragma region(rendertime stuff)
-
-		vector<passBase*>	passes;
-
+	private:
+		vector<sysNode*>	passes;
+		
+	public:
 		#pragma endregion
 	private:
 		void				postProcess(int frameIndex, int windowSwapIndex, vector<VkSemaphore> waits, VkSemaphore signal);
@@ -166,7 +137,11 @@ namespace citrus::graphics {
 		bool				renderDone() const;
 		void				renderFunc(uint32_t threadIndex);
 
-		void				render(VkSemaphore signal, camera const& cam);
+		void				render();
+
+		void				setFinalPass(sysNode* pass);
+
+		vector<meshPass*>	meshPasses;
 
 		system(instance & vkinst,
 			fpath texturePath,

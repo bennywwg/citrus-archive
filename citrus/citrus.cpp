@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
 		}, util::nextID());
 		auto playerModel = e.man->create("Player Model", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
-				//filt.setDynamic(1, 0, 0);
+				filt.setState(0, 0, 0);
 				filt.startAnimation(0, graphics::behavior::repeat);
 			})
 		}, util::nextID());
@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
 						cmp.body->dynamic = false;
 					}),
 					engine::eleInit<engine::meshFilter>::run([x,z](engine::meshFilter& m) {
-						//m.setStatic(0, 1);
+						m.setState(0, 1, 0);
 						m.visible = true;
 					}),
 					//engine::eleInit<engine::sensorEle>()

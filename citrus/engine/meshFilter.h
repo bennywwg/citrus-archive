@@ -3,20 +3,21 @@
 #include "citrus/engine/element.h"
 #include "citrus/engine/engine.h"
 #include "citrus/graphics/mesh/mesh.h"
+#include "citrus/graphics/system/meshPass.h"
 
 namespace citrus::engine {
 	class meshFilter : public element {
 	private:
-		int _model = -1;
-		int _tex = -1;
-		int _ani = -1;
+		int materialIndex = -1;
+		int itemIndex = -1;
 		graphics::behavior _mode;
 		double _aniStart = 0.0;
 
 	public:
 		glm::vec3 color;
-		bool visible = true;;
-		int systemIndex = -1;
+		bool visible = true;
+
+		void setState(int matIndex, int modelIndex, int texIndex);
 		
 		void reset();
 		int model() const;

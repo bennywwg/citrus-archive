@@ -5,7 +5,7 @@
 #include <array>
 
 namespace citrus::graphics {
-	void finalPassShader::fillCommandBuffer(uint32_t frameIndex, VkDescriptorImageInfo colorInfo, VkDescriptorImageInfo depthInfo) {
+	void finalPass::fillCommandBuffer(uint32_t frameIndex, VkDescriptorImageInfo colorInfo, VkDescriptorImageInfo depthInfo) {
 		VkWriteDescriptorSet writes[2] = { };
 		writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writes[0].dstSet = _set;
@@ -21,7 +21,7 @@ namespace citrus::graphics {
 		writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		writes[1].descriptorCount = 1;
 		writes[1].pImageInfo = &depthInfo;
-		vkUpdateDescriptorSets(_inst._device, 2, writes, 0, nullptr);
+		vkUpdateDescriptorSets(sys.inst._device, 2, writes, 0, nullptr);
 
 		VkCommandBufferBeginInfo beginInfo = {};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -37,7 +37,7 @@ namespace citrus::graphics {
 		renderPassInfo.framebuffer = targets[frameIndex];
 
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = { _width, _height };
+		renderPassInfo.renderArea.extent = { sys.inst.width, sys.inst.height};
 
 		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 		renderPassInfo.clearValueCount = 1;
@@ -57,23 +57,7 @@ namespace citrus::graphics {
 		}
 	}
 
-	void finalPassShader::submit(uint32_t index, VkSemaphore wait, VkSemaphore signal) {
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &cbufs[index];
-
-		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &wait;
-		submitInfo.pWaitDstStageMask = &waitStage;
-
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &signal;
-
-		vkQueueSubmit(_inst._graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	}
-	void finalPassShader::submit(uint32_t index, vector<VkSemaphore> waits, VkSemaphore signal) {
+	void finalPass::submit(uint32_t index, vector<VkSemaphore> waits) {
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.commandBufferCount = 1;
@@ -85,12 +69,13 @@ namespace citrus::graphics {
 		submitInfo.pWaitDstStageMask = waitStages.data();
 
 		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &signal;
+		VkSemaphore signalSem = getSignalSem();
+		submitInfo.pSignalSemaphores = &signalSem;
 
-		vkQueueSubmit(_inst._graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueSubmit(sys.inst._graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 	}
 
-	void finalPassShader::initDescriptorLayouts() {
+	void finalPass::initDescriptorsAndLayouts() {
 		VkDescriptorSetLayoutBinding texBindings[2] = { };
 		texBindings[0].binding = 0;
 		texBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -106,7 +91,7 @@ namespace citrus::graphics {
 		descriptorLayoutInfo.bindingCount = 2;
 		descriptorLayoutInfo.pBindings = texBindings;
 
-		if (vkCreateDescriptorSetLayout(_inst._device, &descriptorLayoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS) {
+		if (vkCreateDescriptorSetLayout(sys.inst._device, &descriptorLayoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor set layout!");
 		}
 
@@ -120,7 +105,7 @@ namespace citrus::graphics {
 		poolInfo.pPoolSizes = &poolSize;
 		poolInfo.maxSets = 1;
 
-		if (vkCreateDescriptorPool(_inst._device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS) {
+		if (vkCreateDescriptorPool(sys.inst._device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor pool!");
 		}
 
@@ -130,15 +115,32 @@ namespace citrus::graphics {
 		allocInfo.descriptorSetCount = 1;
 		allocInfo.pSetLayouts = &_descriptorSetLayout;
 
-		if (vkAllocateDescriptorSets(_inst._device, &allocInfo, &_set) != VK_SUCCESS) {
+		if (vkAllocateDescriptorSets(sys.inst._device, &allocInfo, &_set) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate descriptor set!");
 		}
 	}
 
-	finalPassShader::finalPassShader(instance& inst,
-		vector<VkImageView> views, uint32_t width, uint32_t height,
-		string vertLoc, string fragLoc) : _inst(inst), _width(width), _height(height) {
-		_good = false;
+	void finalPass::preRender(uint32_t const& threadCount) {
+		frameIndex = win.getNextFrameIndex(frameReadySem);
+		fillCommandBuffer(frameIndex, prevPass.getColorInfo(), prevPass.getDepthInfo());
+		vector<VkSemaphore> waits = getWaitSems();
+		waits.push_back(frameReadySem);
+		
+		submit(frameIndex, waits);
+
+		win.present(frameIndex, getSignalSem());
+	}
+
+	void finalPass::renderPartial(uint32_t const& threadIndex) {
+		//nothing to do
+	}
+
+	void finalPass::postRender(uint32_t const& threadCount) {
+		//nothing to do
+	}
+
+	finalPass::finalPass(system& sys, window& win, meshPass& prev, fpath vertLoc, fpath fragLoc) : sysNode(sys), frameReadySem(sys.inst.createSemaphore()), win(win), prevPass(prev) {
+		frameIndex = 0;
 
 		VkShaderModule vertModule = VK_NULL_HANDLE;
 		VkShaderModule fragModule = VK_NULL_HANDLE;
@@ -146,14 +148,14 @@ namespace citrus::graphics {
 		VkPipelineShaderStageCreateInfo fragCreateInfo = { };
 		try {
 			{
-				string src = util::loadEntireFile(vertLoc);
+				string src = util::loadEntireFile(vertLoc.string());
 
 				VkShaderModuleCreateInfo createInfo = { };
 				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 				createInfo.codeSize = src.size();
 				createInfo.pCode = reinterpret_cast<const uint32_t*>(src.data());
 
-				if (vkCreateShaderModule(inst._device, &createInfo, nullptr, &vertModule) != VK_SUCCESS) {
+				if (vkCreateShaderModule(sys.inst._device, &createInfo, nullptr, &vertModule) != VK_SUCCESS) {
 					vertModule = VK_NULL_HANDLE;
 					throw std::runtime_error("Failed to create vert shader module");
 				}
@@ -164,14 +166,14 @@ namespace citrus::graphics {
 				vertCreateInfo.pName = "main";
 			}
 			{
-				string src = util::loadEntireFile(fragLoc);
+				string src = util::loadEntireFile(fragLoc.string());
 
 				VkShaderModuleCreateInfo createInfo = { };
 				createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 				createInfo.codeSize = src.size();
 				createInfo.pCode = reinterpret_cast<const uint32_t*>(src.data());
 
-				if (vkCreateShaderModule(inst._device, &createInfo, nullptr, &fragModule) != VK_SUCCESS) {
+				if (vkCreateShaderModule(sys.inst._device, &createInfo, nullptr, &fragModule) != VK_SUCCESS) {
 					fragModule = VK_NULL_HANDLE;
 					throw std::runtime_error("Failed to create frag shader module");
 				}
@@ -187,7 +189,7 @@ namespace citrus::graphics {
 			return;
 		}
 
-		initDescriptorLayouts();
+		initDescriptorsAndLayouts();
 
 		vector<VkPipelineShaderStageCreateInfo> stages = vector<VkPipelineShaderStageCreateInfo>{ vertCreateInfo, fragCreateInfo };
 
@@ -204,14 +206,14 @@ namespace citrus::graphics {
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = (float)width;
-		viewport.height = (float)height;
+		viewport.width = (float)sys.inst.width;
+		viewport.height = (float)sys.inst.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 		VkRect2D scissor = {};
 		scissor.offset = { 0, 0 };
-		scissor.extent = { width, height };
+		scissor.extent = { sys.inst.width, sys.inst.height };
 
 		VkPipelineViewportStateCreateInfo viewportState = {};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -277,12 +279,12 @@ namespace citrus::graphics {
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-		if (vkCreatePipelineLayout(inst._device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
+		if (vkCreatePipelineLayout(sys.inst._device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create pipeline layout!");
 		}
 
 		VkAttachmentDescription colorAttachment = { };
-		colorAttachment.format = _inst._surfaceFormat.format;
+		colorAttachment.format = sys.inst._surfaceFormat.format;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -317,7 +319,7 @@ namespace citrus::graphics {
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		if (vkCreateRenderPass(_inst._device, &renderPassInfo, nullptr, &_renderPass) != VK_SUCCESS) {
+		if (vkCreateRenderPass(sys.inst._device, &renderPassInfo, nullptr, &_renderPass) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create render pass!");
 		}
 
@@ -339,17 +341,17 @@ namespace citrus::graphics {
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 		pipelineInfo.basePipelineIndex = -1; // Optional
 
-		if (vkCreateGraphicsPipelines(_inst._device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS) {
+		if (vkCreateGraphicsPipelines(sys.inst._device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create graphics pipeline!");
 		}
 
-		if (vertModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, vertModule, nullptr);
-		if (fragModule != VK_NULL_HANDLE) vkDestroyShaderModule(inst._device, fragModule, nullptr);
+		if (vertModule != VK_NULL_HANDLE) vkDestroyShaderModule(sys.inst._device, vertModule, nullptr);
+		if (fragModule != VK_NULL_HANDLE) vkDestroyShaderModule(sys.inst._device, fragModule, nullptr);
 
 
 
-		for (int i = 0; i < views.size(); i++) {
-			VkImageView view = views[i];
+		for (int i = 0; i < sys.inst._swapChainImageViews.size(); i++) {
+			VkImageView view = sys.inst._swapChainImageViews[i];
 			VkImageView attachments[] = {
 				view
 			};
@@ -359,41 +361,39 @@ namespace citrus::graphics {
 			framebufferInfo.renderPass = _renderPass;
 			framebufferInfo.attachmentCount = 1;
 			framebufferInfo.pAttachments = attachments;
-			framebufferInfo.width = _width;
-			framebufferInfo.height = _height;
+			framebufferInfo.width = sys.inst.width;
+			framebufferInfo.height = sys.inst.height;
 			framebufferInfo.layers = 1;
 
 			VkFramebuffer fbo;
-			if (vkCreateFramebuffer(_inst._device, &framebufferInfo, nullptr, &fbo) != VK_SUCCESS) {
+			if (vkCreateFramebuffer(sys.inst._device, &framebufferInfo, nullptr, &fbo) != VK_SUCCESS) {
 				throw std::runtime_error("failed to create framebuffer!");
 			}
 
 			VkCommandBuffer buf;
 			VkCommandBufferAllocateInfo allocInfo = {};
 			allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			allocInfo.commandPool = _inst._commandPool;
+			allocInfo.commandPool = sys.inst._commandPool;
 			allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 			allocInfo.commandBufferCount = 1;
 
-			if (vkAllocateCommandBuffers(_inst._device, &allocInfo, &buf) != VK_SUCCESS) {
+			if (vkAllocateCommandBuffers(sys.inst._device, &allocInfo, &buf) != VK_SUCCESS) {
 				throw std::runtime_error("failed to allocate command buffers!");
 			}
 
 			targets.push_back(fbo);
 			cbufs.push_back(buf);
 		}
-
-		_good = true;
 	}
-	finalPassShader::~finalPassShader() {
-		if (_descriptorSetLayout != VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(_inst._device, _descriptorSetLayout, nullptr);
-		if (_descriptorPool != VK_NULL_HANDLE) vkDestroyDescriptorPool(_inst._device, _descriptorPool, nullptr);
+	finalPass::~finalPass() {
+		if (_descriptorSetLayout != VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(sys.inst._device, _descriptorSetLayout, nullptr);
+		if (_descriptorPool != VK_NULL_HANDLE) vkDestroyDescriptorPool(sys.inst._device, _descriptorPool, nullptr);
 		for (int i = 0; i < targets.size(); i++) {
-			vkDestroyFramebuffer(_inst._device, targets[i], nullptr);
-			vkFreeCommandBuffers(_inst._device, _inst._commandPool, 1, &cbufs[i]);
+			vkDestroyFramebuffer(sys.inst._device, targets[i], nullptr);
+			vkFreeCommandBuffers(sys.inst._device, sys.inst._commandPool, 1, &cbufs[i]);
 		}
-		if (_pipeline != VK_NULL_HANDLE) vkDestroyPipeline(_inst._device, _pipeline, nullptr);
-		if (_renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(_inst._device, _renderPass, nullptr);
-		if (_pipelineLayout != VK_NULL_HANDLE) vkDestroyPipelineLayout(_inst._device, _pipelineLayout, nullptr);
+		if (_pipeline != VK_NULL_HANDLE) vkDestroyPipeline(sys.inst._device, _pipeline, nullptr);
+		if (_renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(sys.inst._device, _renderPass, nullptr);
+		if (_pipelineLayout != VK_NULL_HANDLE) vkDestroyPipelineLayout(sys.inst._device, _pipelineLayout, nullptr);
 	}
 }

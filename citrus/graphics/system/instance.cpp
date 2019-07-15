@@ -538,8 +538,6 @@ namespace citrus::graphics {
 		vkDestroySemaphore(_device, _renderFinishedSemaphore, nullptr);
 	}
 
-	int num = 0;
-
 	//sequence of events
 	//query window for next frame index and setup semaphore to signal when that image is available
 	//submit final pass shader, waiting for image available, and signalling when done rendering

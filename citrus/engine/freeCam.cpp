@@ -36,6 +36,7 @@ namespace citrus::engine {
 		auto trans = ent().getGlobalTransform();
 		cam.pos = trans.getPosition();
 		cam.ori = trans.getOrientation();
+		eng()->sys->frameCam = cam;
 	}
 	freeCam::freeCam(entityRef ent) : element(ent, typeid(freeCam)) { }
 }

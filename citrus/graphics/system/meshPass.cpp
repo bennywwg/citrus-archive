@@ -4,7 +4,7 @@ namespace citrus::graphics {
     void meshPass::initializeDescriptors() {
 		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
 		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 		uboLayoutBinding.descriptorCount = 1;
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
@@ -14,19 +14,6 @@ namespace citrus::graphics {
 		uboLayoutInfo.pBindings = &uboLayoutBinding;
 
 		if (vkCreateDescriptorSetLayout(sys.inst._device, &uboLayoutInfo, nullptr, &uboLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
-
-		VkDescriptorSetLayoutBinding texLayoutBinding = {};
-		texLayoutBinding.binding = 1;
-		texLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		texLayoutBinding.descriptorCount = (uint32_t)sys.textures.size();
-		texLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		VkDescriptorSetLayoutCreateInfo texLayoutInfo = {};
-		texLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		texLayoutInfo.bindingCount = 1;
-		texLayoutInfo.pBindings = &texLayoutBinding;
-
-		if (vkCreateDescriptorSetLayout(sys.inst._device, &texLayoutInfo, nullptr, &texLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
 
 		VkDescriptorPoolSize uboPoolSize = { };
 		uboPoolSize.descriptorCount = SWAP_FRAMES;
@@ -38,7 +25,30 @@ namespace citrus::graphics {
 		uboPoolInfo.maxSets = SWAP_FRAMES;
 		uboPoolInfo.pPoolSizes = &uboPoolSize;
 
-		vkCreateDescriptorPool(sys.inst._device, &uboPoolInfo, nullptr, &uboPool);
+		if(vkCreateDescriptorPool(sys.inst._device, &uboPoolInfo, nullptr, &uboPool) != VK_SUCCESS) throw std::runtime_error("failed to create UBO descriptor pool");
+
+		VkDescriptorSetLayout uboLayouts[SWAP_FRAMES] = { uboLayout, uboLayout };
+		VkDescriptorSetAllocateInfo uboAllocInfo = { };
+		uboAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		uboAllocInfo.descriptorPool = uboPool;
+		uboAllocInfo.descriptorSetCount = SWAP_FRAMES;
+		uboAllocInfo.pSetLayouts = uboLayouts;
+
+		vkAllocateDescriptorSets(sys.inst._device, &uboAllocInfo, uboSets);
+
+
+		VkDescriptorSetLayoutBinding texLayoutBinding = {};
+		texLayoutBinding.binding = 0;
+		texLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		texLayoutBinding.descriptorCount = (uint32_t)sys.textures.size();
+		texLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		VkDescriptorSetLayoutCreateInfo texLayoutInfo = {};
+		texLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		texLayoutInfo.bindingCount = 1;
+		texLayoutInfo.pBindings = &texLayoutBinding;
+
+		if (vkCreateDescriptorSetLayout(sys.inst._device, &texLayoutInfo, nullptr, &texLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
 
 		VkDescriptorPoolSize texPoolSize = { };
 		texPoolSize.descriptorCount = (uint32_t) sys.textures.size();
@@ -52,19 +62,10 @@ namespace citrus::graphics {
 
 		vkCreateDescriptorPool(sys.inst._device, &texPoolInfo, nullptr, &texPool);
 
-		VkDescriptorSetLayout uboLayouts[SWAP_FRAMES] = { uboLayout, uboLayout };
-		VkDescriptorSetAllocateInfo uboAllocInfo = { };
-		uboAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		uboAllocInfo.descriptorPool = uboPool;
-		uboAllocInfo.descriptorSetCount = SWAP_FRAMES;
-		uboAllocInfo.pSetLayouts = uboLayouts;
-
-		vkAllocateDescriptorSets(sys.inst._device, &uboAllocInfo, uboSets);
-
 		VkDescriptorSetAllocateInfo texAllocInfo = { };
 		texAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		texAllocInfo.descriptorPool = texPool;
-		texAllocInfo.descriptorSetCount = sys.textures.size();
+		texAllocInfo.descriptorSetCount = 1;
 		texAllocInfo.pSetLayouts = &texLayout;
 
 		vkAllocateDescriptorSets(sys.inst._device, &texAllocInfo, &texSet);
@@ -77,7 +78,7 @@ namespace citrus::graphics {
 
 			VkWriteDescriptorSet uboWrite = { };
 			uboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			uboWrite.descriptorCount = SWAP_FRAMES;
+			uboWrite.descriptorCount = 1;
 			uboWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 			uboWrite.dstBinding = 0;
 			uboWrite.dstSet = uboSets[i];
@@ -98,7 +99,7 @@ namespace citrus::graphics {
 		texWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		texWrite.descriptorCount = (uint32_t)sys.textures.size();
 		texWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		texWrite.dstBinding = 1;
+		texWrite.dstBinding = 0;
 		texWrite.dstSet = texSet;
 		texWrite.pImageInfo = imageInfos.data();
 
@@ -187,9 +188,9 @@ namespace citrus::graphics {
 	void meshPass::initializePipeline() {
 
 		VkShaderModule vertModule, fragModule;
-		VkPipelineShaderStageCreateInfo vertInfo, fragInfo;
+		VkPipelineShaderStageCreateInfo vertInfo = { }, fragInfo = { };
 		{
-			string src = util::loadEntireFile(vert);
+			string src = util::loadEntireFile(vert.string());
 
 			VkShaderModuleCreateInfo createInfo = {};
 			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -207,7 +208,7 @@ namespace citrus::graphics {
 			vertInfo.pName = "main";
 		}
 		{
-			string src = util::loadEntireFile(frag);
+			string src = util::loadEntireFile(frag.string());
 
 			VkShaderModuleCreateInfo createInfo = {};
 			createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -344,8 +345,123 @@ namespace citrus::graphics {
 		vkDestroyShaderModule(sys.inst._device, fragInfo.module, nullptr);
 	}
 	void meshPass::initializeFramebuffers() {
-		for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
-			VkImageView views[2] = { sys.frames[i].colorView, sys.frames[i].depthView };
+		VkImageCreateInfo colorInfo = {};
+		colorInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		colorInfo.imageType = VK_IMAGE_TYPE_2D;
+		colorInfo.extent.width = sys.inst.width;
+		colorInfo.extent.height = sys.inst.height;
+		colorInfo.extent.depth = 1;
+		colorInfo.mipLevels = 1;
+		colorInfo.arrayLayers = 1;
+		colorInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		colorInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		colorInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		colorInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		VkImageCreateInfo depthInfo = {};
+		depthInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		depthInfo.imageType = VK_IMAGE_TYPE_2D;
+		depthInfo.extent.width = sys.inst.width;
+		depthInfo.extent.height = sys.inst.height;
+		depthInfo.extent.depth = 1;
+		depthInfo.mipLevels = 1;
+		depthInfo.arrayLayers = 1;
+		depthInfo.format = sys.inst.findDepthFormat();
+		depthInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		depthInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		depthInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		for (int i = 0; i < SWAP_FRAMES; i++) {
+			if (vkCreateImage(sys.inst._device, &colorInfo, nullptr, &frames[i].color) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create image!");
+			}
+
+			if (vkCreateImage(sys.inst._device, &depthInfo, nullptr, &frames[i].depth) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create image!");
+			}
+
+			VkMemoryRequirements colorRequirements, depthRequirements;
+			vkGetImageMemoryRequirements(sys.inst._device, frames[i].color, &colorRequirements);
+			vkGetImageMemoryRequirements(sys.inst._device, frames[i].depth, &depthRequirements);
+
+			VkMemoryAllocateInfo colorAllocInfo = {}, depthAllocInfo = {};
+			colorAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			colorAllocInfo.memoryTypeIndex = sys.inst.findMemoryType(colorRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+			colorAllocInfo.allocationSize = colorRequirements.size;
+			depthAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			depthAllocInfo.memoryTypeIndex = sys.inst.findMemoryType(depthRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+			depthAllocInfo.allocationSize = depthRequirements.size;
+			vkAllocateMemory(sys.inst._device, &colorAllocInfo, nullptr, &frames[i].colorMem);
+			vkAllocateMemory(sys.inst._device, &depthAllocInfo, nullptr, &frames[i].depthMem);
+
+			vkBindImageMemory(sys.inst._device, frames[i].color, frames[i].colorMem, 0);
+			vkBindImageMemory(sys.inst._device, frames[i].depth, frames[i].depthMem, 0);
+
+			VkImageViewCreateInfo colorViewInfo = {}, depthViewInfo = {};
+			colorViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			colorViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			colorViewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+			colorViewInfo.image = frames[i].color;
+			colorViewInfo.subresourceRange.baseMipLevel = 0;
+			colorViewInfo.subresourceRange.baseArrayLayer = 0;
+			colorViewInfo.subresourceRange.levelCount = 1;
+			colorViewInfo.subresourceRange.layerCount = 1;
+			colorViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			depthViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			depthViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			depthViewInfo.format = sys.inst.findDepthFormat();
+			depthViewInfo.image = frames[i].depth;
+			depthViewInfo.subresourceRange.baseMipLevel = 0;
+			depthViewInfo.subresourceRange.baseArrayLayer = 0;
+			depthViewInfo.subresourceRange.levelCount = 1;
+			depthViewInfo.subresourceRange.layerCount = 1;
+			depthViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+			vkCreateImageView(sys.inst._device, &colorViewInfo, nullptr, &frames[i].colorView);
+			vkCreateImageView(sys.inst._device, &depthViewInfo, nullptr, &frames[i].depthView);
+
+			VkSamplerCreateInfo colorSampInfo = {};
+			colorSampInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			colorSampInfo.magFilter = VK_FILTER_NEAREST;
+			colorSampInfo.minFilter = VK_FILTER_NEAREST;
+			colorSampInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			colorSampInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			colorSampInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			colorSampInfo.anisotropyEnable = VK_FALSE;
+			colorSampInfo.maxAnisotropy = 1;
+			colorSampInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+			colorSampInfo.unnormalizedCoordinates = VK_FALSE;
+			colorSampInfo.compareEnable = VK_FALSE;
+			colorSampInfo.compareOp = VK_COMPARE_OP_NEVER;
+			colorSampInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+			colorSampInfo.mipLodBias = 0.0f;
+			colorSampInfo.minLod = 0.0f;
+			colorSampInfo.maxLod = 0.0f;
+
+			VkSamplerCreateInfo depthSampInfo = {};
+			depthSampInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			depthSampInfo.magFilter = VK_FILTER_NEAREST;
+			depthSampInfo.minFilter = VK_FILTER_NEAREST;
+			depthSampInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			depthSampInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			depthSampInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			depthSampInfo.anisotropyEnable = VK_FALSE;
+			depthSampInfo.maxAnisotropy = 1;
+			depthSampInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+			depthSampInfo.unnormalizedCoordinates = VK_FALSE;
+			depthSampInfo.compareEnable = VK_FALSE;
+			depthSampInfo.compareOp = VK_COMPARE_OP_NEVER;
+			depthSampInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+			depthSampInfo.mipLodBias = 0.0f;
+			depthSampInfo.minLod = 0.0f;
+			depthSampInfo.maxLod = 0.0f;
+
+			vkCreateSampler(sys.inst._device, &colorSampInfo, nullptr, &frames[i].colorSamp);
+			vkCreateSampler(sys.inst._device, &depthSampInfo, nullptr, &frames[i].depthSamp);
+
+			VkImageView views[2] = { frames[i].colorView, frames[i].depthView };
 
 			VkFramebufferCreateInfo fbInfo = {};
 			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -356,7 +472,7 @@ namespace citrus::graphics {
 			fbInfo.attachmentCount = 2;
 			fbInfo.pAttachments = views;
 
-			if(vkCreateFramebuffer(sys.inst._device, &fbInfo, nullptr, &fbos[i]) != VK_SUCCESS) throw std::runtime_error("couldn't create meshPass FBO");
+			if(vkCreateFramebuffer(sys.inst._device, &fbInfo, nullptr, &frames[i].fbo) != VK_SUCCESS) throw std::runtime_error("couldn't create meshPass FBO");
 		}
 	}
     
@@ -374,10 +490,28 @@ namespace citrus::graphics {
 		}
 	}
 
+	VkDescriptorImageInfo meshPass::getColorInfo() {
+		VkDescriptorImageInfo colorInfo = { };
+		colorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		colorInfo.imageView = frames[sys.frameIndex].colorView;
+		colorInfo.sampler = frames[sys.frameIndex].colorSamp;
+		return colorInfo;
+	}
+
+	VkDescriptorImageInfo meshPass::getDepthInfo() {
+		VkDescriptorImageInfo depthInfo = { };
+		depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		depthInfo.imageView = frames[sys.frameIndex].depthView;
+		depthInfo.sampler = frames[sys.frameIndex].depthSamp;
+		return depthInfo;
+	}
+
 	void meshPass::preRender(uint32_t const & threadCount) {
+
 		sys.inst.waitForFence(waitFences[sys.frameIndex]);
 		sys.inst.resetFence(waitFences[sys.frameIndex]);
 
+		ranges.resize(threadCount);
 		ranges[0].begin = 0;
 		for (uint32_t i = 1; i < threadCount; i++) {
 			ranges[i - 1].end = uint32_t(i * float(items.size()) / float(threadCount));
@@ -387,6 +521,7 @@ namespace citrus::graphics {
 	}
 
 	void meshPass::renderPartial(uint32_t const & threadIndex) {
+		util::sout("renderPartial " + std::to_string(threadIndex));
 		int vbinds = 0, draws = 0, culls = 0;
 		hptime partialStart = hpclock::now();
 
@@ -399,7 +534,7 @@ namespace citrus::graphics {
 		VkCommandBufferBeginInfo cmdInfo = {};
 		cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		cmdInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-		cmdInfo.pInheritanceInfo = &sys.inheritanceInfos[sys.frameIndex];
+		cmdInfo.pInheritanceInfo = &inheritanceInfos[sys.frameIndex];
 
 		vkBeginCommandBuffer(buf, &cmdInfo);
 
@@ -438,6 +573,7 @@ namespace citrus::graphics {
 	}
 
 	void meshPass::postRender(uint32_t const& threadCount) {
+		util::sout("postRender\n");
 		if (priBufs[sys.frameIndex] != VK_NULL_HANDLE) sys.inst.destroyCommandBuffer(priBufs[sys.frameIndex], sys.inst._commandPool);
 		priBufs[sys.frameIndex] = sys.inst.createCommandBuffer(sys.inst._commandPool, false);
 
@@ -453,7 +589,7 @@ namespace citrus::graphics {
 		VkRenderPassBeginInfo renderPassInfo = { };
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = pass;
-		renderPassInfo.framebuffer = fbos[sys.frameIndex];
+		renderPassInfo.framebuffer = frames[sys.frameIndex].fbo;
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = sys.inst._extent;
 		renderPassInfo.clearValueCount = 2;
@@ -472,12 +608,15 @@ namespace citrus::graphics {
 		subInfo.commandBufferCount = 1;
 		subInfo.pCommandBuffers = &priBufs[sys.frameIndex];
 		subInfo.signalSemaphoreCount = 1;
+		VkSemaphore signalSem = getSignalSem();
 		subInfo.pSignalSemaphores = &signalSem;
 
 		vkQueueSubmit(sys.inst._graphicsQueue, 1, &subInfo, waitFences[sys.frameIndex]);
 	}
 	
-	meshPass::meshPass(system & sys, string const& vertLoc, string const& fragLoc) : passBase(sys) {
+	meshPass::meshPass(system & sys, fpath const& vertLoc, fpath const& fragLoc) : sysNode(sys) {
+		sys.meshPasses.push_back(this);
+
 		vert = vertLoc;
 		frag = fragLoc;
 
@@ -486,17 +625,42 @@ namespace citrus::graphics {
 		locMap[meshAttributeUsage::normalType] = 1;
 		locMap[meshAttributeUsage::uvType] = 2;
 		meshMappings = meshUsageLocationMapping(locMap);
+		for (auto const& kvp : locMap) {
+			requiredUsages.push_back(kvp.first);
+		}
 
-		signalSem = sys.inst.createSemaphore();
+		for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
+			waitFences[i] = sys.inst.createFence(true);
+			priBufs[i] = sys.inst.createCommandBuffer(sys.inst._commandPool);
+			secBufs[i].resize(sys.renderThreads.size());
+		}
 
 		initializeDescriptors();
 		initializeRenderPass();
 		initializePipelineLayout();
 		initializePipeline();
 		initializeFramebuffers();
+
+		for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
+			inheritanceInfos[i] = { };
+			inheritanceInfos[i].sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+			inheritanceInfos[i].framebuffer = frames[i].fbo;
+			inheritanceInfos[i].renderPass = pass;
+		}
+
 		mapModels();
 	}
     meshPass::~meshPass() {
-		sys.inst.destroySemaphore(signalSem);
+		for (int i = 0; i < SWAP_FRAMES; i++) {
+			vkDestroyFramebuffer(sys.inst._device, frames[i].fbo, nullptr);
+			vkDestroySampler(sys.inst._device, frames[i].depthSamp, nullptr);
+			vkDestroySampler(sys.inst._device, frames[i].colorSamp, nullptr);
+			vkDestroyImageView(sys.inst._device, frames[i].colorView, nullptr);
+			vkDestroyImageView(sys.inst._device, frames[i].depthView, nullptr);
+			vkDestroyImage(sys.inst._device, frames[i].color, nullptr);
+			vkDestroyImage(sys.inst._device, frames[i].depth, nullptr);
+			vkFreeMemory(sys.inst._device, frames[i].colorMem, nullptr);
+			vkFreeMemory(sys.inst._device, frames[i].depthMem, nullptr);
+		}
     }
 }

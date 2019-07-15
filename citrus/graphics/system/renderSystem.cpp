@@ -1,120 +1,14 @@
 #include "citrus/graphics/system/renderSystem.h"
+#include "citrus/graphics/system/sysNode.h"
 #include <fstream>
 #include <shared_mutex>
 
 namespace citrus::graphics {
 	void system::createFramebufferData() {
-		VkImageCreateInfo colorInfo = {};
-		colorInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		colorInfo.imageType = VK_IMAGE_TYPE_2D;
-		colorInfo.extent.width = inst.width;
-		colorInfo.extent.height = inst.height;
-		colorInfo.extent.depth = 1;
-		colorInfo.mipLevels = 1;
-		colorInfo.arrayLayers = 1;
-		colorInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-		colorInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		colorInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		colorInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		VkImageCreateInfo depthInfo = {};
-		depthInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		depthInfo.imageType = VK_IMAGE_TYPE_2D;
-		depthInfo.extent.width = inst.width;
-		depthInfo.extent.height = inst.height;
-		depthInfo.extent.depth = 1;
-		depthInfo.mipLevels = 1;
-		depthInfo.arrayLayers = 1;
-		depthInfo.format = inst.findDepthFormat();
-		depthInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		depthInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		depthInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		for (int i = 0; i < SWAP_FRAMES; i++) {
-			if (vkCreateImage(inst._device, &colorInfo, nullptr, &frames[i].color) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create image!");
-			}
-
-			if (vkCreateImage(inst._device, &depthInfo, nullptr, &frames[i].depth) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create image!");
-			}
-
-			VkMemoryRequirements colorRequirements, depthRequirements;
-			vkGetImageMemoryRequirements(inst._device, frames[i].color, &colorRequirements);
-			vkGetImageMemoryRequirements(inst._device, frames[i].depth, &depthRequirements);
-
-			VkMemoryAllocateInfo colorAllocInfo = {}, depthAllocInfo = {};
-			colorAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			colorAllocInfo.memoryTypeIndex = inst.findMemoryType(colorRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			colorAllocInfo.allocationSize = colorRequirements.size;
-			depthAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			depthAllocInfo.memoryTypeIndex = inst.findMemoryType(depthRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			depthAllocInfo.allocationSize = depthRequirements.size;
-			vkAllocateMemory(inst._device, &colorAllocInfo, nullptr, &frames[i].colorMem);
-			vkAllocateMemory(inst._device, &depthAllocInfo, nullptr, &frames[i].depthMem);
-
-			vkBindImageMemory(inst._device, frames[i].color, frames[i].colorMem, 0);
-			vkBindImageMemory(inst._device, frames[i].depth, frames[i].depthMem, 0);
-
-			VkImageViewCreateInfo colorViewInfo = {}, depthViewInfo = {};
-			colorViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			colorViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			colorViewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-			colorViewInfo.image = frames[i].color;
-			colorViewInfo.subresourceRange.baseMipLevel = 0;
-			colorViewInfo.subresourceRange.baseArrayLayer = 0;
-			colorViewInfo.subresourceRange.levelCount = 1;
-			colorViewInfo.subresourceRange.layerCount = 1;
-			colorViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			depthViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			depthViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			depthViewInfo.format = inst.findDepthFormat();
-			depthViewInfo.image = frames[i].depth;
-			depthViewInfo.subresourceRange.baseMipLevel = 0;
-			depthViewInfo.subresourceRange.baseArrayLayer = 0;
-			depthViewInfo.subresourceRange.levelCount = 1;
-			depthViewInfo.subresourceRange.layerCount = 1;
-			depthViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-			vkCreateImageView(inst._device, &colorViewInfo, nullptr, &frames[i].colorView);
-			vkCreateImageView(inst._device, &depthViewInfo, nullptr, &frames[i].depthView);
-
-			VkSamplerCreateInfo sampInfo = {};
-			sampInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-			sampInfo.magFilter = VK_FILTER_NEAREST;
-			sampInfo.minFilter = VK_FILTER_NEAREST;
-			sampInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			sampInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			sampInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			sampInfo.anisotropyEnable = VK_FALSE;
-			sampInfo.maxAnisotropy = 1;
-			sampInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-			sampInfo.unnormalizedCoordinates = VK_FALSE;
-			sampInfo.compareEnable = VK_FALSE;
-			sampInfo.compareOp = VK_COMPARE_OP_NEVER;
-			sampInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-			sampInfo.mipLodBias = 0.0f;
-			sampInfo.minLod = 0.0f;
-			sampInfo.maxLod = 0.0f;
-
-			vkCreateSampler(inst._device, &sampInfo, nullptr, &frames[i].colorSamp);
-			frames[i].depthSamp = VK_NULL_HANDLE;
-		}
+		
 	}
 	void system::freeFramebufferData() {
-		for (int i = 0; i < SWAP_FRAMES; i++) {
-			//vkDestroyFramebuffer(inst._device, frames[i].frameBuffer, nullptr);
-			//vkDestroySampler(inst._device, frames[i].depthSamp, nullptr);
-			vkDestroySampler(inst._device, frames[i].colorSamp, nullptr);
-			vkDestroyImageView(inst._device, frames[i].colorView, nullptr);
-			vkDestroyImageView(inst._device, frames[i].depthView, nullptr);
-			vkDestroyImage(inst._device, frames[i].color, nullptr);
-			vkDestroyImage(inst._device, frames[i].depth, nullptr);
-			vkFreeMemory(inst._device, frames[i].colorMem, nullptr);
-			vkFreeMemory(inst._device, frames[i].depthMem, nullptr);
-		}
+		
 	}
 	void system::loadTextures() {
 		if (texturePaths.size() == 0) throw std::runtime_error("there must be at least one texture to load");
@@ -251,8 +145,12 @@ namespace citrus::graphics {
 		for (int i = 0; i < modelPaths.size(); i++) {
 			models[i].m = mesh(modelPaths[i].string());
 			models[i].desc = models[i].m.getDescription(vertexAddr, vertexRequirements.alignment, indexAddr, indexRequirements.alignment);
+			vertexAddr = models[i].desc.nextFree;
+			indexAddr = models[i].desc.nextFreeIndex;
 			models[i].radius = models[i].m.getMaxRadius();
 		}
+
+		util::sout("citrus::graphics::system::loadModels(...): " + std::to_string(vertexAddr) + " bytes of vertex memory will be consumed\n");
 	}
 	void system::initializeModelData() {
 		VkDeviceAddress totalVertexSize = models.back().desc.nextFree;
@@ -344,15 +242,11 @@ namespace citrus::graphics {
 		else if (threadCount > 256) threadCount = 256;
 
 		renderThreads.resize(threadCount);
-		for (size_t i = 0; i < SWAP_FRAMES; i++) {
-			primaryBuffers[i] = VK_NULL_HANDLE;
-		}
-		commandPools.resize(renderThreads.size());
+		commandPools.resize(threadCount);
 		for (size_t t = 0; t < renderThreads.size(); t++) {
 			renderGo[t] = false;
 			commandPools[t] = inst.createCommandPool();
 		}
-
 		for (size_t t = 1; t < renderThreads.size(); t++) {
 			renderThreads[t] = std::thread(&system::renderFunc, this, t);
 		}
@@ -363,9 +257,6 @@ namespace citrus::graphics {
 		}
 		stdioDebug("all threads joined\n");
 
-		for (int i = 0; i < SWAP_FRAMES; i++) {
-			if (primaryBuffers[i] != VK_NULL_HANDLE) vkFreeCommandBuffers(inst._device, inst._commandPool, 1, &primaryBuffers[i]);
-		}
 		for (int t = 0; t < renderThreads.size(); t++) {
 			vkDestroyCommandPool(inst._device, commandPools[t], nullptr);
 		}
@@ -377,7 +268,7 @@ namespace citrus::graphics {
 		VkBufferCreateInfo bufferInfo = {};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = uniformSize;
-		bufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		for (int i = 0; i < SWAP_FRAMES; i++) {
@@ -484,11 +375,11 @@ namespace citrus::graphics {
 		inst._finalPass->fillCommandBuffer(windowSwapIndex, colorInfo, depthInfo);
 		inst._finalPass->submit(windowSwapIndex, waits, signal);*/
 	}
-	void system::render(VkSemaphore sem, camera const& cam) {
+	void system::render() {
 		{ std::unique_lock<std::shared_mutex> lock(startMut);
-			frameCam = cam;
-			frameCull = cam.genFrustrumInfo();
-			frameVP = cam.getViewProjectionMatrix();
+			frameIndex = (frameIndex + 1) % SWAP_FRAMES;
+			frameCull = frameCam.genFrustrumInfo();
+			frameVP = frameCam.getViewProjectionMatrix();
 		}
 
 		for(uint32_t i = 0; i < passes.size(); i++) {
@@ -511,11 +402,25 @@ namespace citrus::graphics {
 			passes[i]->postRender((uint32_t) renderThreads.size());
 		}
 	}
-	system::system(instance& vkinst, fpath texturePath, fpath modelPath, fpath animationPath) : inst(vkinst) {
+	void system::setFinalPass(sysNode* pass) {
+		vector<sysNode*> toAdd = { pass };
+		for (uint32_t i = 0; i < toAdd.size(); i++) {
+			for (sysNode* const& c : toAdd[i]->getDependencies()) {
+				if (std::find(toAdd.begin(), toAdd.end(), c) == toAdd.end()) {
+					toAdd.push_back(c);
+				}
+			}
+			passes.push_back(toAdd[i]);
+		}
+		std::reverse(passes.begin(), passes.end());
+	}
+	system::system(instance& vkinst, fpath texturePath, fpath modelPath, fpath animationPath) : inst(vkinst), renderGo(4) {
 		texturePaths = util::filesInDirectory(texturePath, ".png");
 		modelPaths = util::filesInDirectory(modelPath, ".dae");
 		animationPaths = util::filesInDirectory(animationPath, ".cta");
 		uniformSize = 1024 * 1024 * 16;
+
+		frameIndex = SWAP_FRAMES - 1;
 
 		createFramebufferData();
 
@@ -525,6 +430,10 @@ namespace citrus::graphics {
 		loadModels();
 		initializeModelData();
 		loadAnimations();
+
+		initializeUniformData();
+
+		initializeThreads(4);
 
 		stopped = false;
 	}
@@ -539,4 +448,5 @@ namespace citrus::graphics {
 
 		freeThreads();
 	}
+	
 }

@@ -60,8 +60,6 @@ namespace citrus {
 
 			std::thread _renderThread;
 
-			uint32_t _frameIndex;
-
 			public:
 			uint32_t currentFrameIndex();
 			int frame = 0;
@@ -80,8 +78,6 @@ namespace citrus {
 			private: std::atomic<renderState> _renderState;
 			private: void _runRender();
 
-			VkSemaphore _imageReadySem;
-			VkSemaphore _presentSem;
 			public:
 
 			int fps();

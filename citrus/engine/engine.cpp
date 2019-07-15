@@ -7,6 +7,8 @@
 #include <vector>
 #include "citrus/graphics/system/finalPass.h"
 #include "citrus/graphics/image.h"
+#include "citrus/graphics/system/meshPass.h"
+#include "citrus/graphics/system/finalPass.h"
 
 namespace citrus::engine {
 	void engine::Log(string str) {
@@ -40,6 +42,12 @@ namespace citrus::engine {
 
 			try {
 				sys = new graphics::system(*_win->inst(), resDir / "textures", resDir / "meshes", resDir / "animations");
+				fpath shaderPath = resDir / "shaders";
+				graphics::meshPass* mp = new graphics::meshPass(*sys, shaderPath / "standard.vert.spv", shaderPath / "standard.frag.spv");
+				graphics::finalPass* fp = new graphics::finalPass(*sys, *_win, *mp, shaderPath / "finalPass.vert.spv", shaderPath / "finalPass.frag.spv");
+				fp->addDependency(mp);
+				
+				sys->setFinalPass(fp);
 			} catch (std::runtime_error const& re) {
 				util::sout(string(re.what()) + "\n");
 				throw re;
@@ -75,20 +83,14 @@ namespace citrus::engine {
 
 				clock::time_point fbegin = clock::now();
 
-				_imageReadySem = _win->inst()->createSemaphore();
-				_presentSem = _win->inst()->createSemaphore();
-
-				_frameIndex = _win->getNextFrameIndex(_imageReadySem);
-
 				_win->poll();
 
 				man->flush();
 				/*if (!ed || ed->playing || ed->doFrame)*/ man->preRender();
 				man->render();
 
-				_win->present(_frameIndex, _presentSem);
-				_win->inst()->destroySemaphore(_imageReadySem);
-				_win->inst()->destroySemaphore(_presentSem);
+				sys->render();
+
 				fpsSample++;
 
 				long long nextLastFrame = (clock::now() - fbegin).count();
@@ -164,15 +166,6 @@ namespace citrus::engine {
 				}
 			}
 		}*/
-	}
-	uint32_t engine::currentFrameIndex() {
-		return _frameIndex;
-	}
-	VkSemaphore engine::getImageReadySemaphore() {
-		return _imageReadySem;
-	}
-	VkSemaphore engine::getPresentSemaphore() {
-		return _presentSem;
 	}
 
 	void engine::setOrder(vector<std::type_index> order) {
