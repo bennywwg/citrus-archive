@@ -29,6 +29,8 @@ namespace citrus::engine {
 
 		std::unique_ptr<editor::gui> renderGUI();
 
+		void preRender();
+
 		void load(const json&);
 
 		meshFilter(entityRef ent);

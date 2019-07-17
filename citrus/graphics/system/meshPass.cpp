@@ -488,6 +488,11 @@ namespace citrus::graphics {
 
 			mappings.push_back({ i, meshMappings.makePartialStructureView(sys.models[i].desc) });
 		}
+		util::sout("Mesh Pass:\n");
+		util::sout("  Mapped Models: " + std::to_string(mappings.size()) + "\n");
+		for (int i = 0; i < mappings.size(); i++) {
+			util::sout("    " + std::to_string(i) + ": " + sys.models[mappings[i].modelIndex].source.relative_path().string() + "\n");
+		}
 	}
 
 	VkDescriptorImageInfo meshPass::getColorInfo() {
@@ -521,7 +526,7 @@ namespace citrus::graphics {
 	}
 
 	void meshPass::renderPartial(uint32_t const & threadIndex) {
-		util::sout("renderPartial " + std::to_string(threadIndex));
+		//util::sout("renderPartial " + std::to_string(threadIndex));
 		int vbinds = 0, draws = 0, culls = 0;
 		hptime partialStart = hpclock::now();
 
@@ -573,7 +578,7 @@ namespace citrus::graphics {
 	}
 
 	void meshPass::postRender(uint32_t const& threadCount) {
-		util::sout("postRender\n");
+		//util::sout("postRender\n");
 		if (priBufs[sys.frameIndex] != VK_NULL_HANDLE) sys.inst.destroyCommandBuffer(priBufs[sys.frameIndex], sys.inst._commandPool);
 		priBufs[sys.frameIndex] = sys.inst.createCommandBuffer(sys.inst._commandPool, false);
 

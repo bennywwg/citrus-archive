@@ -22,7 +22,7 @@ namespace citrus::graphics {
 
 		float verticalFOV = 90.0f;
 		float aspectRatio = 1.0f;
-		float zNear = 0.001f;
+		float zNear = 0.01f;
 		float zFar = 100.0f;
 
 		void setGimbalAngles(float angleX, float angleY);

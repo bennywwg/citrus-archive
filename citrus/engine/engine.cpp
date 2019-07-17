@@ -42,7 +42,7 @@ namespace citrus::engine {
 
 			try {
 				sys = new graphics::system(*_win->inst(), resDir / "textures", resDir / "meshes", resDir / "animations");
-				fpath shaderPath = resDir / "shaders";
+				fpath shaderPath = resDir / "shaders" / "build";
 				graphics::meshPass* mp = new graphics::meshPass(*sys, shaderPath / "standard.vert.spv", shaderPath / "standard.frag.spv");
 				graphics::finalPass* fp = new graphics::finalPass(*sys, *_win, *mp, shaderPath / "finalPass.vert.spv", shaderPath / "finalPass.frag.spv");
 				fp->addDependency(mp);
@@ -115,6 +115,8 @@ namespace citrus::engine {
 		}*/
 
 		//_win->inst()->destroyTexture(tx);
+
+		delete sys;
 
 		if(_win) delete _win;
 

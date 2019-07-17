@@ -132,6 +132,10 @@ namespace citrus::graphics {
 
 		int count = 0;
 		const unsigned char* states = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
+		/*for (int i = 0; i < count; i++) {
+			util::sout("state " + std::to_string(i) + " = " + std::to_string(states[i]) + "\n");
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));*/
 
 		switch(b) {
 			case windowInput::ctr_invalid:

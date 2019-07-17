@@ -34,6 +34,8 @@ namespace citrus::engine {
 	}
 	void freeCam::render() {
 		auto trans = ent().getGlobalTransform();
+		cam.zNear = 0.1;
+		cam.zFar = 50.0;
 		cam.pos = trans.getPosition();
 		cam.ori = trans.getOrientation();
 		eng()->sys->frameCam = cam;

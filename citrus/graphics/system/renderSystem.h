@@ -74,6 +74,7 @@ namespace citrus::graphics {
 			mesh			m;												// mesh
 			meshMemoryStructure desc;										// mesh description
 			float			radius;											// vertex distance farther from origin
+			fpath			source;											// from whence 'twas loaded
 		};
 
 		vector<model>		models;											// model info

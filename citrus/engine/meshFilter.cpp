@@ -70,6 +70,12 @@ namespace citrus::engine {
 
 		return std::unique_ptr<editor::gui>(c);
 	}
+	void meshFilter::preRender() {
+		if (materialIndex != -1) {
+			eng()->sys->meshPasses[materialIndex]->items[itemIndex].pos = ent().getGlobalTransform().getPosition();
+			eng()->sys->meshPasses[materialIndex]->items[itemIndex].ori = ent().getGlobalTransform().getOrientation();
+		}
+	}
 	void meshFilter::load(const json& js) {
 	}
 

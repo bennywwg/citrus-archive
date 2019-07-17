@@ -148,6 +148,7 @@ namespace citrus::graphics {
 			vertexAddr = models[i].desc.nextFree;
 			indexAddr = models[i].desc.nextFreeIndex;
 			models[i].radius = models[i].m.getMaxRadius();
+			models[i].source = modelPaths[i];
 		}
 
 		util::sout("citrus::graphics::system::loadModels(...): " + std::to_string(vertexAddr) + " bytes of vertex memory will be consumed\n");
@@ -418,6 +419,22 @@ namespace citrus::graphics {
 		texturePaths = util::filesInDirectory(texturePath, ".png");
 		modelPaths = util::filesInDirectory(modelPath, ".dae");
 		animationPaths = util::filesInDirectory(animationPath, ".cta");
+
+		util::sout("Render System:\n");
+		util::sout("  Models: " + std::to_string(modelPaths.size()) + "\n");
+		for (int i = 0; i < modelPaths.size(); i++) {
+			util::sout("    " + std::to_string(i) + ": " + modelPaths[i].relative_path().string() + "\n");
+		}
+		util::sout("  Textures: " + std::to_string(texturePaths.size()) + "\n");
+		for (int i = 0; i < texturePaths.size(); i++) {
+			util::sout("    " + std::to_string(i) + ": " + texturePaths[i].relative_path().string() + "\n");
+		}
+		util::sout("  Animations: " + std::to_string(animationPaths.size()) + "\n");
+		for (int i = 0; i < animationPaths.size(); i++) {
+			util::sout("    " + std::to_string(i) + ": " + animationPaths[i].relative_path().string() + "\n");
+		}
+
+
 		uniformSize = 1024 * 1024 * 16;
 
 		frameIndex = SWAP_FRAMES - 1;

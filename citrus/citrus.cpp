@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 		e.resDir = resDir;
 		
 		e.man->registerType<engine::freeCam>("Free Cam", true);
-		e.man->registerType<engine::meshFilter>("Mesh Filter", false);
+		e.man->registerType<engine::meshFilter>("Mesh Filter", true);
 		e.man->registerType<engine::playerController>("Player Controller", true);
 		e.man->registerType<engine::worldManager>("World Manager", true);
 		e.man->registerType<engine::rigidBodyComponent>("Rigid Body", false);
@@ -70,41 +70,6 @@ int main(int argc, char **argv) {
 				}
 			)
 		}, util::nextID());
-		
-		auto item = e.man->create("MeshTable", {
-			//engine::eleInit<engine::renderManager>::run(
-			//	[resDir, &cam2](engine::renderManager & man) {
-			//		man.initSystem(
-			//			resDir + "/shaders/standard.vert.spv",
-			//			resDir + "/shaders/standard.frag.spv",
-			//			{
-			//				//resDir + "/textures/Natsuki_COLOR.png",
-			//				resDir + "/textures/gridsmall.png",
-			//				resDir + "/textures/cement.png",
-			//				resDir + "/textures/consolas256x256.png",
-			//			},
-			//			{
-			//				resDir + "/meshes/cube1x1x1.dae"
-			//			},
-			//			{
-			//				//resDir + "/meshes/monkas.dae",
-			//				//resDir + "/meshes/sphere.dae",
-			//				resDir + "/meshes/cube1x1x1.dae",
-			//				//resDir + "/meshes/walker.dae",
-			//				resDir + "/meshes/human.dae",
-			//				resDir + "/meshes/blast.dae",
-			//				//resDir + "/meshes/icosphere.dae",
-			//				//resDir + "/meshes/arrow.dae"
-			//			},
-			//			{
-			//				resDir + "/animations/idle.cta"
-			//			}
-			//		);
-
-			//		man.camRef = cam2.getElement<engine::freeCam>();
-			//	}
-			//)
-			}, util::nextID());
 
 		e.man->create("Physics", {engine::eleInit<engine::worldManager>()}, util::nextID());
 
@@ -119,7 +84,7 @@ int main(int argc, char **argv) {
 		}, util::nextID());
 		auto playerModel = e.man->create("Player Model", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
-				filt.setState(0, 0, 0);
+				filt.setState(0, 1, 0);
 				filt.startAnimation(0, graphics::behavior::repeat);
 			})
 		}, util::nextID());
@@ -136,8 +101,9 @@ int main(int argc, char **argv) {
 			})
 		}, util::nextID());*/
 
-		for(int x = -10; x < 10; x++) {
-			for(int z = -10; z < 10; z++) {
+
+		for(int x = -6; x < 6; x++) {
+			for(int z = -6; z < 6; z++) {
 				e.man->create("Floor: <" + std::to_string(x) + ", " + std::to_string(z) + ">", {
 					engine::eleInit<engine::rigidBodyComponent>::run([x,z](engine::rigidBodyComponent& cmp) {
 						cmp.setToBox(glm::vec3(0.5f, 0.5f, 0.5f));
@@ -145,7 +111,7 @@ int main(int argc, char **argv) {
 						cmp.body->dynamic = false;
 					}),
 					engine::eleInit<engine::meshFilter>::run([x,z](engine::meshFilter& m) {
-						m.setState(0, 1, 0);
+						m.setState(0, 0, 0);
 						m.visible = true;
 					}),
 					//engine::eleInit<engine::sensorEle>()

@@ -14,7 +14,7 @@ namespace citrus::engine {
 	void playerController::cameraStuff() {
 		//do camera stuff
 		y += -eng()->dt() * ySpeed * ((eng()->getKey(button::arrowLeft) ? 1 : 0 + eng()->getKey(button::arrowRight) ? -1 : 0) + eng()->controllerValue(analog::ctr_rstick_x));
-		float distMag = ((eng()->getKey(button::arrowUp) ? 1 : 0 + eng()->getKey(button::arrowDown) ? -1 : 0) + eng()->controllerValue(analog::ctr_rstick_y));
+		float distMag = ((eng()->getKey(button::arrowUp) ? 1 : 0 + eng()->getKey(button::arrowDown) ? -1 : 0) - eng()->controllerValue(analog::ctr_rstick_y));
 		dist += -eng()->dt() * distSpeed * (abs(distMag) > 0.8f ? distMag : 0.0f);
 		dist = glm::clamp(dist, minDist, maxDist);
 
@@ -35,7 +35,7 @@ namespace citrus::engine {
 	}
 	void playerController::movementStuff() {
 		//do movement
-		glm::vec2 movement = glm::vec2(eng()->controllerValue(analog::ctr_lstick_x), eng()->controllerValue(analog::ctr_lstick_y));
+		glm::vec2 movement = glm::vec2(eng()->controllerValue(analog::ctr_lstick_x), -eng()->controllerValue(analog::ctr_lstick_y));
 		movement += glm::vec2((eng()->getKey(button::d) ? 1.0f : 0.0f) + (eng()->getKey(button::a) ? -1.0f : 0.0f), (eng()->getKey(button::w) ? 1.0f : 0.0f) + (eng()->getKey(button::s) ? -1.0f : 0.0f));
 		if(glm::length(movement) > 0.05f) {
 			movement = glm::vec2(glm::rotate(y / 180.0f * glm::pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::vec4(movement, 0.0f, 0.0f));
@@ -62,7 +62,7 @@ namespace citrus::engine {
 		glm::quat playerOri = glm::toQuat(glm::toMat4(ent().getGlobalTransform().getOrientation()) * glm::rotate(3.141596f * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 
-		if(eng()->controllerButton(ctr_west)) {
+		if(eng()->controllerButton(ctr_rbump)) {
 			if(!fired) {
 				glm::vec3 projStart = ent().getGlobalTransform().getMat() * glm::translate(glm::vec3(0.0f, 0.0f, 1.5f)) * glm::vec4(0, 0, 0, 1);
 				fired = true;
@@ -77,7 +77,7 @@ namespace citrus::engine {
 						p.ent().setLocalScale(glm::vec3(0.1f, 0.1f, 0.1f));
 					}),
 					eleInit<meshFilter>::run([e](meshFilter& m) {
-						//m.setStatic(0, 0);
+						m.setState(0, 1, 3);
 						m.color = glm::vec3(1.0f, 0.5f, 0.5f);
 					}),
 					eleInit<sensorEle>::run([e](sensorEle& s) {
