@@ -5,6 +5,7 @@ layout(location = 0) out vec4 color;
 
 layout(set = 0, binding = 0) uniform sampler2D colorTex;
 layout(set = 0, binding = 1) uniform sampler2D depthTex;
+layout(set = 0, binding = 2) uniform usampler2D indexTex;
 
 layout(location = 0) in vec2 fragUVCoord;
 
@@ -26,11 +27,9 @@ float zdif(vec2 uv) {
 			mav = max(mav, v);
 		}
 	}
-	if(mav - miv > 0.01) return 0; else return 1;
+	if(mav - miv > 0.01) return 0.5; else return 1;
 }
 
 void main() {
 	color = texture(colorTex, fragUVCoord) * zdif(fragUVCoord);
-	//float val = texture(depthTex, fragUVCoord).x;
-	//color = vec4(val, val, val, 1);
 }

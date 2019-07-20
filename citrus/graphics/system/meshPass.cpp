@@ -126,20 +126,36 @@ namespace citrus::graphics {
 		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		VkAttachmentDescription attachments[] = { colorAttachment, depthAttachment };
+		VkAttachmentDescription indexAttachment = {};
+		indexAttachment.format = VK_FORMAT_R16_UINT;
+		indexAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		indexAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		indexAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		indexAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		indexAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		indexAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		indexAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		VkAttachmentDescription attachments[] = { colorAttachment, indexAttachment, depthAttachment };
 
 		VkAttachmentReference colorAttachmentRef = {};
 		colorAttachmentRef.attachment = 0;
 		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+		VkAttachmentReference indexAttachmentRef = {};
+		indexAttachmentRef.attachment = 1;
+		indexAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference colorRefs[2] = { colorAttachmentRef, indexAttachmentRef };
+
 		VkAttachmentReference depthAttachmentRef = {};
-		depthAttachmentRef.attachment = 1;
+		depthAttachmentRef.attachment = 2;
 		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.colorAttachmentCount = 2;
+		subpass.pColorAttachments = colorRefs;
 		subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
 		VkSubpassDependency dependency = {};
@@ -152,7 +168,7 @@ namespace citrus::graphics {
 
 		VkRenderPassCreateInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 2;
+		renderPassInfo.attachmentCount = 3;
 		renderPassInfo.pAttachments = attachments;
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
@@ -298,12 +314,14 @@ namespace citrus::graphics {
 															 colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 															 colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;*/
 
+		VkPipelineColorBlendAttachmentState states[3] = { colorBlendAttachment, colorBlendAttachment, colorBlendAttachment };
+
 		VkPipelineColorBlendStateCreateInfo colorBlending = {};
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		colorBlending.logicOpEnable = VK_FALSE;
 		colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colorBlendAttachment;
+		colorBlending.attachmentCount = 2;
+		colorBlending.pAttachments = states;
 		colorBlending.blendConstants[0] = 0.0f; // Optional
 		colorBlending.blendConstants[1] = 0.0f; // Optional
 		colorBlending.blendConstants[2] = 0.0f; // Optional
@@ -345,123 +363,9 @@ namespace citrus::graphics {
 		vkDestroyShaderModule(sys.inst._device, fragInfo.module, nullptr);
 	}
 	void meshPass::initializeFramebuffers() {
-		VkImageCreateInfo colorInfo = {};
-		colorInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		colorInfo.imageType = VK_IMAGE_TYPE_2D;
-		colorInfo.extent.width = sys.inst.width;
-		colorInfo.extent.height = sys.inst.height;
-		colorInfo.extent.depth = 1;
-		colorInfo.mipLevels = 1;
-		colorInfo.arrayLayers = 1;
-		colorInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-		colorInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		colorInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		colorInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		VkImageCreateInfo depthInfo = {};
-		depthInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		depthInfo.imageType = VK_IMAGE_TYPE_2D;
-		depthInfo.extent.width = sys.inst.width;
-		depthInfo.extent.height = sys.inst.height;
-		depthInfo.extent.depth = 1;
-		depthInfo.mipLevels = 1;
-		depthInfo.arrayLayers = 1;
-		depthInfo.format = sys.inst.findDepthFormat();
-		depthInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		depthInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		depthInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
 		for (int i = 0; i < SWAP_FRAMES; i++) {
-			if (vkCreateImage(sys.inst._device, &colorInfo, nullptr, &frames[i].color) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create image!");
-			}
-
-			if (vkCreateImage(sys.inst._device, &depthInfo, nullptr, &frames[i].depth) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create image!");
-			}
-
-			VkMemoryRequirements colorRequirements, depthRequirements;
-			vkGetImageMemoryRequirements(sys.inst._device, frames[i].color, &colorRequirements);
-			vkGetImageMemoryRequirements(sys.inst._device, frames[i].depth, &depthRequirements);
-
-			VkMemoryAllocateInfo colorAllocInfo = {}, depthAllocInfo = {};
-			colorAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			colorAllocInfo.memoryTypeIndex = sys.inst.findMemoryType(colorRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			colorAllocInfo.allocationSize = colorRequirements.size;
-			depthAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			depthAllocInfo.memoryTypeIndex = sys.inst.findMemoryType(depthRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			depthAllocInfo.allocationSize = depthRequirements.size;
-			vkAllocateMemory(sys.inst._device, &colorAllocInfo, nullptr, &frames[i].colorMem);
-			vkAllocateMemory(sys.inst._device, &depthAllocInfo, nullptr, &frames[i].depthMem);
-
-			vkBindImageMemory(sys.inst._device, frames[i].color, frames[i].colorMem, 0);
-			vkBindImageMemory(sys.inst._device, frames[i].depth, frames[i].depthMem, 0);
-
-			VkImageViewCreateInfo colorViewInfo = {}, depthViewInfo = {};
-			colorViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			colorViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			colorViewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-			colorViewInfo.image = frames[i].color;
-			colorViewInfo.subresourceRange.baseMipLevel = 0;
-			colorViewInfo.subresourceRange.baseArrayLayer = 0;
-			colorViewInfo.subresourceRange.levelCount = 1;
-			colorViewInfo.subresourceRange.layerCount = 1;
-			colorViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			depthViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			depthViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			depthViewInfo.format = sys.inst.findDepthFormat();
-			depthViewInfo.image = frames[i].depth;
-			depthViewInfo.subresourceRange.baseMipLevel = 0;
-			depthViewInfo.subresourceRange.baseArrayLayer = 0;
-			depthViewInfo.subresourceRange.levelCount = 1;
-			depthViewInfo.subresourceRange.layerCount = 1;
-			depthViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-			vkCreateImageView(sys.inst._device, &colorViewInfo, nullptr, &frames[i].colorView);
-			vkCreateImageView(sys.inst._device, &depthViewInfo, nullptr, &frames[i].depthView);
-
-			VkSamplerCreateInfo colorSampInfo = {};
-			colorSampInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-			colorSampInfo.magFilter = VK_FILTER_NEAREST;
-			colorSampInfo.minFilter = VK_FILTER_NEAREST;
-			colorSampInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			colorSampInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			colorSampInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			colorSampInfo.anisotropyEnable = VK_FALSE;
-			colorSampInfo.maxAnisotropy = 1;
-			colorSampInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-			colorSampInfo.unnormalizedCoordinates = VK_FALSE;
-			colorSampInfo.compareEnable = VK_FALSE;
-			colorSampInfo.compareOp = VK_COMPARE_OP_NEVER;
-			colorSampInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-			colorSampInfo.mipLodBias = 0.0f;
-			colorSampInfo.minLod = 0.0f;
-			colorSampInfo.maxLod = 0.0f;
-
-			VkSamplerCreateInfo depthSampInfo = {};
-			depthSampInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-			depthSampInfo.magFilter = VK_FILTER_NEAREST;
-			depthSampInfo.minFilter = VK_FILTER_NEAREST;
-			depthSampInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			depthSampInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			depthSampInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			depthSampInfo.anisotropyEnable = VK_FALSE;
-			depthSampInfo.maxAnisotropy = 1;
-			depthSampInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-			depthSampInfo.unnormalizedCoordinates = VK_FALSE;
-			depthSampInfo.compareEnable = VK_FALSE;
-			depthSampInfo.compareOp = VK_COMPARE_OP_NEVER;
-			depthSampInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-			depthSampInfo.mipLodBias = 0.0f;
-			depthSampInfo.minLod = 0.0f;
-			depthSampInfo.maxLod = 0.0f;
-
-			vkCreateSampler(sys.inst._device, &colorSampInfo, nullptr, &frames[i].colorSamp);
-			vkCreateSampler(sys.inst._device, &depthSampInfo, nullptr, &frames[i].depthSamp);
-
-			VkImageView views[2] = { frames[i].colorView, frames[i].depthView };
+			VkImageView views[3] = { frame->frames[i].color.view, frame->frames[i].index.view, frame->frames[i].depth.view, };
 
 			VkFramebufferCreateInfo fbInfo = {};
 			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -469,10 +373,10 @@ namespace citrus::graphics {
 			fbInfo.height = sys.inst.height;
 			fbInfo.layers = 1;
 			fbInfo.renderPass = pass;
-			fbInfo.attachmentCount = 2;
+			fbInfo.attachmentCount = 3;
 			fbInfo.pAttachments = views;
 
-			if(vkCreateFramebuffer(sys.inst._device, &fbInfo, nullptr, &frames[i].fbo) != VK_SUCCESS) throw std::runtime_error("couldn't create meshPass FBO");
+			if (vkCreateFramebuffer(sys.inst._device, &fbInfo, nullptr, &fbos[i]) != VK_SUCCESS) throw std::runtime_error("couldn't create meshPass FBO");
 		}
 	}
     
@@ -493,22 +397,6 @@ namespace citrus::graphics {
 		for (int i = 0; i < mappings.size(); i++) {
 			util::sout("    " + std::to_string(i) + ": " + sys.models[mappings[i].modelIndex].source.relative_path().string() + "\n");
 		}
-	}
-
-	VkDescriptorImageInfo meshPass::getColorInfo() {
-		VkDescriptorImageInfo colorInfo = { };
-		colorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		colorInfo.imageView = frames[sys.frameIndex].colorView;
-		colorInfo.sampler = frames[sys.frameIndex].colorSamp;
-		return colorInfo;
-	}
-
-	VkDescriptorImageInfo meshPass::getDepthInfo() {
-		VkDescriptorImageInfo depthInfo = { };
-		depthInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		depthInfo.imageView = frames[sys.frameIndex].depthView;
-		depthInfo.sampler = frames[sys.frameIndex].depthSamp;
-		return depthInfo;
 	}
 
 	void meshPass::preRender(uint32_t const & threadCount) {
@@ -562,6 +450,7 @@ namespace citrus::graphics {
 				pushData.model = modTmp;
 				pushData.mvp = sys.frameVP * modTmp;
 				pushData.uints[0] = items[i].texIndex;
+				pushData.uints[0] = i;
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, pcVertSize, &pushData);
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, pcVertSize, pcFragSize, &pushData.uints);
 				uint32_t zero = 0;
@@ -594,7 +483,7 @@ namespace citrus::graphics {
 		VkRenderPassBeginInfo renderPassInfo = { };
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = pass;
-		renderPassInfo.framebuffer = frames[sys.frameIndex].fbo;
+		renderPassInfo.framebuffer = fbos[sys.frameIndex];
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = sys.inst._extent;
 		renderPassInfo.clearValueCount = 2;
@@ -619,7 +508,7 @@ namespace citrus::graphics {
 		vkQueueSubmit(sys.inst._graphicsQueue, 1, &subInfo, waitFences[sys.frameIndex]);
 	}
 	
-	meshPass::meshPass(system & sys, fpath const& vertLoc, fpath const& fragLoc) : sysNode(sys) {
+	meshPass::meshPass(system & sys, frameStore* fstore, bool textured, bool lit, bool rigged, fpath const& vertLoc, fpath const& fragLoc) : sysNode(sys), frame(fstore) {
 		sys.meshPasses.push_back(this);
 
 		vert = vertLoc;
@@ -627,8 +516,14 @@ namespace citrus::graphics {
 
 		map<meshAttributeUsage, uint32_t> locMap;
 		locMap[meshAttributeUsage::positionType] = 0;
-		locMap[meshAttributeUsage::normalType] = 1;
-		locMap[meshAttributeUsage::uvType] = 2;
+		if(lit) locMap[meshAttributeUsage::normalType] = 1;
+		if(textured) locMap[meshAttributeUsage::uvType] = 2;
+		if (rigged) {
+			locMap[meshAttributeUsage::bone0Type] = 3;
+			locMap[meshAttributeUsage::bone1Type] = 4;
+			locMap[meshAttributeUsage::weight0Type] = 5;
+			locMap[meshAttributeUsage::weight1Type] = 6;
+		}
 		meshMappings = meshUsageLocationMapping(locMap);
 		for (auto const& kvp : locMap) {
 			requiredUsages.push_back(kvp.first);
@@ -649,7 +544,7 @@ namespace citrus::graphics {
 		for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
 			inheritanceInfos[i] = { };
 			inheritanceInfos[i].sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-			inheritanceInfos[i].framebuffer = frames[i].fbo;
+			inheritanceInfos[i].framebuffer = fbos[i];
 			inheritanceInfos[i].renderPass = pass;
 		}
 
@@ -657,15 +552,7 @@ namespace citrus::graphics {
 	}
     meshPass::~meshPass() {
 		for (int i = 0; i < SWAP_FRAMES; i++) {
-			vkDestroyFramebuffer(sys.inst._device, frames[i].fbo, nullptr);
-			vkDestroySampler(sys.inst._device, frames[i].depthSamp, nullptr);
-			vkDestroySampler(sys.inst._device, frames[i].colorSamp, nullptr);
-			vkDestroyImageView(sys.inst._device, frames[i].colorView, nullptr);
-			vkDestroyImageView(sys.inst._device, frames[i].depthView, nullptr);
-			vkDestroyImage(sys.inst._device, frames[i].color, nullptr);
-			vkDestroyImage(sys.inst._device, frames[i].depth, nullptr);
-			vkFreeMemory(sys.inst._device, frames[i].colorMem, nullptr);
-			vkFreeMemory(sys.inst._device, frames[i].depthMem, nullptr);
+			vkDestroyFramebuffer(sys.inst._device, fbos[i], nullptr);
 		}
     }
 }

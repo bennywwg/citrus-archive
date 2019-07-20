@@ -5,8 +5,8 @@
 #include <array>
 
 namespace citrus::graphics {
-	void finalPass::fillCommandBuffer(uint32_t frameIndex, VkDescriptorImageInfo colorInfo, VkDescriptorImageInfo depthInfo) {
-		VkWriteDescriptorSet writes[2] = { };
+	void finalPass::fillCommandBuffer(uint32_t frameIndex, VkDescriptorImageInfo colorInfo, VkDescriptorImageInfo depthInfo, VkDescriptorImageInfo indexInfo) {
+		VkWriteDescriptorSet writes[3] = { };
 		writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writes[0].dstSet = _set;
 		writes[0].dstBinding = 0;
@@ -21,6 +21,13 @@ namespace citrus::graphics {
 		writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		writes[1].descriptorCount = 1;
 		writes[1].pImageInfo = &depthInfo;
+		writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writes[2].dstSet = _set;
+		writes[2].dstBinding = 2;
+		writes[2].dstArrayElement = 0;
+		writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writes[2].descriptorCount = 1;
+		writes[2].pImageInfo = &indexInfo;
 		vkUpdateDescriptorSets(sys.inst._device, 2, writes, 0, nullptr);
 
 		VkCommandBufferBeginInfo beginInfo = {};
@@ -122,7 +129,7 @@ namespace citrus::graphics {
 
 	void finalPass::preRender(uint32_t const& threadCount) {
 		frameIndex = win.getNextFrameIndex(frameReadySem);
-		fillCommandBuffer(frameIndex, prevPass.getColorInfo(), prevPass.getDepthInfo());
+		fillCommandBuffer(frameIndex, prevPass.frame->getColorInfo(frameIndex), prevPass.frame->getDepthInfo(frameIndex), prevPass.frame->getIndexInfo(frameIndex));
 		vector<VkSemaphore> waits = getWaitSems();
 		waits.push_back(frameReadySem);
 		

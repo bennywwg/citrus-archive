@@ -22,7 +22,7 @@ namespace citrus::graphics {
 		window&					win;
 		uint32_t				frameIndex;
 	public:
-		void fillCommandBuffer(uint32_t frameIndex, VkDescriptorImageInfo colorInfo, VkDescriptorImageInfo depthInfo);
+		void fillCommandBuffer(uint32_t frameIndex, VkDescriptorImageInfo colorInfo, VkDescriptorImageInfo depthInfo, VkDescriptorImageInfo indexInfo);
 
 		//submit to graphics queue
 		void submit(uint32_t targetIndex, vector<VkSemaphore> waits);

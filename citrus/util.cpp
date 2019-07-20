@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <cstdio>
 
 #include <lodepng.h>
 
@@ -231,7 +232,20 @@ namespace citrus::util {
 		return btVerts;
 	}
 
-
+	std::string execute(string const& command) {
+		char tmpname[L_tmpnam];
+		std::tmpnam(tmpname);
+		std::string cmd = command + " >> " + tmpname;
+		std::system(cmd.c_str());
+		std::ifstream file(tmpname, std::ios::in | std::ios::binary);
+		std::string result;
+		if (file) {
+			while (!file.eof()) result.push_back(file.get());
+			file.close();
+		}
+		remove(tmpname);
+		return result;
+	}
 
 	json save(vec2 vec) {
 		return json({

@@ -8,6 +8,7 @@
 #include "citrus/graphics/image.h"
 #include "citrus/graphics/mesh/mesh.h"
 #include "citrus/graphics/camera.h"
+#include "citrus/graphics/system/runtimeResource.h"
 
 namespace citrus::graphics {
     class meshPass : public sysNode {
@@ -39,18 +40,10 @@ namespace citrus::graphics {
 		VkSemaphore				doneSem[SWAP_FRAMES];
 		VkFence					waitFences[SWAP_FRAMES];
 
-		struct frame {
-			VkImage			color;					// color image
-			VkImage			depth;					// depth image
-			VkImageView		colorView;				// color view
-			VkImageView		depthView;				// depth view
-			VkSampler		colorSamp;				// color sampler
-			VkSampler		depthSamp;				// color sampler
-			VkDeviceMemory	colorMem;				// color memory
-			VkDeviceMemory	depthMem;				// depth memory
-			VkFramebuffer	fbo;					// framebuffer
-		};
-		frame				frames[SWAP_FRAMES];	// frame info
+	public:
+		frameStore* const	frame;
+	protected:
+		VkFramebuffer		fbos[SWAP_FRAMES];
 
 		VkCommandBufferInheritanceInfo inheritanceInfos[SWAP_FRAMES];
 
@@ -113,16 +106,11 @@ namespace citrus::graphics {
     public:
 		#pragma endregion
 
-		// get image info for color buffer
-		VkDescriptorImageInfo	getColorInfo();
-		// get image info for depth buffer
-		VkDescriptorImageInfo	getDepthInfo();
-
 		virtual void			preRender(uint32_t const& threadCount);
 		virtual void 			renderPartial(uint32_t const& threadIndex);
         virtual void            postRender(uint32_t const& threadCount);
 		
-		meshPass(system & sys, fpath const& vert, fpath const& frag);
+		meshPass(system & sys, frameStore* fstore, bool textured, bool lit, bool rigged, fpath const& vert, fpath const& frag);
 		~meshPass();
 	};
 }
