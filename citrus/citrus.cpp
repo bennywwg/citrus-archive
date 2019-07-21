@@ -34,10 +34,14 @@ void terminateGLFW() {
 }
 
 int main(int argc, char **argv) {
-	util::sout("Citrus 0.0.0 - DO NOT DISTRIBUTE\n");
-
 	std::string resDir = argc == 1 ? "" :argv[1];
 
+	if (argc >= 3 && (string(argv[2]) == "compileShaders")) {
+		util::compileAllShaders(fpath(resDir) / "shaders");
+	}
+
+	util::sout("Citrus 0.0.0 - DO NOT DISTRIBUTE\n");
+	
 	initializeGLFW();
 	
 	{

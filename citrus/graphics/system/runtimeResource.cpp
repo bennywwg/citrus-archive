@@ -244,4 +244,50 @@ namespace citrus::graphics {
 			vkFreeMemory(inst._device, frames[i].index.mem, nullptr);
 		}
 	}
+
+
+	void buffer::flushRange(uint64_t start, uint64_t size) {
+		VkMappedMemoryRange range = { };
+		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range.memory = mem;
+		range.offset = start;
+		range.pNext = nullptr;
+		range.size = size;
+		if (vkFlushMappedMemoryRanges(inst->_device, 1, &range) != VK_SUCCESS) throw std::runtime_error("failed to map flush memory range");
+	}
+	void buffer::init(instance* inst, uint64_t size, VkBufferUsageFlags usages, VkMemoryPropertyFlags props, bool map) {
+		this->inst = inst;
+		VkBufferCreateInfo bufferInfo = { };
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = size;
+		bufferInfo.usage = usages;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(inst->_device, &bufferInfo, nullptr, &buf) != VK_SUCCESS) throw std::runtime_error("failed to create memory buffer!");
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(inst->_device, buf, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo = { };
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = inst->findMemoryType(memRequirements.memoryTypeBits, props);
+
+		if (vkAllocateMemory(inst->_device, &allocInfo, nullptr, &mem) != VK_SUCCESS) throw std::runtime_error("failed to allocate buffer memory!");
+
+		if (vkBindBufferMemory(inst->_device, buf, mem, 0) != VK_SUCCESS) throw std::runtime_error("failed to bind buffer memory");
+
+		if (map) {
+			vkMapMemory(inst->_device, mem, 0, size, 0, (void**)& mapped);
+		}
+	}
+	buffer::buffer() : inst(nullptr), size(0), mem(VK_NULL_HANDLE), buf(VK_NULL_HANDLE), mapped(nullptr) { }
+	buffer::buffer(instance* inst, uint64_t size, VkBufferUsageFlags usages, VkMemoryPropertyFlags props, bool map) : buffer() {
+		init(inst, size, usages, props, map);
+	}
+	buffer::~buffer() {
+		if (mapped) vkUnmapMemory(inst->_device, mem);
+		if(buf != VK_NULL_HANDLE) vkDestroyBuffer(inst->_device, buf, nullptr);
+		if (mem != VK_NULL_HANDLE) vkFreeMemory(inst->_device, mem, nullptr);
+	}
 }

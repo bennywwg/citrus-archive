@@ -39,7 +39,6 @@ namespace citrus::graphics {
 		instance& inst;
 
 		#pragma region(initialization state)
-		uint64_t			uniformSize;
 		vector<fpath>		texturePaths;
 		vector<fpath>		modelPaths;
 		vector<fpath>		animationPaths;
@@ -112,16 +111,6 @@ namespace citrus::graphics {
 		camera					frameCam;		// camera
 		frustrumCullInfo		frameCull;		// camera cull info cache
 		mat4					frameVP;		// projection * view
-		#pragma endregion
-
-		#pragma region(uniform stuff)
-		uint64_t				uniformAlignment;
-		VkDeviceMemory			uniformMemories[SWAP_FRAMES];
-		VkBuffer				uniformBuffers[SWAP_FRAMES];
-		uint8_t*				uniformMapped[SWAP_FRAMES];
-
-		void					initializeUniformData();
-		void					freeUniformData();
 		#pragma endregion
 
 		#pragma region(rendertime stuff)

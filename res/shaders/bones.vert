@@ -9,8 +9,12 @@ layout(location = 4) in int vert_bone1;
 layout(location = 5) in float vert_weight0;
 layout(location = 6) in float vert_weight1;
 
-layout (set = 0, binding = 0) uniform BoneData {
-	mat4 transforms[64];
+layout (set = 0, binding = 0) uniform UniformData {
+	vec4 lightDir;
+} uniformData;
+
+layout (set = 1, binding = 0) buffer BoneData {
+	mat4 transforms[];
 } boneData;
 
 layout (push_constant) uniform PushConstants {

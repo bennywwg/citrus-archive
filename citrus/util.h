@@ -70,6 +70,8 @@ namespace citrus {
 	using fpath = std::filesystem::path;
 
 	namespace util {
+		void compileAllShaders(fpath shaderDir);
+
 		string execute(string const& command);
 
 		bool isPowerOfTwo(unsigned int val);

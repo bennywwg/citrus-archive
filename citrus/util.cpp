@@ -10,7 +10,7 @@
 #include <iostream>
 #include <cstdio>
 
-#include <lodepng.h>
+#include <citrus/lodepng.h>
 
 namespace citrus::util {
 	bool loadPngImage(const char *name, int &outWidth, int &outHeight, bool &outHasAlpha, std::vector<unsigned char>& res) {
@@ -232,6 +232,45 @@ namespace citrus::util {
 		return btVerts;
 	}
 
+	void compileAllShaders(fpath shaderDir) {
+		vector<fpath> vertPaths = filesInDirectory(shaderDir, ".vert");
+		vector<fpath> fragPaths = filesInDirectory(shaderDir, ".frag");
+		vector<fpath> allPaths; allPaths.reserve(vertPaths.size() + fragPaths.size());
+		allPaths.insert(allPaths.end(), vertPaths.begin(), vertPaths.end());
+		allPaths.insert(allPaths.end(), fragPaths.begin(), fragPaths.end());
+
+		fpath compileDir = shaderDir / "build";
+
+		if (!std::filesystem::exists(compileDir) || !std::filesystem::is_directory(compileDir)) {
+			std::filesystem::create_directory(compileDir);
+		}
+
+		uint32_t numFailed = 0;
+		uint32_t numSucceeded = 0;
+		for (uint32_t i = 0; i < allPaths.size(); i++) {
+			fpath compiled = compileDir / allPaths[i].filename();
+			compiled += ".spv";
+
+			if (!std::filesystem::exists(compiled) ||
+				std::filesystem::last_write_time(compiled) < std::filesystem::last_write_time(allPaths[i])) {
+				string compString = "glslangValidator.exe -V \"" + allPaths[i].string() + "\" -o \"" + compiled.string() + "\"";
+				string res = util::execute(compString);
+				if (res.length() >= 2) res.erase(res.length() - 2); //remove trailing endline
+				if (res != allPaths[i].string()) {
+					util::sout("Failed to compile shader:\n" + res + "\n");
+					numFailed++;
+				} else {
+					util::sout("Compiled shader " + allPaths[i].filename().string() + "\n");
+					numSucceeded++;
+				}
+			}
+		}
+
+		util::sout("Shader info: " + std::to_string(numSucceeded) + " compiled, " + std::to_string(numFailed) + " failed, " + std::to_string(allPaths.size() - numFailed) + " up to date\n");
+
+		return;
+	}
+
 	std::string execute(string const& command) {
 		char tmpname[L_tmpnam];
 		std::tmpnam(tmpname);
@@ -244,7 +283,7 @@ namespace citrus::util {
 			file.close();
 		}
 		remove(tmpname);
-		return result;
+		return result.substr(0, result.length() - 1);
 	}
 
 	json save(vec2 vec) {
@@ -297,7 +336,7 @@ namespace citrus::util {
 		vector<fpath> res;
 		if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
 			for(std::filesystem::directory_iterator it(path); !it._At_end(); ++it) {
-				if (!it->is_directory() && it->path().extension() == suffix) {
+				if (!it->is_directory() && it->path().extension().string() == suffix) {
 					res.push_back(it->path());
 				}
 			}

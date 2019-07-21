@@ -1,1 +1,4 @@
 build/*
+windows/*
+res/shaders/build/*
+*.spv

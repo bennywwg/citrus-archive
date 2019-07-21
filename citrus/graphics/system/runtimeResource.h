@@ -35,4 +35,21 @@ namespace citrus::graphics {
 		frameStore(instance& inst);
 		~frameStore();
 	};
+
+	class buffer {
+	public:
+		instance*		inst;
+
+		uint64_t		size;
+		VkDeviceMemory	mem;
+		VkBuffer		buf;
+		uint8_t*		mapped;
+
+		void flushRange(uint64_t start, uint64_t size);
+		void init(instance* inst, uint64_t size, VkBufferUsageFlags usages, VkMemoryPropertyFlags props, bool map);
+
+		buffer();
+		buffer(instance* inst, uint64_t size, VkBufferUsageFlags usages, VkMemoryPropertyFlags props, bool map);
+		~buffer();
+	};
 }

@@ -19,16 +19,19 @@ namespace citrus::graphics {
 		bool					ccw = true;
 		bool					cullObscured = true;
 		bool					texturesEnabled = true;
-		bool					animated = false;
+		bool					rigged = false;
+		uint64_t const			uboSize = 4 * 1024;
+		uint64_t const			ssboSize = 4 * 1024 * 1024;
 		#pragma endregion
 
 		#pragma region(pipeline stuff)
     protected:
 		fpath vert, frag;
 
-		VkDescriptorSetLayout	uboLayout, texLayout;
-		VkDescriptorPool		uboPool, texPool;
+		VkDescriptorSetLayout	uboLayout, ssboLayout, texLayout;
+		VkDescriptorPool		uboPool, ssboPool, texPool;
 		VkDescriptorSet			uboSets[SWAP_FRAMES];
+		VkDescriptorSet			ssboSets[SWAP_FRAMES];
 		VkDescriptorSet			texSet;
 
 		VkRenderPass			pass;
@@ -39,6 +42,9 @@ namespace citrus::graphics {
 		VkSemaphore				startSem[SWAP_FRAMES];
 		VkSemaphore				doneSem[SWAP_FRAMES];
 		VkFence					waitFences[SWAP_FRAMES];
+		
+		buffer					ubos[SWAP_FRAMES];
+		buffer					ssbos[SWAP_FRAMES];
 
 	public:
 		frameStore* const	frame;

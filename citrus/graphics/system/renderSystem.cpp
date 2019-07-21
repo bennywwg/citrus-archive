@@ -263,45 +263,6 @@ namespace citrus::graphics {
 		}
 	}
 
-	void system::initializeUniformData() {
-		uniformAlignment = inst.minUniformBufferOffsetAlignment();
-
-		VkBufferCreateInfo bufferInfo = {};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = uniformSize;
-		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		for (int i = 0; i < SWAP_FRAMES; i++) {
-			if (vkCreateBuffer(inst._device, &bufferInfo, nullptr, &uniformBuffers[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create memory buffer!");
-			}
-
-			VkMemoryRequirements memRequirements;
-			vkGetBufferMemoryRequirements(inst._device, uniformBuffers[i], &memRequirements);
-
-			VkMemoryAllocateInfo allocInfo = {};
-			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			allocInfo.allocationSize = memRequirements.size;
-			allocInfo.memoryTypeIndex = inst.findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-
-			if (vkAllocateMemory(inst._device, &allocInfo, nullptr, &uniformMemories[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to allocate buffer memory!");
-			}
-
-			vkBindBufferMemory(inst._device, uniformBuffers[i], uniformMemories[i], 0);
-
-			vkMapMemory(inst._device, uniformMemories[i], 0, uniformSize, 0, (void**)&uniformMapped[i]);
-		}
-	}
-	void system::freeUniformData() {
-		for (int i = 0; i < SWAP_FRAMES; i++) {
-			vkUnmapMemory(inst._device, uniformMemories[i]);
-			vkDestroyBuffer(inst._device, uniformBuffers[i], nullptr);
-			vkFreeMemory(inst._device, uniformMemories[i], nullptr);
-		}
-	}
-
 	/*void system::sequence(vector<vector<itemInfo>> const& items, vector<vector<itemDrawRange>> & ranges) {
 		int totalItems = 0;
 		for (int m = 0; m < items.size(); m++)
@@ -434,9 +395,6 @@ namespace citrus::graphics {
 			util::sout("    " + std::to_string(i) + ": " + animationPaths[i].relative_path().string() + "\n");
 		}
 
-
-		uniformSize = 1024 * 1024 * 16;
-
 		frameIndex = SWAP_FRAMES - 1;
 
 		createFramebufferData();
@@ -447,8 +405,6 @@ namespace citrus::graphics {
 		loadModels();
 		initializeModelData();
 		loadAnimations();
-
-		initializeUniformData();
 
 		initializeThreads(4);
 

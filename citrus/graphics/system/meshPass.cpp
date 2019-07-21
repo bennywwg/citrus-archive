@@ -1,90 +1,147 @@
 #include "citrus/graphics/system/meshPass.h"
 
 namespace citrus::graphics {
-    void meshPass::initializeDescriptors() {
-		VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		uboLayoutBinding.descriptorCount = 1;
-		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	void meshPass::initializeDescriptors() {
+		{
+			VkDescriptorSetLayoutBinding uboLayoutBinding = { };
+			uboLayoutBinding.binding = 0;
+			uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			uboLayoutBinding.descriptorCount = 1;
+			uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-		VkDescriptorSetLayoutCreateInfo uboLayoutInfo = {};
-		uboLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		uboLayoutInfo.bindingCount = 1;
-		uboLayoutInfo.pBindings = &uboLayoutBinding;
+			VkDescriptorSetLayoutCreateInfo uboLayoutInfo = { };
+			uboLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			uboLayoutInfo.bindingCount = 1;
+			uboLayoutInfo.pBindings = &uboLayoutBinding;
 
-		if (vkCreateDescriptorSetLayout(sys.inst._device, &uboLayoutInfo, nullptr, &uboLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
+			if (vkCreateDescriptorSetLayout(sys.inst._device, &uboLayoutInfo, nullptr, &uboLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
 
-		VkDescriptorPoolSize uboPoolSize = { };
-		uboPoolSize.descriptorCount = SWAP_FRAMES;
-		uboPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+			VkDescriptorPoolSize uboPoolSize = { };
+			uboPoolSize.descriptorCount = SWAP_FRAMES;
+			uboPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
-		VkDescriptorPoolCreateInfo uboPoolInfo = { };
-		uboPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		uboPoolInfo.poolSizeCount = 1;
-		uboPoolInfo.maxSets = SWAP_FRAMES;
-		uboPoolInfo.pPoolSizes = &uboPoolSize;
+			VkDescriptorPoolCreateInfo uboPoolInfo = { };
+			uboPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			uboPoolInfo.poolSizeCount = 1;
+			uboPoolInfo.maxSets = SWAP_FRAMES;
+			uboPoolInfo.pPoolSizes = &uboPoolSize;
 
-		if(vkCreateDescriptorPool(sys.inst._device, &uboPoolInfo, nullptr, &uboPool) != VK_SUCCESS) throw std::runtime_error("failed to create UBO descriptor pool");
+			if (vkCreateDescriptorPool(sys.inst._device, &uboPoolInfo, nullptr, &uboPool) != VK_SUCCESS) throw std::runtime_error("failed to create UBO descriptor pool");
 
-		VkDescriptorSetLayout uboLayouts[SWAP_FRAMES] = { uboLayout, uboLayout };
-		VkDescriptorSetAllocateInfo uboAllocInfo = { };
-		uboAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		uboAllocInfo.descriptorPool = uboPool;
-		uboAllocInfo.descriptorSetCount = SWAP_FRAMES;
-		uboAllocInfo.pSetLayouts = uboLayouts;
+			VkDescriptorSetLayout uboLayouts[SWAP_FRAMES] = { uboLayout, uboLayout };
+			VkDescriptorSetAllocateInfo uboAllocInfo = { };
+			uboAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			uboAllocInfo.descriptorPool = uboPool;
+			uboAllocInfo.descriptorSetCount = SWAP_FRAMES;
+			uboAllocInfo.pSetLayouts = uboLayouts;
 
-		vkAllocateDescriptorSets(sys.inst._device, &uboAllocInfo, uboSets);
+			vkAllocateDescriptorSets(sys.inst._device, &uboAllocInfo, uboSets);
+		}
 
+		{
+			VkDescriptorSetLayoutBinding ssboLayoutBinding = { };
+			ssboLayoutBinding.binding = 0;
+			ssboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+			ssboLayoutBinding.descriptorCount = 1;
+			ssboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-		VkDescriptorSetLayoutBinding texLayoutBinding = {};
-		texLayoutBinding.binding = 0;
-		texLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		texLayoutBinding.descriptorCount = (uint32_t)sys.textures.size();
-		texLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			VkDescriptorSetLayoutCreateInfo ssboLayoutInfo = { };
+			ssboLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			ssboLayoutInfo.bindingCount = 1;
+			ssboLayoutInfo.pBindings = &ssboLayoutBinding;
 
-		VkDescriptorSetLayoutCreateInfo texLayoutInfo = {};
-		texLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		texLayoutInfo.bindingCount = 1;
-		texLayoutInfo.pBindings = &texLayoutBinding;
+			if (vkCreateDescriptorSetLayout(sys.inst._device, &ssboLayoutInfo, nullptr, &ssboLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
 
-		if (vkCreateDescriptorSetLayout(sys.inst._device, &texLayoutInfo, nullptr, &texLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
+			VkDescriptorPoolSize ssboPoolSize = { };
+			ssboPoolSize.descriptorCount = SWAP_FRAMES;
+			ssboPoolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
 
-		VkDescriptorPoolSize texPoolSize = { };
-		texPoolSize.descriptorCount = (uint32_t) sys.textures.size();
-		texPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			VkDescriptorPoolCreateInfo ssboPoolInfo = { };
+			ssboPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			ssboPoolInfo.poolSizeCount = 1;
+			ssboPoolInfo.maxSets = SWAP_FRAMES;
+			ssboPoolInfo.pPoolSizes = &ssboPoolSize;
 
-		VkDescriptorPoolCreateInfo texPoolInfo = { };
-		texPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		texPoolInfo.poolSizeCount = 1;
-		texPoolInfo.maxSets = (uint32_t) sys.textures.size();
-		texPoolInfo.pPoolSizes = &texPoolSize;
+			if (vkCreateDescriptorPool(sys.inst._device, &ssboPoolInfo, nullptr, &ssboPool) != VK_SUCCESS) throw std::runtime_error("failed to create UBO descriptor pool");
 
-		vkCreateDescriptorPool(sys.inst._device, &texPoolInfo, nullptr, &texPool);
+			VkDescriptorSetLayout ssboLayouts[SWAP_FRAMES] = { ssboLayout, ssboLayout };
+			VkDescriptorSetAllocateInfo ssboAllocInfo = { };
+			ssboAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			ssboAllocInfo.descriptorPool = ssboPool;
+			ssboAllocInfo.descriptorSetCount = SWAP_FRAMES;
+			ssboAllocInfo.pSetLayouts = ssboLayouts;
 
-		VkDescriptorSetAllocateInfo texAllocInfo = { };
-		texAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		texAllocInfo.descriptorPool = texPool;
-		texAllocInfo.descriptorSetCount = 1;
-		texAllocInfo.pSetLayouts = &texLayout;
+			vkAllocateDescriptorSets(sys.inst._device, &ssboAllocInfo, ssboSets);
+		}
 
-		vkAllocateDescriptorSets(sys.inst._device, &texAllocInfo, &texSet);
+		{
+			VkDescriptorSetLayoutBinding texLayoutBinding = {};
+			texLayoutBinding.binding = 0;
+			texLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			texLayoutBinding.descriptorCount = (uint32_t)sys.textures.size();
+			texLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			VkDescriptorSetLayoutCreateInfo texLayoutInfo = {};
+			texLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			texLayoutInfo.bindingCount = 1;
+			texLayoutInfo.pBindings = &texLayoutBinding;
+
+			if (vkCreateDescriptorSetLayout(sys.inst._device, &texLayoutInfo, nullptr, &texLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
+
+			VkDescriptorPoolSize texPoolSize = { };
+			texPoolSize.descriptorCount = (uint32_t)sys.textures.size();
+			texPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+			VkDescriptorPoolCreateInfo texPoolInfo = { };
+			texPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			texPoolInfo.poolSizeCount = 1;
+			texPoolInfo.maxSets = (uint32_t)sys.textures.size();
+			texPoolInfo.pPoolSizes = &texPoolSize;
+
+			vkCreateDescriptorPool(sys.inst._device, &texPoolInfo, nullptr, &texPool);
+
+			VkDescriptorSetAllocateInfo texAllocInfo = { };
+			texAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			texAllocInfo.descriptorPool = texPool;
+			texAllocInfo.descriptorSetCount = 1;
+			texAllocInfo.pSetLayouts = &texLayout;
+
+			vkAllocateDescriptorSets(sys.inst._device, &texAllocInfo, &texSet);
+		}
 
 		for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
 			VkDescriptorBufferInfo uboBufInfo = { };
-			uboBufInfo.buffer = sys.uniformBuffers[i];
+			uboBufInfo.buffer = ubos[i].buf;
 			uboBufInfo.offset = 0;
-			uboBufInfo.range = sys.uniformSize;
+			uboBufInfo.range = uboSize;
 
 			VkWriteDescriptorSet uboWrite = { };
 			uboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			uboWrite.descriptorCount = 1;
-			uboWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+			uboWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			uboWrite.dstBinding = 0;
 			uboWrite.dstSet = uboSets[i];
 			uboWrite.pBufferInfo = &uboBufInfo;
 
 			vkUpdateDescriptorSets(sys.inst._device, 1, &uboWrite, 0, nullptr);
+		}
+		if (rigged) {
+			for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
+				VkDescriptorBufferInfo ssboBufInfo = { };
+				ssboBufInfo.buffer = ssbos[i].buf;
+				ssboBufInfo.offset = 0;
+				ssboBufInfo.range = ssboSize;
+
+				VkWriteDescriptorSet ssboWrite = { };
+				ssboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				ssboWrite.descriptorCount = 1;
+				ssboWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+				ssboWrite.dstBinding = 0;
+				ssboWrite.dstSet = ssboSets[i];
+				ssboWrite.pBufferInfo = &ssboBufInfo;
+
+				vkUpdateDescriptorSets(sys.inst._device, 1, &ssboWrite, 0, nullptr);
+			}
 		}
 
 		vector<VkDescriptorImageInfo> imageInfos;
@@ -190,14 +247,19 @@ namespace citrus::graphics {
 
 		VkPushConstantRange ranges[2] = { pcRange, frag_pcRange };
 
-		VkDescriptorSetLayout setLayouts[2] = { uboLayout, texLayout };
+		vector<VkDescriptorSetLayout> setLayouts;
+		if (!rigged) {
+			setLayouts = { uboLayout, texLayout };
+		} else {
+			setLayouts = { uboLayout, ssboLayout, texLayout };
+		}
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = { };
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.pushConstantRangeCount = 2;
 		pipelineLayoutInfo.pPushConstantRanges = ranges;
-		pipelineLayoutInfo.setLayoutCount = 2;
-		pipelineLayoutInfo.pSetLayouts = setLayouts;
+		pipelineLayoutInfo.setLayoutCount = (uint32_t) setLayouts.size();
+		pipelineLayoutInfo.pSetLayouts = setLayouts.data();
 
 		if (vkCreatePipelineLayout(sys.inst._device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) throw std::runtime_error("failed to create pipeline layout");
 	}
@@ -508,11 +570,19 @@ namespace citrus::graphics {
 		vkQueueSubmit(sys.inst._graphicsQueue, 1, &subInfo, waitFences[sys.frameIndex]);
 	}
 	
-	meshPass::meshPass(system & sys, frameStore* fstore, bool textured, bool lit, bool rigged, fpath const& vertLoc, fpath const& fragLoc) : sysNode(sys), frame(fstore) {
+	meshPass::meshPass(system & sys, frameStore* fstore, bool textured, bool lit, bool rigged, fpath const& vertLoc, fpath const& fragLoc) :
+		sysNode(sys),
+		frame(fstore) {
 		sys.meshPasses.push_back(this);
+
+		this->rigged = rigged;
 
 		vert = vertLoc;
 		frag = fragLoc;
+
+		for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
+			ubos[i].init(&sys.inst, 4 * 1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, false);
+		}
 
 		map<meshAttributeUsage, uint32_t> locMap;
 		locMap[meshAttributeUsage::positionType] = 0;
@@ -523,6 +593,10 @@ namespace citrus::graphics {
 			locMap[meshAttributeUsage::bone1Type] = 4;
 			locMap[meshAttributeUsage::weight0Type] = 5;
 			locMap[meshAttributeUsage::weight1Type] = 6;
+
+			for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
+				ssbos[i].init(&sys.inst, 4 * 1024 * 1024, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, false);
+			}
 		}
 		meshMappings = meshUsageLocationMapping(locMap);
 		for (auto const& kvp : locMap) {

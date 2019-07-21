@@ -166,6 +166,7 @@ namespace citrus::graphics {
 		void destroyCommandBuffer(VkCommandBuffer buf, VkCommandPool pool);
 
 		uint64_t minUniformBufferOffsetAlignment();
+		uint64_t minStorageBufferOffsetAlignment();
 		ctDynamicOffsetBuffer createDynamicOffsetBuffer(uint64_t size);
 		void destroyDynamicOffsetBuffer(ctDynamicOffsetBuffer bm);
 		void flushDynamicOffsetBuffer(ctDynamicOffsetBuffer bm);
