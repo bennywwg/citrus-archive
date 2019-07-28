@@ -7,7 +7,7 @@ namespace citrus::graphics {
 			uboLayoutBinding.binding = 0;
 			uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			uboLayoutBinding.descriptorCount = 1;
-			uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
 			VkDescriptorSetLayoutCreateInfo uboLayoutInfo = { };
 			uboLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -251,7 +251,7 @@ namespace citrus::graphics {
 		if (!rigged) {
 			setLayouts = { uboLayout, texLayout };
 		} else {
-			setLayouts = { uboLayout, ssboLayout, texLayout };
+			setLayouts = { uboLayout, texLayout, ssboLayout };
 		}
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = { };
@@ -465,6 +465,10 @@ namespace citrus::graphics {
 
 		sys.inst.waitForFence(waitFences[sys.frameIndex]);
 		sys.inst.resetFence(waitFences[sys.frameIndex]);
+		
+		vec4 v = vec4(0.0f, 1.0f, 0.0f, 0.0f);
+		memcpy(ubos[sys.frameIndex].mapped, &v, sizeof(vec4));
+		ubos[sys.frameIndex].flushRange(0, sizeof(vec4));
 
 		ranges.resize(threadCount);
 		ranges[0].begin = 0;
@@ -495,6 +499,7 @@ namespace citrus::graphics {
 
 		vkCmdBindPipeline(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
+		vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboSets[sys.frameIndex], 0, nullptr);
 		vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &texSet, 0, nullptr);
 
 		uint32_t lastModelBindIndex = 999999;
@@ -508,9 +513,9 @@ namespace citrus::graphics {
 				}
 
 				pcData pushData;
-				mat4 modTmp = glm::translate(items[i].pos);
-				pushData.model = modTmp;
-				pushData.mvp = sys.frameVP * modTmp;
+				glm::mat4x3 modTmp = glm::translate(items[i].pos) * glm::toMat4(items[i].ori);
+				util::copyMat4x3ToRowMajor(modTmp, pushData.rowMajorModel);
+				pushData.mvp = sys.frameVP * mat4(modTmp);
 				pushData.uints[0] = items[i].texIndex;
 				pushData.uints[1] = i;
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, pcVertSize, &pushData);
@@ -581,7 +586,7 @@ namespace citrus::graphics {
 		frag = fragLoc;
 
 		for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
-			ubos[i].init(&sys.inst, 4 * 1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, false);
+			ubos[i].init(&sys.inst, 4 * 1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, true);
 		}
 
 		map<meshAttributeUsage, uint32_t> locMap;

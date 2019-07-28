@@ -167,6 +167,7 @@ namespace citrus::graphics {
 
 		uint64_t minUniformBufferOffsetAlignment();
 		uint64_t minStorageBufferOffsetAlignment();
+		uint64_t minFlushRangeAlignment();
 		ctDynamicOffsetBuffer createDynamicOffsetBuffer(uint64_t size);
 		void destroyDynamicOffsetBuffer(ctDynamicOffsetBuffer bm);
 		void flushDynamicOffsetBuffer(ctDynamicOffsetBuffer bm);

@@ -34,6 +34,8 @@ void terminateGLFW() {
 }
 
 int main(int argc, char **argv) {
+	util::sout(std::to_string(sizeof(glm::mat4x3)) + "\n");
+
 	std::string resDir = argc == 1 ? "" :argv[1];
 
 	if (argc >= 3 && (string(argv[2]) == "compileShaders")) {

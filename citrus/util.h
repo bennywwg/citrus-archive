@@ -81,6 +81,9 @@ namespace citrus {
 		string loadEntireFile(string path);
 
 		uint64_t roundUpAlign(uint64_t val, uint64_t align);
+		uint64_t roundDownAlign(uint64_t val, uint64_t align);
+
+		void copyMat4x3ToRowMajor(mat4x3 const& m, float f[4 * 3]);
 
 		extern mutex _soutMut;
 		void sout(string text);

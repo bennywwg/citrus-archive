@@ -163,6 +163,30 @@ namespace citrus::util {
 
 		return (val / align + 1) * align;
 	}
+	uint64_t roundDownAlign(uint64_t val, uint64_t align) {
+		if (align == 0) return val;
+
+		if (val % align == 0) return val;
+
+		return (val / align) * align;
+	}
+
+	void copyMat4x3ToRowMajor(mat4x3 const& m, float f[4 * 3]) {
+		f[0] = m[0].x;
+		f[1] = m[1].x;
+		f[2] = m[2].x;
+		f[3] = m[3].x;
+
+		f[4] = m[0].y;
+		f[5] = m[1].y;
+		f[6] = m[2].y;
+		f[7] = m[3].y;
+
+		f[8] =  m[0].z;
+		f[9] =  m[1].z;
+		f[10] = m[2].z;
+		f[11] = m[3].z;
+	}
 
 	mutex _soutMut;
 	mutex _idMut;

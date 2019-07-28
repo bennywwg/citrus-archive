@@ -9,6 +9,10 @@ layout(location = 1) out uint index;
 
 layout(set = 1, binding = 0) uniform sampler2D colorTex[4];
 
+layout (set = 0, binding = 0) uniform UniformData {
+	vec4 lightDir;
+} uniformData;
+
 layout (push_constant) uniform FragPushConstants {
 	layout(offset = 112) uint texIndex;
 	layout(offset = 116) uint itemIndex;
@@ -17,6 +21,10 @@ layout (push_constant) uniform FragPushConstants {
 } frag_pc;
 
 void main() {
-	color = vec4(texture(colorTex[frag_pc.texIndex], frag_uv).xyz, 1);
+	float brightness = clamp(dot(frag_norm, uniformData.lightDir.xyz), 0, 1);
+	if(brightness < 0.5) brightness = 0.5; else brightness = 1;
+	color = vec4(texture(colorTex[frag_pc.texIndex], frag_uv).xyz
+	* brightness, 1);
+	//color = vec4(frag_norm, 1);
 	index = frag_pc.itemIndex;
 }

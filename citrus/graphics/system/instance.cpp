@@ -1084,6 +1084,11 @@ namespace citrus::graphics {
 		vkGetPhysicalDeviceProperties(_chosenDevice, &props);
 		return props.limits.minStorageBufferOffsetAlignment;
 	}
+	uint64_t instance::minFlushRangeAlignment() {
+		VkPhysicalDeviceProperties props;
+		vkGetPhysicalDeviceProperties(_chosenDevice, &props);
+		return props.limits.nonCoherentAtomSize;
+	}
 
 	ctDynamicOffsetBuffer instance::createDynamicOffsetBuffer(uint64_t size) {
 

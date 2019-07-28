@@ -40,6 +40,7 @@ namespace citrus::graphics {
 	public:
 		instance*		inst;
 
+		uint64_t		align;
 		uint64_t		size;
 		VkDeviceMemory	mem;
 		VkBuffer		buf;

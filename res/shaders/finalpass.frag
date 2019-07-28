@@ -35,12 +35,13 @@ float idif(vec2 uv) {
 	#define RS 1
 	#define SF 0.001
 	uint mv = texture(indexTex, uv).r;
+	float weight = 0;
 	for(int y = -RS; y <= RS; y++) {
 		for(int x = -RS; x <= RS; x++) {
-			if(mv != texture(indexTex, uv + vec2(x*SF, y*SF)).r) return 0.5;
+			if(mv != texture(indexTex, uv + vec2(x*SF, y*SF)).r) weight += (abs(x) + abs(y));
 		}
 	}
-	return 1;
+	return 1 - weight / 12.0;
 }
 
 void main() {

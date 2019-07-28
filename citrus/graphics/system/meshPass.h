@@ -64,9 +64,9 @@ namespace citrus::graphics {
 		#pragma region(item stuff)
     protected:
 		struct pcData {
-			mat4				mvp;
-			mat4x3				model;
-			uvec4				uints;
+			mat4	mvp;
+			float	rowMajorModel[4*3];
+			uvec4	uints;
 		};
 		const uint32_t pcVertSize = 128 - 16;
 		const uint32_t pcFragSize = 16;

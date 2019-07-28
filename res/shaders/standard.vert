@@ -10,11 +10,11 @@ layout(location = 1) out vec2 frag_uv;
 
 layout (push_constant) uniform PushConstants {
 	mat4	mvp;
-	mat4x3	model;
+	layout( row_major ) mat4x3	model;
 } pushConstants;
 
 void main() {
     gl_Position	= pushConstants.mvp * vec4(vert_pos, 1.0);
-    frag_norm	= vert_norm;
+    frag_norm	= pushConstants.model * vec4(vert_norm, 0.0);
 	frag_uv		= vert_uv;
 }
