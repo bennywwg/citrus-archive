@@ -20,15 +20,15 @@ namespace citrus::graphics {
 		writes[1].dstArrayElement = 0;
 		writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		writes[1].descriptorCount = 1;
-		writes[1].pImageInfo = &depthInfo;
+		writes[1].pImageInfo = &indexInfo;
 		writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writes[2].dstSet = _set;
 		writes[2].dstBinding = 2;
 		writes[2].dstArrayElement = 0;
 		writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		writes[2].descriptorCount = 1;
-		writes[2].pImageInfo = &indexInfo;
-		vkUpdateDescriptorSets(sys.inst._device, 2, writes, 0, nullptr);
+		writes[2].pImageInfo = &depthInfo;
+		vkUpdateDescriptorSets(sys.inst._device, 3, writes, 0, nullptr);
 
 		VkCommandBufferBeginInfo beginInfo = {};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -83,7 +83,7 @@ namespace citrus::graphics {
 	}
 
 	void finalPass::initDescriptorsAndLayouts() {
-		VkDescriptorSetLayoutBinding texBindings[2] = { };
+		VkDescriptorSetLayoutBinding texBindings[3] = { };
 		texBindings[0].binding = 0;
 		texBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		texBindings[0].descriptorCount = 1;
@@ -92,10 +92,14 @@ namespace citrus::graphics {
 		texBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		texBindings[1].descriptorCount = 1;
 		texBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		texBindings[2].binding = 2;
+		texBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		texBindings[2].descriptorCount = 1;
+		texBindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo = { };
 		descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorLayoutInfo.bindingCount = 2;
+		descriptorLayoutInfo.bindingCount = 3;
 		descriptorLayoutInfo.pBindings = texBindings;
 
 		if (vkCreateDescriptorSetLayout(sys.inst._device, &descriptorLayoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS) {
@@ -104,7 +108,7 @@ namespace citrus::graphics {
 
 		VkDescriptorPoolSize poolSize = { };
 		poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSize.descriptorCount = 2;
+		poolSize.descriptorCount = 3;
 
 		VkDescriptorPoolCreateInfo poolInfo = { };
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -129,7 +133,8 @@ namespace citrus::graphics {
 
 	void finalPass::preRender(uint32_t const& threadCount) {
 		frameIndex = win.getNextFrameIndex(frameReadySem);
-		fillCommandBuffer(frameIndex, prevPass.frame->getColorInfo(frameIndex), prevPass.frame->getDepthInfo(frameIndex), prevPass.frame->getIndexInfo(frameIndex));
+
+		fillCommandBuffer(frameIndex, prevPass.frame->getColorInfo(sys.frameIndex), prevPass.frame->getDepthInfo(sys.frameIndex), prevPass.frame->getIndexInfo(sys.frameIndex));
 		vector<VkSemaphore> waits = getWaitSems();
 		waits.push_back(frameReadySem);
 		
@@ -402,5 +407,6 @@ namespace citrus::graphics {
 		if (_pipeline != VK_NULL_HANDLE) vkDestroyPipeline(sys.inst._device, _pipeline, nullptr);
 		if (_renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(sys.inst._device, _renderPass, nullptr);
 		if (_pipelineLayout != VK_NULL_HANDLE) vkDestroyPipelineLayout(sys.inst._device, _pipelineLayout, nullptr);
+		vkDestroySemaphore(sys.inst._device, frameReadySem, nullptr);
 	}
 }

@@ -40,13 +40,17 @@ namespace citrus::engine {
 			_win = nullptr;
 			_win = new graphics::window(1280, 720, "Citrus Engine", "C:\\Users\\benny\\Desktop\\citrus\\res");
 
+			graphics::frameStore* fs = nullptr;
+			graphics::meshPass* mp = nullptr;
+			graphics::finalPass* fp = nullptr;
+
 			try {
 				sys = new graphics::system(*_win->inst(), resDir / "textures", resDir / "meshes", resDir / "animations");
 				fpath shaderPath = resDir / "shaders" / "build";
-				graphics::frameStore* fs = new graphics::frameStore(*_win->inst());
-				graphics::meshPass* mp = new graphics::meshPass(*sys, fs, true, true, false, shaderPath / "standard.vert.spv", shaderPath / "standard.frag.spv");
+				fs = new graphics::frameStore(*_win->inst());
+				mp = new graphics::meshPass(*sys, fs, true, true, false, shaderPath / "standard.vert.spv", shaderPath / "standard.frag.spv");
 				//graphics::meshPass* bp = new graphics::meshPass(*sys, fs, true, true, true,  shaderPath / "bones.vert.spv", shaderPath / "bones.frag.spv");
-				graphics::finalPass* fp = new graphics::finalPass(*sys, *_win, *mp, shaderPath / "finalPass.vert.spv", shaderPath / "finalPass.frag.spv");
+				fp = new graphics::finalPass(*sys, *_win, *mp, shaderPath / "finalPass.vert.spv", shaderPath / "finalPass.frag.spv");
 				fp->addDependency(mp);
 				//fp->addDependency(bp);
 				
@@ -119,7 +123,10 @@ namespace citrus::engine {
 
 		//_win->inst()->destroyTexture(tx);
 
-		delete sys;
+		if (mp) delete mp;
+		if (fp) delete fp;
+		if (fs) delete fs;
+		if(sys) delete sys;
 
 		if(_win) delete _win;
 

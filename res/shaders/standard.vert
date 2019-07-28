@@ -8,10 +8,6 @@ layout(location = 2) in vec2 vert_uv;
 layout(location = 0) out vec3 frag_norm;
 layout(location = 1) out vec2 frag_uv;
 
-layout (set = 0, binding = 0) uniform BoneData {
-	mat4 transforms[];
-} boneData;
-
 layout (push_constant) uniform PushConstants {
 	mat4	mvp;
 	mat4x3	model;

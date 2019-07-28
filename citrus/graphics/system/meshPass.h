@@ -39,8 +39,6 @@ namespace citrus::graphics {
 		VkPipeline				pipeline;
 		VkCommandBuffer			priBufs[SWAP_FRAMES];
 		vector<VkCommandBuffer>	secBufs[SWAP_FRAMES];
-		VkSemaphore				startSem[SWAP_FRAMES];
-		VkSemaphore				doneSem[SWAP_FRAMES];
 		VkFence					waitFences[SWAP_FRAMES];
 		
 		buffer					ubos[SWAP_FRAMES];

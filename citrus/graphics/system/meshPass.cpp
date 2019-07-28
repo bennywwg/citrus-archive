@@ -512,11 +512,10 @@ namespace citrus::graphics {
 				pushData.model = modTmp;
 				pushData.mvp = sys.frameVP * modTmp;
 				pushData.uints[0] = items[i].texIndex;
-				pushData.uints[0] = i;
+				pushData.uints[1] = i;
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, pcVertSize, &pushData);
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, pcVertSize, pcFragSize, &pushData.uints);
-				uint32_t zero = 0;
-				vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboSets[sys.frameIndex], 1, &zero);
+				vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboSets[sys.frameIndex], 0, nullptr);
 
 				vkCmdDrawIndexed(buf, mappings[items[i].modelIndex].desc.indexCount, 1, 0, 0, 0);
 				draws++;
@@ -539,16 +538,17 @@ namespace citrus::graphics {
 
 		vkBeginCommandBuffer(priBufs[sys.frameIndex], &beginInfo);
 
-		VkClearValue clearValues[2] = { };
+		VkClearValue clearValues[3] = { };
 		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
-		clearValues[1].depthStencil = { 1.0f, 0 };
+		clearValues[1].color.uint32[0] = 0;
+		clearValues[2].depthStencil = { 1.0f, 0 };
 		VkRenderPassBeginInfo renderPassInfo = { };
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = pass;
 		renderPassInfo.framebuffer = fbos[sys.frameIndex];
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = sys.inst._extent;
-		renderPassInfo.clearValueCount = 2;
+		renderPassInfo.clearValueCount = 3;
 		renderPassInfo.pClearValues = clearValues;
 
 		vkCmdBeginRenderPass(priBufs[sys.frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
@@ -625,7 +625,17 @@ namespace citrus::graphics {
 		mapModels();
 	}
     meshPass::~meshPass() {
+		vkDestroyDescriptorPool(sys.inst._device, uboPool, nullptr);
+		vkDestroyDescriptorPool(sys.inst._device, texPool, nullptr);
+		vkDestroyDescriptorPool(sys.inst._device, ssboPool, nullptr);
+		vkDestroyDescriptorSetLayout(sys.inst._device, uboLayout, nullptr);
+		vkDestroyDescriptorSetLayout(sys.inst._device, texLayout, nullptr);
+		vkDestroyDescriptorSetLayout(sys.inst._device, ssboLayout, nullptr);
+		vkDestroyPipeline(sys.inst._device, pipeline, nullptr);
+		vkDestroyPipelineLayout(sys.inst._device, pipelineLayout, nullptr);
+		vkDestroyRenderPass(sys.inst._device, pass, nullptr);
 		for (int i = 0; i < SWAP_FRAMES; i++) {
+			vkDestroyFence(sys.inst._device, waitFences[i], nullptr);
 			vkDestroyFramebuffer(sys.inst._device, fbos[i], nullptr);
 		}
     }
