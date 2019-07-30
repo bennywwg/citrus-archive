@@ -46,6 +46,7 @@ namespace citrus::graphics {
 		VkBuffer		buf;
 		uint8_t*		mapped;
 
+		void flushAll();
 		void flushRange(uint64_t start, uint64_t size);
 		void init(instance* inst, uint64_t size, VkBufferUsageFlags usages, VkMemoryPropertyFlags props, bool map);
 

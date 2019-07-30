@@ -130,7 +130,7 @@ namespace citrus::graphics {
 				VkDescriptorBufferInfo ssboBufInfo = { };
 				ssboBufInfo.buffer = ssbos[i].buf;
 				ssboBufInfo.offset = 0;
-				ssboBufInfo.range = ssboSize;
+				ssboBufInfo.range = sizeof(mat4) * 64;
 
 				VkWriteDescriptorSet ssboWrite = { };
 				ssboWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -166,32 +166,32 @@ namespace citrus::graphics {
         VkAttachmentDescription colorAttachment = {};
 		colorAttachment.format = VK_FORMAT_R8G8B8A8_UNORM;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-		VkAttachmentDescription depthAttachment = {};
-		depthAttachment.format = sys.inst.findDepthFormat();
-		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorAttachment.finalLayout = transitionToRead ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription indexAttachment = {};
 		indexAttachment.format = VK_FORMAT_R16_UINT;
 		indexAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		indexAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		indexAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		indexAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		indexAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		indexAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		indexAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		indexAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		indexAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		indexAttachment.finalLayout = transitionToRead ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentDescription depthAttachment = {};
+		depthAttachment.format = sys.inst.findDepthFormat();
+		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttachment.finalLayout = transitionToRead ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription attachments[] = { colorAttachment, indexAttachment, depthAttachment };
 
@@ -454,7 +454,9 @@ namespace citrus::graphics {
 
 			mappings.push_back({ i, meshMappings.makePartialStructureView(sys.models[i].desc) });
 		}
-		util::sout("Mesh Pass:\n");
+		util::sout("Mesh Pass (");
+		util::sout(rigged ? "rigged " : "");
+		util::sout("):\n");
 		util::sout("  Mapped Models: " + std::to_string(mappings.size()) + "\n");
 		for (int i = 0; i < mappings.size(); i++) {
 			util::sout("    " + std::to_string(i) + ": " + sys.models[mappings[i].modelIndex].source.relative_path().string() + "\n");
@@ -462,7 +464,6 @@ namespace citrus::graphics {
 	}
 
 	void meshPass::preRender(uint32_t const & threadCount) {
-
 		sys.inst.waitForFence(waitFences[sys.frameIndex]);
 		sys.inst.resetFence(waitFences[sys.frameIndex]);
 		
@@ -480,9 +481,35 @@ namespace citrus::graphics {
 	}
 
 	void meshPass::renderPartial(uint32_t const & threadIndex) {
+		hptime partialStart = hpclock::now();
+
+		// computes animation transform data for each item belonging to this thread
+		// where each item (starting at item index ranges[threadIndex].begin) has bone data
+		// number of bones per item shouldn't be needed later
+		vector<uint64_t> boneOffsets;
+		if (threadIndex == 3)
+			boneOffsets = { };
+		if (rigged) {
+			uint64_t availableForMyThread = ssbos[sys.frameIndex].size / sys.renderThreads.size();
+			boneOffsets.resize(ranges[threadIndex].end - ranges[threadIndex].begin);
+			uint64_t boneOffset = util::roundUpAlign(availableForMyThread * (uint64_t) threadIndex, ssbos[sys.frameIndex].align);
+			ranges[threadIndex].offset = boneOffset;
+			//todo: don't do this if culled
+			for (uint32_t i = ranges[threadIndex].begin; i < ranges[threadIndex].end; i++) {
+				mesh& m = sys.models[mappings[items[i].modelIndex].modelIndex].m;
+				vector<mat4> res;
+				m.calculateAnimationTransforms(items[i].animationIndex, res, items[i].aniTime, behavior::linear);
+				if ((boneOffset + res.size() * sizeof(mat4)) > ssbos[sys.frameIndex].size) throw std::runtime_error("ran out of bones");
+				memcpy(stagings[sys.frameIndex].mapped + boneOffset, res.data(), sizeof(mat4) * res.size());
+				boneOffsets[i - ranges[threadIndex].begin] = boneOffset;
+				boneOffset += res.size() * sizeof(mat4);
+				boneOffset = util::roundUpAlign(boneOffset, ssbos[sys.frameIndex].align);
+			}
+			ranges[threadIndex].size = boneOffset - ranges[threadIndex].offset;
+		}
+
 		//util::sout("renderPartial " + std::to_string(threadIndex));
 		int vbinds = 0, draws = 0, culls = 0;
-		hptime partialStart = hpclock::now();
 
 		VkCommandBuffer& buf = secBufs[sys.frameIndex][threadIndex];
 		{	std::lock_guard<std::mutex> lock(sys.instMut);
@@ -520,7 +547,11 @@ namespace citrus::graphics {
 				pushData.uints[1] = i;
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, pcVertSize, &pushData);
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, pcVertSize, pcFragSize, &pushData.uints);
-				vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboSets[sys.frameIndex], 0, nullptr);
+				
+				if (rigged) {
+					uint32_t val = boneOffsets[i - ranges[threadIndex].begin];
+					vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &ssboSets[sys.frameIndex], 1, &val);
+				}
 
 				vkCmdDrawIndexed(buf, mappings[items[i].modelIndex].desc.indexCount, 1, 0, 0, 0);
 				draws++;
@@ -533,6 +564,36 @@ namespace citrus::graphics {
 	}
 
 	void meshPass::postRender(uint32_t const& threadCount) {
+		if (rigged) {
+			for (int i = 0; i < threadCount; i++) {
+				stagings[sys.frameIndex].flushRange(ranges[i].offset, ranges[i].size);
+			}
+			
+			VkBufferCopy reg = { };
+			reg.srcOffset = 0;
+			reg.dstOffset = 0;
+			reg.size = stagings[sys.frameIndex].size;
+
+			if (stagingCommands[sys.frameIndex] != VK_NULL_HANDLE) sys.inst.destroyCommandBuffer(stagingCommands[sys.frameIndex], sys.inst._commandPool);
+			stagingCommands[sys.frameIndex] = sys.inst.createCommandBuffer(sys.inst._commandPool);
+			
+			VkCommandBufferBeginInfo inf = { };
+			inf.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			inf.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+			vkBeginCommandBuffer(stagingCommands[sys.frameIndex], &inf);
+			vkCmdCopyBuffer(stagingCommands[sys.frameIndex], stagings[sys.frameIndex].buf, ssbos[sys.frameIndex].buf, 1, &reg);
+			vkEndCommandBuffer(stagingCommands[sys.frameIndex]);
+
+			VkSubmitInfo subInf = { };
+			subInf.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			subInf.signalSemaphoreCount = 1;
+			subInf.pSignalSemaphores = &stagingSems[sys.frameIndex];
+			subInf.commandBufferCount = 1;
+			subInf.pCommandBuffers = &stagingCommands[sys.frameIndex];
+			vkQueueSubmit(sys.inst._graphicsQueue, 1, &subInf, VK_NULL_HANDLE);
+		}
+
 		//util::sout("postRender\n");
 		if (priBufs[sys.frameIndex] != VK_NULL_HANDLE) sys.inst.destroyCommandBuffer(priBufs[sys.frameIndex], sys.inst._commandPool);
 		priBufs[sys.frameIndex] = sys.inst.createCommandBuffer(sys.inst._commandPool, false);
@@ -543,18 +604,12 @@ namespace citrus::graphics {
 
 		vkBeginCommandBuffer(priBufs[sys.frameIndex], &beginInfo);
 
-		VkClearValue clearValues[3] = { };
-		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
-		clearValues[1].color.uint32[0] = 0;
-		clearValues[2].depthStencil = { 1.0f, 0 };
 		VkRenderPassBeginInfo renderPassInfo = { };
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = pass;
 		renderPassInfo.framebuffer = fbos[sys.frameIndex];
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = sys.inst._extent;
-		renderPassInfo.clearValueCount = 3;
-		renderPassInfo.pClearValues = clearValues;
 
 		vkCmdBeginRenderPass(priBufs[sys.frameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
@@ -568,14 +623,23 @@ namespace citrus::graphics {
 		subInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		subInfo.commandBufferCount = 1;
 		subInfo.pCommandBuffers = &priBufs[sys.frameIndex];
-		subInfo.signalSemaphoreCount = 1;
-		VkSemaphore signalSem = getSignalSem();
-		subInfo.pSignalSemaphores = &signalSem;
+		vector<VkSemaphore> signalSems = getSignalSems();
+		subInfo.signalSemaphoreCount = signalSems.size();
+		subInfo.pSignalSemaphores = signalSems.data();
+		vector<VkSemaphore> waitSems = getWaitSems();
+		vector<VkPipelineStageFlags> waitFlags(waitSems.size(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+		if (rigged) {
+			waitSems.push_back(stagingSems[sys.frameIndex]);
+			waitFlags.push_back(VK_PIPELINE_STAGE_TRANSFER_BIT);
+		}
+		subInfo.waitSemaphoreCount = waitSems.size();
+		subInfo.pWaitSemaphores = waitSems.data();
+		subInfo.pWaitDstStageMask = waitFlags.data();
 
 		vkQueueSubmit(sys.inst._graphicsQueue, 1, &subInfo, waitFences[sys.frameIndex]);
 	}
 	
-	meshPass::meshPass(system & sys, frameStore* fstore, bool textured, bool lit, bool rigged, fpath const& vertLoc, fpath const& fragLoc) :
+	meshPass::meshPass(system & sys, frameStore* fstore, bool textured, bool lit, bool rigged, fpath const& vertLoc, fpath const& fragLoc, bool transitionToRead) :
 		sysNode(sys),
 		frame(fstore) {
 		sys.meshPasses.push_back(this);
@@ -585,8 +649,10 @@ namespace citrus::graphics {
 		vert = vertLoc;
 		frag = fragLoc;
 
+		this->transitionToRead = transitionToRead;
+
 		for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
-			ubos[i].init(&sys.inst, 4 * 1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, true);
+			ubos[i].init(&sys.inst, uboSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, true);
 		}
 
 		map<meshAttributeUsage, uint32_t> locMap;
@@ -600,7 +666,8 @@ namespace citrus::graphics {
 			locMap[meshAttributeUsage::weight1Type] = 6;
 
 			for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
-				ssbos[i].init(&sys.inst, 4 * 1024 * 1024, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, false);
+				ssbos[i].init(&sys.inst, ssboSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, false);
+				stagings[i].init(&sys.inst, ssboSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, true);
 			}
 		}
 		meshMappings = meshUsageLocationMapping(locMap);
@@ -625,6 +692,8 @@ namespace citrus::graphics {
 			inheritanceInfos[i].sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 			inheritanceInfos[i].framebuffer = fbos[i];
 			inheritanceInfos[i].renderPass = pass;
+			stagingCommands[i] = VK_NULL_HANDLE;
+			stagingSems[i] = sys.inst.createSemaphore();
 		}
 
 		mapModels();
@@ -642,6 +711,7 @@ namespace citrus::graphics {
 		for (int i = 0; i < SWAP_FRAMES; i++) {
 			vkDestroyFence(sys.inst._device, waitFences[i], nullptr);
 			vkDestroyFramebuffer(sys.inst._device, fbos[i], nullptr);
+			sys.inst.destroySemaphore(stagingSems[i]);
 		}
     }
 }

@@ -75,9 +75,10 @@ namespace citrus::graphics {
 		submitInfo.pWaitSemaphores = waits.data();
 		submitInfo.pWaitDstStageMask = waitStages.data();
 
-		submitInfo.signalSemaphoreCount = 1;
-		VkSemaphore signalSem = getSignalSem();
-		submitInfo.pSignalSemaphores = &signalSem;
+		vector<VkSemaphore> signalSems = getSignalSems();
+		signalSems.push_back(frameDoneSem);
+		submitInfo.signalSemaphoreCount = signalSems.size();
+		submitInfo.pSignalSemaphores = signalSems.data();
 
 		vkQueueSubmit(sys.inst._graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 	}
@@ -134,13 +135,13 @@ namespace citrus::graphics {
 	void finalPass::preRender(uint32_t const& threadCount) {
 		frameIndex = win.getNextFrameIndex(frameReadySem);
 
-		fillCommandBuffer(frameIndex, prevPass.frame->getColorInfo(sys.frameIndex), prevPass.frame->getDepthInfo(sys.frameIndex), prevPass.frame->getIndexInfo(sys.frameIndex));
+		fillCommandBuffer(frameIndex, fStore.getColorInfo(sys.frameIndex), fStore.getDepthInfo(sys.frameIndex), fStore.getIndexInfo(sys.frameIndex));
 		vector<VkSemaphore> waits = getWaitSems();
 		waits.push_back(frameReadySem);
 		
 		submit(frameIndex, waits);
 
-		win.present(frameIndex, getSignalSem());
+		win.present(frameIndex, frameDoneSem);
 	}
 
 	void finalPass::renderPartial(uint32_t const& threadIndex) {
@@ -151,7 +152,8 @@ namespace citrus::graphics {
 		//nothing to do
 	}
 
-	finalPass::finalPass(system& sys, window& win, meshPass& prev, fpath vertLoc, fpath fragLoc) : sysNode(sys), frameReadySem(sys.inst.createSemaphore()), win(win), prevPass(prev) {
+	finalPass::finalPass(system& sys, window& win, frameStore& store, fpath vertLoc, fpath fragLoc) : sysNode(sys),
+		frameReadySem(sys.inst.createSemaphore()), frameDoneSem(sys.inst.createSemaphore()), win(win), fStore(store) {
 		frameIndex = 0;
 
 		VkShaderModule vertModule = VK_NULL_HANDLE;
@@ -408,5 +410,6 @@ namespace citrus::graphics {
 		if (_renderPass != VK_NULL_HANDLE) vkDestroyRenderPass(sys.inst._device, _renderPass, nullptr);
 		if (_pipelineLayout != VK_NULL_HANDLE) vkDestroyPipelineLayout(sys.inst._device, _pipelineLayout, nullptr);
 		vkDestroySemaphore(sys.inst._device, frameReadySem, nullptr);
+		vkDestroySemaphore(sys.inst._device, frameDoneSem, nullptr);
 	}
 }

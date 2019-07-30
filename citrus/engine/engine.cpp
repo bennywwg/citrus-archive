@@ -9,6 +9,7 @@
 #include "citrus/graphics/image.h"
 #include "citrus/graphics/system/meshPass.h"
 #include "citrus/graphics/system/finalPass.h"
+#include "citrus/graphics/system/clearFrame.h"
 
 namespace citrus::engine {
 	void engine::Log(string str) {
@@ -41,20 +42,25 @@ namespace citrus::engine {
 			_win = new graphics::window(1280, 720, "Citrus Engine", "C:\\Users\\benny\\Desktop\\citrus\\res");
 
 			graphics::frameStore* fs = nullptr;
-			graphics::meshPass* mp = nullptr;
+			graphics::meshPass* mp = nullptr, *bp = nullptr;
 			graphics::finalPass* fp = nullptr;
+			graphics::clearFrame* cf = nullptr;
 
 			try {
 				sys = new graphics::system(*_win->inst(), resDir / "textures", resDir / "meshes", resDir / "animations");
 				fpath shaderPath = resDir / "shaders" / "build";
 				fs = new graphics::frameStore(*_win->inst());
-				mp = new graphics::meshPass(*sys, fs, true, true, false, shaderPath / "standard.vert.spv", shaderPath / "standard.frag.spv");
-				//graphics::meshPass* bp = new graphics::meshPass(*sys, fs, true, true, true,  shaderPath / "bones.vert.spv", shaderPath / "bones.frag.spv");
-				fp = new graphics::finalPass(*sys, *_win, *mp, shaderPath / "finalPass.vert.spv", shaderPath / "finalPass.frag.spv");
+				mp = new graphics::meshPass(*sys, fs, true, true, false, shaderPath / "standard.vert.spv", shaderPath / "standard.frag.spv", false);
+				bp = new graphics::meshPass(*sys, fs, true, true, true,  shaderPath / "bones.vert.spv", shaderPath / "bones.frag.spv", true);
+				fp = new graphics::finalPass(*sys, *_win, *fs, shaderPath / "finalPass.vert.spv", shaderPath / "finalPass.frag.spv");
+				cf = new graphics::clearFrame(*sys, fs);
+
+				mp->addDependency(cf);
+				bp->addDependency(cf);
 				fp->addDependency(mp);
-				//fp->addDependency(bp);
+				fp->addDependency(bp);
 				
-				sys->setFinalPass(fp);
+				sys->passes = { cf, mp, bp, fp };
 			} catch (std::runtime_error const& re) {
 				util::sout(string(re.what()) + "\n");
 				throw re;
@@ -124,6 +130,7 @@ namespace citrus::engine {
 		//_win->inst()->destroyTexture(tx);
 
 		if (mp) delete mp;
+		if (bp) delete bp;
 		if (fp) delete fp;
 		if (fs) delete fs;
 		if(sys) delete sys;

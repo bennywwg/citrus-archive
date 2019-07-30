@@ -115,21 +115,20 @@ namespace citrus::graphics {
 
 		#pragma region(rendertime stuff)
 	private:
-		vector<sysNode*>	passes;
 		
 	public:
 		#pragma endregion
 	private:
 		void				postProcess(int frameIndex, int windowSwapIndex, vector<VkSemaphore> waits, VkSemaphore signal);
 	public:
+		vector<sysNode*>	passes;
+
 		void				initializeThreads(uint32_t numThreads);
 		void				freeThreads();
 		bool				renderDone() const;
 		void				renderFunc(uint32_t threadIndex);
 
 		void				render();
-
-		void				setFinalPass(sysNode* pass);
 
 		vector<meshPass*>	meshPasses;
 

@@ -49,13 +49,14 @@ namespace citrus::engine {
 	graphics::behavior meshFilter::mode() const {
 		return _mode;
 	}
-	double meshFilter::aniTime() const {
+	float meshFilter::aniTime() const {
 		return eng()->time() - _aniStart;
 	}
 
 	void meshFilter::startAnimation(int ani, graphics::behavior mode) {
 		_aniStart = eng()->time();
 		_mode = mode;
+		eng()->sys->meshPasses[materialIndex]->items[itemIndex].animationIndex = ani;
 	}
 	std::unique_ptr<editor::gui> meshFilter::renderGUI() {
 		editor::container* c = new	editor::container();
@@ -72,8 +73,10 @@ namespace citrus::engine {
 	}
 	void meshFilter::preRender() {
 		if (materialIndex != -1) {
-			eng()->sys->meshPasses[materialIndex]->items[itemIndex].pos = ent().getGlobalTransform().getPosition();
-			eng()->sys->meshPasses[materialIndex]->items[itemIndex].ori = ent().getGlobalTransform().getOrientation();
+			graphics::meshPass::itemInfo& inf = eng()->sys->meshPasses[materialIndex]->items[itemIndex];
+			inf.pos		= ent().getGlobalTransform().getPosition();
+			inf.ori		= ent().getGlobalTransform().getOrientation();
+			inf.aniTime = float(eng()->time() - _aniStart);
 		}
 	}
 	void meshFilter::load(const json& js) {

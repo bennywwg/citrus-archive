@@ -34,8 +34,6 @@ void terminateGLFW() {
 }
 
 int main(int argc, char **argv) {
-	util::sout(std::to_string(sizeof(glm::mat4x3)) + "\n");
-
 	std::string resDir = argc == 1 ? "" :argv[1];
 
 	if (argc >= 3 && (string(argv[2]) == "compileShaders")) {
@@ -90,7 +88,7 @@ int main(int argc, char **argv) {
 		}, util::nextID());
 		auto playerModel = e.man->create("Player Model", {
 			engine::eleInit<engine::meshFilter>::run([](engine::meshFilter& filt) {
-				filt.setState(0, 1, 0);
+				filt.setState(1, 1, 8);
 				filt.startAnimation(0, graphics::behavior::repeat);
 			})
 		}, util::nextID());

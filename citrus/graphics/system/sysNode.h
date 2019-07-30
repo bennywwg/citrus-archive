@@ -11,10 +11,10 @@ namespace citrus::graphics {
 		friend class window;
 
 	private:
-		vector<sysNode*>	dependencies;
+		vector<sysNode*>	dependencies; // semaphore is needed
 
-		// semaphore that is signalled upon completion of rendering
-		VkSemaphore	const	signalSem;
+		vector<VkSemaphore> waitSems;
+		vector<VkSemaphore> signalSems; // managed by this object
 
 	public:
 		system& sys;
@@ -23,7 +23,7 @@ namespace citrus::graphics {
 		void				addDependency(sysNode* pass);
 		vector<sysNode*>	getDependencies();
 		vector<VkSemaphore>	getWaitSems();
-		VkSemaphore			getSignalSem();
+		vector<VkSemaphore>	getSignalSems();
 
 		// prepare for rendering proper, ie assign each thread item range
 		// return value: number of invocations of renderPartial

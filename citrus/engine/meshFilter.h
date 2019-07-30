@@ -24,7 +24,7 @@ namespace citrus::engine {
 		int tex() const;
 		int ani() const;
 		graphics::behavior mode() const;
-		double aniTime() const;
+		float aniTime() const;
 		void startAnimation(int ani, graphics::behavior mode = graphics::behavior::nearest);
 
 		std::unique_ptr<editor::gui> renderGUI();

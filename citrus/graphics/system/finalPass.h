@@ -4,6 +4,7 @@
 #include "citrus/graphics/system/sysNode.h"
 #include "citrus/graphics/window.h"
 #include "citrus/graphics/system/meshPass.h"
+#include "citrus/graphics/system/runtimeResource.h"
 
 namespace citrus::graphics {
 	class finalPass : public sysNode {
@@ -16,9 +17,9 @@ namespace citrus::graphics {
 
 		vector<VkFramebuffer> targets;
 		vector<VkCommandBuffer> cbufs;
-
-		meshPass&				prevPass;
-		VkSemaphore				frameReadySem;
+		
+		frameStore&				fStore;
+		VkSemaphore				frameReadySem, frameDoneSem;
 		window&					win;
 		uint32_t				frameIndex;
 	public:
@@ -35,7 +36,7 @@ namespace citrus::graphics {
 
 		//constructs final pass compositor shader
 		//views : swapchain image views to render to, one target created per view
-		finalPass(system& sys, window& win, meshPass& prev, fpath vertLoc, fpath fragLoc);
+		finalPass(system& sys, window& win, frameStore& prev, fpath vertLoc, fpath fragLoc);
 		~finalPass();
 	};
 }

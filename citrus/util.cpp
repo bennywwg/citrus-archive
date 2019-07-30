@@ -290,9 +290,7 @@ namespace citrus::util {
 			}
 		}
 
-		util::sout("Shader info: " + std::to_string(numSucceeded) + " compiled, " + std::to_string(numFailed) + " failed, " + std::to_string(allPaths.size() - numFailed) + " up to date\n");
-
-		return;
+		util::sout("Shader info: " + std::to_string(numSucceeded) + " compiled, " + std::to_string(numFailed) + " failed, " + std::to_string(allPaths.size() - numFailed) + " up to date\n\n");
 	}
 
 	std::string execute(string const& command) {

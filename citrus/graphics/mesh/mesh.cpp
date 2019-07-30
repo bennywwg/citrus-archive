@@ -454,6 +454,8 @@ namespace citrus::graphics {
 	void mesh::calculateAnimationTransforms(int animationIndex, std::vector<glm::mat4> & data, double time, behavior mode) const {
 		const aniBinding& ani = animations[animationIndex];
 
+		if(data.size() != bones.bones.size()) data.resize(bones.bones.size());
+
 		//localTransforms[i] corresponds to bones.bones[i]
 		std::vector<glm::mat4> localTransforms(nodes.nodes.size());
 		std::vector<glm::mat4> globalTransforms(nodes.nodes.size());

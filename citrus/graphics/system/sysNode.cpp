@@ -4,19 +4,22 @@
 namespace citrus::graphics {
 	void sysNode::addDependency(sysNode* pass) {
 		dependencies.push_back(pass);
+		pass->signalSems.push_back(sys.inst.createSemaphore());
+		waitSems.push_back(pass->signalSems.back());
 	}
 	vector<sysNode*> sysNode::getDependencies() {
 		return dependencies;
 	}
 	vector<VkSemaphore> sysNode::getWaitSems() {
-		vector<VkSemaphore> res;
-		for (sysNode* dep : dependencies)
-			res.push_back(dep->getSignalSem());
-		return res;
+		return waitSems;
 	}
-	VkSemaphore sysNode::getSignalSem() {
-		return signalSem;
+	vector<VkSemaphore> sysNode::getSignalSems() {
+		return signalSems;
 	}
-	sysNode::sysNode(system& sys) : sys(sys), signalSem(sys.inst.createSemaphore()) { }
-	sysNode::~sysNode() { sys.inst.destroySemaphore(signalSem); }
+	sysNode::sysNode(system& sys) : sys(sys) { }
+	sysNode::~sysNode() {
+		for (VkSemaphore const& sem : signalSems) {
+			sys.inst.destroySemaphore(sem);
+		}
+	}
 }

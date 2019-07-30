@@ -21,12 +21,14 @@ namespace citrus::graphics {
 		bool					texturesEnabled = true;
 		bool					rigged = false;
 		uint64_t const			uboSize = 4 * 1024;
-		uint64_t const			ssboSize = 4 * 1024 * 1024;
+		uint64_t const			ssboSize = 4 * 1024 * 4;
 		#pragma endregion
 
 		#pragma region(pipeline stuff)
     protected:
 		fpath vert, frag;
+
+		bool					transitionToRead;
 
 		VkDescriptorSetLayout	uboLayout, ssboLayout, texLayout;
 		VkDescriptorPool		uboPool, ssboPool, texPool;
@@ -43,6 +45,10 @@ namespace citrus::graphics {
 		
 		buffer					ubos[SWAP_FRAMES];
 		buffer					ssbos[SWAP_FRAMES];
+		buffer					stagings[SWAP_FRAMES];
+
+		VkCommandBuffer			stagingCommands[SWAP_FRAMES];
+		VkSemaphore				stagingSems[SWAP_FRAMES];
 
 	public:
 		frameStore* const	frame;
@@ -78,6 +84,8 @@ namespace citrus::graphics {
 			quat				ori;
 			uint32_t			modelIndex;
 			uint32_t			texIndex;
+			uint32_t			animationIndex;
+			float				aniTime;
 			uint32_t			uniformOffset;
 			uint32_t			uniformSize;
 			bool				enabled;
@@ -114,7 +122,7 @@ namespace citrus::graphics {
 		virtual void 			renderPartial(uint32_t const& threadIndex);
         virtual void            postRender(uint32_t const& threadCount);
 		
-		meshPass(system & sys, frameStore* fstore, bool textured, bool lit, bool rigged, fpath const& vert, fpath const& frag);
+		meshPass(system & sys, frameStore* fstore, bool textured, bool lit, bool rigged, fpath const& vert, fpath const& frag, bool transitionToRead);
 		~meshPass();
 	};
 }

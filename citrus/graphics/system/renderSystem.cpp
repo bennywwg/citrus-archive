@@ -364,18 +364,6 @@ namespace citrus::graphics {
 			passes[i]->postRender((uint32_t) renderThreads.size());
 		}
 	}
-	void system::setFinalPass(sysNode* pass) {
-		vector<sysNode*> toAdd = { pass };
-		for (uint32_t i = 0; i < toAdd.size(); i++) {
-			for (sysNode* const& c : toAdd[i]->getDependencies()) {
-				if (std::find(toAdd.begin(), toAdd.end(), c) == toAdd.end()) {
-					toAdd.push_back(c);
-				}
-			}
-			passes.push_back(toAdd[i]);
-		}
-		std::reverse(passes.begin(), passes.end());
-	}
 	system::system(instance& vkinst, fpath texturePath, fpath modelPath, fpath animationPath) : inst(vkinst), renderGo(4) {
 		texturePaths = util::filesInDirectory(texturePath, ".png");
 		modelPaths = util::filesInDirectory(modelPath, ".dae");
