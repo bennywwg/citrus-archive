@@ -498,7 +498,7 @@ namespace citrus::graphics {
 			for (uint32_t i = ranges[threadIndex].begin; i < ranges[threadIndex].end; i++) {
 				mesh& m = sys.models[mappings[items[i].modelIndex].modelIndex].m;
 				vector<mat4> res;
-				m.calculateAnimationTransforms(items[i].animationIndex, res, items[i].aniTime, behavior::linear);
+				m.calculateAnimationTransforms(items[i].animationIndex, res, items[i].aniTime, behavior::repeat);
 				if ((boneOffset + res.size() * sizeof(mat4)) > ssbos[sys.frameIndex].size) throw std::runtime_error("ran out of bones");
 				memcpy(stagings[sys.frameIndex].mapped + boneOffset, res.data(), sizeof(mat4) * res.size());
 				boneOffsets[i - ranges[threadIndex].begin] = boneOffset;

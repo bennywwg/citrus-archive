@@ -274,7 +274,28 @@ namespace citrus::graphics {
 		glfwSetErrorCallback(errorFun);
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, false);
+		glfwWindowHint(GLFW_DECORATED, false);
 		_win = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
+
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		if (!mode)
+			return;
+
+		int monitorX, monitorY;
+		glfwGetMonitorPos(monitor, &monitorX, &monitorY);
+
+		int windowWidth, windowHeight;
+		glfwGetWindowSize(_win, &windowWidth, &windowHeight);
+
+		glfwSetWindowPos(_win,
+			monitorX + (mode->width - windowWidth) / 2,
+			monitorY + (mode->height - windowHeight) / 2);
+
+
+
+
 		GLFWimage img;
 		img.height = 32;
 		img.width = 32;

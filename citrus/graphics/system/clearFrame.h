@@ -34,6 +34,8 @@ namespace citrus::graphics {
 		virtual void			initializeFramebuffers();
 	public:
 
+		uint16_t				selectedIndex;
+
 		virtual void			preRender(uint32_t const& threadCount);
 		virtual void 			renderPartial(uint32_t const& threadIndex);
 		virtual void            postRender(uint32_t const& threadCount);

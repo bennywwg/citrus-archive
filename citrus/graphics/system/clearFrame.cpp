@@ -95,6 +95,8 @@ namespace citrus::graphics {
 		sys.inst.waitForFence(waitFences[sys.frameIndex]);
 		sys.inst.resetFence(waitFences[sys.frameIndex]);
 
+		selectedIndex = frame->getPixelIndex(sys.frameIndex, 50, 50);
+
 		VkCommandBuffer& buf = priBufs[sys.frameIndex];
 		if (buf != VK_NULL_HANDLE) sys.inst.destroyCommandBuffer(buf, sys.inst._commandPool);
 		buf = sys.inst.createCommandBuffer(sys.inst._commandPool);

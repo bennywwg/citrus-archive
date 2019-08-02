@@ -10,6 +10,7 @@
 #include "citrus/graphics/system/meshPass.h"
 #include "citrus/graphics/system/finalPass.h"
 #include "citrus/graphics/system/clearFrame.h"
+#include "citrus/graphics/system/immediatePass.h"
 
 namespace citrus::engine {
 	void engine::Log(string str) {
@@ -39,28 +40,33 @@ namespace citrus::engine {
 		//try {
 			_renderState.store(render_initializing);
 			_win = nullptr;
-			_win = new graphics::window(1280, 720, "Citrus Engine", "C:\\Users\\benny\\Desktop\\citrus\\res");
+			_win = new graphics::window(1728, 972, "Citrus Engine", "C:\\Users\\benny\\Desktop\\citrus\\res");
 
 			graphics::frameStore* fs = nullptr;
 			graphics::meshPass* mp = nullptr, *bp = nullptr;
 			graphics::finalPass* fp = nullptr;
 			graphics::clearFrame* cf = nullptr;
+			graphics::immediatePass* ip = nullptr;
 
 			try {
-				sys = new graphics::system(*_win->inst(), resDir / "textures", resDir / "meshes", resDir / "animations");
 				fpath shaderPath = resDir / "shaders" / "build";
+				sys = new graphics::system(*_win->inst(), resDir / "textures", resDir / "meshes", resDir / "animations");
 				fs = new graphics::frameStore(*_win->inst());
 				mp = new graphics::meshPass(*sys, fs, true, true, false, shaderPath / "standard.vert.spv", shaderPath / "standard.frag.spv", false);
-				bp = new graphics::meshPass(*sys, fs, true, true, true,  shaderPath / "bones.vert.spv", shaderPath / "bones.frag.spv", true);
+				bp = new graphics::meshPass(*sys, fs, true, true, true,  shaderPath / "bones.vert.spv", shaderPath / "bones.frag.spv", false);
+				ip = new graphics::immediatePass(*sys, fs, shaderPath / "immediate.vert.spv", shaderPath / "immediate.frag.spv", true);
 				fp = new graphics::finalPass(*sys, *_win, *fs, shaderPath / "finalPass.vert.spv", shaderPath / "finalPass.frag.spv");
 				cf = new graphics::clearFrame(*sys, fs);
 
 				mp->addDependency(cf);
 				bp->addDependency(cf);
+				ip->addDependency(cf);
+
 				fp->addDependency(mp);
 				fp->addDependency(bp);
+				fp->addDependency(ip);
 				
-				sys->passes = { cf, mp, bp, fp };
+				sys->passes = { cf, mp, bp, ip, fp };
 			} catch (std::runtime_error const& re) {
 				util::sout(string(re.what()) + "\n");
 				throw re;

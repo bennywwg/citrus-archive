@@ -1,6 +1,81 @@
 #include "runtimeResource.h"
 
 namespace citrus::graphics {
+	uint16_t frameStore::getPixelIndex(uint32_t frameIndex, uint32_t x, uint32_t y) {
+		VkCommandBuffer buf = inst.createCommandBuffer(inst._commandPool);
+
+		VkCommandBufferBeginInfo inf = {};
+		inf.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		vkBeginCommandBuffer(buf, &inf);
+
+		{
+			inst.pipelineBarrierLayoutChange(frames[frameIndex].index.img,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+			VkImageMemoryBarrier imgBarrier = {};
+			imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			imgBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			imgBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			imgBarrier.image = frames[frameIndex].index.img;
+			imgBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imgBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			imgBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imgBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			vkCmdPipelineBarrier(buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imgBarrier);
+		}
+
+		VkBufferImageCopy region = {};
+		region.imageOffset = { (int32_t) x, (int32_t)y, 0 };
+		region.imageExtent = { 1, 1, 1 };
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.layerCount = 1;
+		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.mipLevel = 0;
+		region.bufferOffset = 0;
+		vkCmdCopyImageToBuffer(buf, frames[frameIndex].index.img, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, tmpRes.buf, 1, &region);
+
+		{
+			VkBufferMemoryBarrier bufBarrier = {};
+			bufBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			bufBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			bufBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+			bufBarrier.offset = 0;
+			bufBarrier.size = 2;
+			bufBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			bufBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			bufBarrier.buffer = tmpRes.buf;
+			vkCmdPipelineBarrier(buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT, VK_DEPENDENCY_DEVICE_GROUP_BIT, 0, nullptr, 1, &bufBarrier, 0, nullptr);
+		}
+
+		vkEndCommandBuffer(buf);
+
+		VkFence fen = inst.createFence(false);
+
+		VkSubmitInfo subInf = {};
+		subInf.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		subInf.commandBufferCount = 1;
+		subInf.pCommandBuffers = &buf;
+		vkQueueSubmit(inst._graphicsQueue, 1, &subInf, fen);
+
+		inst.waitForFence(fen);
+
+		inst.destroyCommandBuffer(buf, inst._commandPool);
+
+		inst.destroyFence(fen);
+
+		VkMappedMemoryRange invRange = {};
+		invRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		invRange.memory = tmpRes.mem;
+		invRange.offset = 0;
+		invRange.size = 2;
+		vkInvalidateMappedMemoryRanges(inst._device, 1, &invRange);
+
+		uint16_t finalRes = *(uint16_t*)(tmpRes.mapped);
+		
+		return finalRes;
+	}
 	void frameStore::initColor() {
 		VkImageCreateInfo imgInfo = {};
 		imgInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -145,7 +220,7 @@ namespace citrus::graphics {
 		imgInfo.format = VK_FORMAT_R16_UINT;
 		imgInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imgInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imgInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		imgInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		imgInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imgInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -224,6 +299,7 @@ namespace citrus::graphics {
 		initColor();
 		initDepth();
 		initIndex();
+		tmpRes.init(&inst, 2, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, true);
 	}
 	frameStore::~frameStore() {
 		for (int i = 0; i < SWAP_FRAMES; i++) {
@@ -265,10 +341,6 @@ namespace citrus::graphics {
 		if (vkFlushMappedMemoryRanges(inst->_device, 1, &range) != VK_SUCCESS) throw std::runtime_error("failed to map flush memory range");
 	}
 	void buffer::init(instance* inst, uint64_t size, VkBufferUsageFlags usages, VkMemoryPropertyFlags props, bool map) {
-		if (map) align = inst->minFlushRangeAlignment();
-		else if (usages & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) align = inst->minStorageBufferOffsetAlignment();
-		else align = inst->minUniformBufferOffsetAlignment();
-
 		this->size = size;
 
 		this->inst = inst;
@@ -282,6 +354,8 @@ namespace citrus::graphics {
 
 		VkMemoryRequirements memRequirements;
 		vkGetBufferMemoryRequirements(inst->_device, buf, &memRequirements);
+
+		align = memRequirements.alignment;
 
 		VkMemoryAllocateInfo allocInfo = { };
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;

@@ -15,8 +15,10 @@ namespace citrus::engine {
 		//do camera stuff
 		y += -eng()->dt() * ySpeed * ((eng()->getKey(button::arrowLeft) ? 1 : 0 + eng()->getKey(button::arrowRight) ? -1 : 0) + eng()->controllerValue(analog::ctr_rstick_x));
 		float distMag = ((eng()->getKey(button::arrowUp) ? 1 : 0 + eng()->getKey(button::arrowDown) ? -1 : 0) - eng()->controllerValue(analog::ctr_rstick_y));
-		dist += -eng()->dt() * distSpeed * (abs(distMag) > 0.8f ? distMag : 0.0f);
+		//dist += -eng()->dt() * distSpeed * (abs(distMag) > 0.8f ? distMag : 0.0f);
+		x -= distMag * 0.2f;
 		dist = glm::clamp(dist, minDist, maxDist);
+		dist = 8.0f;
 
 		if(y < 0) y += 360.0f;
 		if(y >= 360.0f) y -= 360.0f;
@@ -37,7 +39,7 @@ namespace citrus::engine {
 		//do movement
 		glm::vec2 movement = glm::vec2(eng()->controllerValue(analog::ctr_lstick_x), -eng()->controllerValue(analog::ctr_lstick_y));
 		movement += glm::vec2((eng()->getKey(button::d) ? 1.0f : 0.0f) + (eng()->getKey(button::a) ? -1.0f : 0.0f), (eng()->getKey(button::w) ? 1.0f : 0.0f) + (eng()->getKey(button::s) ? -1.0f : 0.0f));
-		if(glm::length(movement) > 0.05f) {
+		if(glm::length(movement) > 0.25f) {
 			movement = glm::vec2(glm::rotate(y / 180.0f * glm::pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::vec4(movement, 0.0f, 0.0f));
 			movement *= eng()->dt() * navSpeed;
 			ent().setLocalPosition(ent().getLocalPosition() + glm::vec3(movement.x, 0.0f, -movement.y));
@@ -47,12 +49,12 @@ namespace citrus::engine {
 
 			if(!walking) {
 				walking = true;
-				m->startAnimation(0, graphics::behavior::repeat);
+				m->startAnimation(1, graphics::behavior::repeat);
 			}
 		} else {
 			if(walking) {
 				walking = false;
-				m->startAnimation(1, graphics::behavior::repeat);
+				m->startAnimation(0, graphics::behavior::repeat);
 			}
 		}
 	}
