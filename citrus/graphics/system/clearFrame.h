@@ -1,5 +1,6 @@
 #pragma once
 
+#include <citrus/graphics/system/renderSystem.h>
 #include <citrus/graphics/system/sysNode.h>
 #include <citrus/graphics/system/runtimeResource.h>
 
@@ -22,8 +23,6 @@ namespace citrus::graphics {
 	class clearFrame : public sysNode {
 	protected:
 		VkRenderPass			pass;
-		VkPipelineLayout		pipelineLayout;
-		VkPipeline				pipeline;
 		VkCommandBuffer			priBufs[SWAP_FRAMES];
 
 		frameStore* const		frame;

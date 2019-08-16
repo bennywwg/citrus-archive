@@ -136,6 +136,8 @@ namespace citrus::engine {
 		//_win->inst()->destroyTexture(tx);
 
 		if (mp) delete mp;
+		if (cf) delete cf;
+		if (ip) delete ip;
 		if (bp) delete bp;
 		if (fp) delete fp;
 		if (fs) delete fs;

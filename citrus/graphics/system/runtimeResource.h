@@ -1,8 +1,10 @@
 #pragma once
 
-#include "citrus/graphics/system/renderSystem.h"
+#include "citrus/graphics/system/instance.h"
+#include "citrus/graphics/image.h"
 
 namespace citrus::graphics {
+
 	class buffer {
 	public:
 		instance*		inst;
@@ -16,10 +18,40 @@ namespace citrus::graphics {
 		void flushAll();
 		void flushRange(uint64_t start, uint64_t size);
 		void init(instance* inst, uint64_t size, VkBufferUsageFlags usages, VkMemoryPropertyFlags props, bool map);
+		void free();
 
 		buffer();
 		buffer(instance* inst, uint64_t size, VkBufferUsageFlags usages, VkMemoryPropertyFlags props, bool map);
 		~buffer();
+	};
+
+	class cubemapStore {
+	public:
+		instance*		inst;
+
+		uint64_t const	size = 1024 * 1024 * 4 * 6 * 2; //number pixels * bytes per pixel * number sides * expected number of cubemaps
+		uint64_t		align;
+		
+		buffer			staging;
+		VkDeviceMemory	mem;
+
+		struct cubemap {
+			VkImage		img;
+			VkImageView	view;
+			VkSampler	samp;
+			uint64_t	offset;
+			uint64_t	nextAvailable;
+		};
+		vector<cubemap>	cubemaps;
+
+		void addImage(image4b const& data);
+
+		// allocates mem with size size and sets align
+		void initMemory();
+		
+		cubemapStore(instance* inst);
+		cubemapStore(instance* inst, vector<fpath> const& paths);
+		~cubemapStore();
 	};
 
 	class frameStore {
@@ -31,29 +63,41 @@ namespace citrus::graphics {
 			VkImageView		view;
 			VkSampler		samp;
 			VkDeviceMemory	mem;
+			inline void		destroy(instance const& inst) {
+				vkDestroySampler(inst._device,samp, nullptr);
+				
+				vkDestroyImageView(inst._device, view, nullptr);
+				
+				vkDestroyImage(inst._device, img, nullptr);
+				
+				vkFreeMemory(inst._device, mem, nullptr);
+			}
 		};
 
 		struct frame {
 			frameComponent	color;
-			frameComponent	depth;
 			frameComponent	index;
+			frameComponent	depth;
 		};
 
 		frame				frames[SWAP_FRAMES];
 
-		buffer				tmpRes;
-		uint16_t			getPixelIndex(uint32_t frameIndex, uint32_t x, uint32_t y);
+		//buffer				tmpRes;
+		//uint16_t			getPixelIndex(uint32_t frameIndex, uint32_t x, uint32_t y);
 
 	private:
 		void initColor();
-		void initDepth();
 		void initIndex();
+		void initDepth();
 	public:
 
-		VkDescriptorImageInfo frameStore::getColorInfo(uint32_t const& index);
-		VkDescriptorImageInfo frameStore::getDepthInfo(uint32_t const& index);
-		VkDescriptorImageInfo frameStore::getIndexInfo(uint32_t const& index);
-
+		VkDescriptorImageInfo	getColorInfo(uint32_t const& index);
+		VkDescriptorImageInfo	getIndexInfo(uint32_t const& index);
+		VkDescriptorImageInfo	getDepthInfo(uint32_t const& index);
+		vector<VkImageView>		getViews(uint32_t const& index);
+		vector<VkAttachmentDescription> frameStore::getAttachmentDescriptions(bool transitionToRead);
+		vector<VkAttachmentReference> getColorAttachmentRefs();
+		VkAttachmentReference getDepthAttachmentRef();
 		frameStore(instance& inst);
 		~frameStore();
 	};

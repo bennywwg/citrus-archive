@@ -8,6 +8,7 @@ layout(location = 0) out vec4 color;
 layout(location = 1) out uint index;
 
 layout(set = 1, binding = 0) uniform sampler2D colorTex[4];
+layout(set = 2, binding = 0) uniform samplerCube cubeMaps[1];
 
 layout (set = 0, binding = 0) uniform UniformData {
 	vec4 lightDir;

@@ -76,7 +76,7 @@ namespace citrus::graphics {
 
 	void clearFrame::initializeFramebuffers() {
 		for (int i = 0; i < SWAP_FRAMES; i++) {
-			VkImageView views[3] = { frame->frames[i].color.view, frame->frames[i].index.view, frame->frames[i].depth.view, };
+			vector<VkImageView> views = frame->getViews(i);
 
 			VkFramebufferCreateInfo fbInfo = {};
 			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -84,8 +84,8 @@ namespace citrus::graphics {
 			fbInfo.height = sys.inst.height;
 			fbInfo.layers = 1;
 			fbInfo.renderPass = pass;
-			fbInfo.attachmentCount = 3;
-			fbInfo.pAttachments = views;
+			fbInfo.attachmentCount = views.size();
+			fbInfo.pAttachments = views.data();
 
 			if (vkCreateFramebuffer(sys.inst._device, &fbInfo, nullptr, &fbos[i]) != VK_SUCCESS) throw std::runtime_error("couldn't create meshPass FBO");
 		}
@@ -95,7 +95,7 @@ namespace citrus::graphics {
 		sys.inst.waitForFence(waitFences[sys.frameIndex]);
 		sys.inst.resetFence(waitFences[sys.frameIndex]);
 
-		selectedIndex = frame->getPixelIndex(sys.frameIndex, 50, 50);
+		//selectedIndex = frame->getPixelIndex(sys.frameIndex, 50, 50);
 
 		VkCommandBuffer& buf = priBufs[sys.frameIndex];
 		if (buf != VK_NULL_HANDLE) sys.inst.destroyCommandBuffer(buf, sys.inst._commandPool);
@@ -107,24 +107,8 @@ namespace citrus::graphics {
 
 		vkBeginCommandBuffer(buf, &begInf);
 
-		VkClearAttachment clears[3] = { };
-		clears[0].colorAttachment = 0;
-		clears[0].aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		clears[0].clearValue.color.float32[0] = 0.0f;
-		clears[0].clearValue.color.float32[1] = 0.0f;
-		clears[0].clearValue.color.float32[2] = 0.0f;
-		clears[0].clearValue.color.float32[3] = 1.0f;
-
-		clears[1].colorAttachment = 1;
-		clears[1].aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		clears[1].clearValue.color.uint32[0] = 0;
-
-		clears[2].colorAttachment = 2;
-		clears[2].aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		clears[2].clearValue.depthStencil.depth = 1.0f;
-
-		VkClearValue clearValues[3] = { };
-		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		VkClearValue clearValues[4] = { };
+		clearValues[0].color = { 0.0f, 0.0f, 0.0f };
 		clearValues[1].color.uint32[0] = 0;
 		clearValues[2].depthStencil = { 1.0f, 0 };
 		VkRenderPassBeginInfo renderPassInfo = { };
@@ -133,7 +117,7 @@ namespace citrus::graphics {
 		renderPassInfo.framebuffer = fbos[sys.frameIndex];
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = sys.inst._extent;
-		renderPassInfo.clearValueCount = 3;
+		renderPassInfo.clearValueCount = 4;
 		renderPassInfo.pClearValues = clearValues;
 
 		vkCmdBeginRenderPass(buf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -170,7 +154,9 @@ namespace citrus::graphics {
 	}
 
 	clearFrame::~clearFrame() {
+		vkDestroyRenderPass(sys.inst._device, pass, nullptr);
 		for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
+			vkDestroyFramebuffer(sys.inst._device, fbos[i], nullptr);
 			sys.inst.destroyFence(waitFences[i]);
 			if(priBufs[i] != VK_NULL_HANDLE) sys.inst.destroyCommandBuffer(priBufs[i], sys.inst._commandPool);
 		}

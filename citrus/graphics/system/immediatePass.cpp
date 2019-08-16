@@ -309,7 +309,7 @@ namespace citrus::graphics {
 	}
 	void immediatePass::initializeFramebuffers() {
 		for (int i = 0; i < SWAP_FRAMES; i++) {
-			VkImageView views[3] = { frame->frames[i].color.view, frame->frames[i].index.view, frame->frames[i].depth.view, };
+			vector<VkImageView> views = frame->getViews(i);
 
 			VkFramebufferCreateInfo fbInfo = {};
 			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -317,8 +317,8 @@ namespace citrus::graphics {
 			fbInfo.height = sys.inst.height;
 			fbInfo.layers = 1;
 			fbInfo.renderPass = pass;
-			fbInfo.attachmentCount = 3;
-			fbInfo.pAttachments = views;
+			fbInfo.attachmentCount = views.size();
+			fbInfo.pAttachments = views.data();
 
 			if (vkCreateFramebuffer(sys.inst._device, &fbInfo, nullptr, &fbos[i]) != VK_SUCCESS) throw std::runtime_error("couldn't create meshPass FBO");
 		}
@@ -454,5 +454,14 @@ namespace citrus::graphics {
 		}
 	}
 	immediatePass::~immediatePass() {
+		vkDestroyDescriptorPool(sys.inst._device, uboPool, nullptr);
+		vkDestroyDescriptorSetLayout(sys.inst._device, uboLayout, nullptr);
+		vkDestroyPipeline(sys.inst._device, pipeline, nullptr);
+		vkDestroyPipelineLayout(sys.inst._device, pipelineLayout, nullptr);
+		vkDestroyRenderPass(sys.inst._device, pass, nullptr);
+		for (int i = 0; i < SWAP_FRAMES; i++) {
+			vkDestroyFence(sys.inst._device, waitFences[i], nullptr);
+			vkDestroyFramebuffer(sys.inst._device, fbos[i], nullptr);
+		}
 	}
 }

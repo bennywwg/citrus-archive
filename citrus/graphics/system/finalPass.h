@@ -17,13 +17,23 @@ namespace citrus::graphics {
 
 		vector<VkFramebuffer> targets;
 		vector<VkCommandBuffer> cbufs;
+
+		struct uniformBlock {
+			mat4 vp;
+			vec4 cameraPos;
+			float ncp;
+			float fcp;
+			uint32_t widthPX;
+			uint32_t heightPX;
+		};
+		buffer					uniformData;
 		
 		frameStore&				fStore;
 		VkSemaphore				frameReadySem, frameDoneSem;
 		window&					win;
 		uint32_t				frameIndex;
 	public:
-		void fillCommandBuffer(uint32_t frameIndex, VkDescriptorImageInfo colorInfo, VkDescriptorImageInfo depthInfo, VkDescriptorImageInfo indexInfo);
+		void fillCommandBuffer(uint32_t frameIndex, VkDescriptorImageInfo colorInfo, VkDescriptorImageInfo indexInfo, VkDescriptorImageInfo depthInfo);
 
 		//submit to graphics queue
 		void submit(uint32_t targetIndex, vector<VkSemaphore> waits);

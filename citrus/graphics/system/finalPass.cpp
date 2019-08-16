@@ -5,8 +5,19 @@
 #include <array>
 
 namespace citrus::graphics {
-	void finalPass::fillCommandBuffer(uint32_t frameIndex, VkDescriptorImageInfo colorInfo, VkDescriptorImageInfo depthInfo, VkDescriptorImageInfo indexInfo) {
-		VkWriteDescriptorSet writes[3] = { };
+	void finalPass::fillCommandBuffer(uint32_t frameIndex, VkDescriptorImageInfo colorInfo, VkDescriptorImageInfo indexInfo, VkDescriptorImageInfo depthInfo) {
+
+		VkDescriptorImageInfo cubeInfo = { };
+		cubeInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		cubeInfo.imageView = sys.cubemaps.cubemaps[0].view;
+		cubeInfo.sampler = sys.cubemaps.cubemaps[0].samp;
+
+		VkDescriptorBufferInfo uboInfo = { };
+		uboInfo.buffer = uniformData.buf;
+		uboInfo.offset = 0;
+		uboInfo.range = uniformData.size;
+
+		VkWriteDescriptorSet writes[5] = { };
 		writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		writes[0].dstSet = _set;
 		writes[0].dstBinding = 0;
@@ -28,9 +39,23 @@ namespace citrus::graphics {
 		writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		writes[2].descriptorCount = 1;
 		writes[2].pImageInfo = &depthInfo;
-		vkUpdateDescriptorSets(sys.inst._device, 3, writes, 0, nullptr);
+		writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writes[3].dstSet = _set;
+		writes[3].dstBinding = 3;
+		writes[3].dstArrayElement = 0;
+		writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writes[3].descriptorCount = 1;
+		writes[3].pImageInfo = &cubeInfo;
+		writes[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writes[4].dstSet = _set;
+		writes[4].dstBinding = 4;
+		writes[4].dstArrayElement = 0;
+		writes[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writes[4].descriptorCount = 1;
+		writes[4].pBufferInfo = &uboInfo;
+		vkUpdateDescriptorSets(sys.inst._device, 5, writes, 0, nullptr);
 
-		VkCommandBufferBeginInfo beginInfo = {};
+		VkCommandBufferBeginInfo beginInfo = { };
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
@@ -38,7 +63,7 @@ namespace citrus::graphics {
 			throw std::runtime_error("failed to begin recording command buffer!");
 		}
 
-		VkRenderPassBeginInfo renderPassInfo = {};
+		VkRenderPassBeginInfo renderPassInfo = { };
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = _renderPass;
 		renderPassInfo.framebuffer = targets[frameIndex];
@@ -47,6 +72,7 @@ namespace citrus::graphics {
 		renderPassInfo.renderArea.extent = { sys.inst.width, sys.inst.height};
 
 		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
 
@@ -84,37 +110,37 @@ namespace citrus::graphics {
 	}
 
 	void finalPass::initDescriptorsAndLayouts() {
-		VkDescriptorSetLayoutBinding texBindings[3] = { };
-		texBindings[0].binding = 0;
-		texBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		texBindings[0].descriptorCount = 1;
-		texBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		texBindings[1].binding = 1;
-		texBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		texBindings[1].descriptorCount = 1;
-		texBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		texBindings[2].binding = 2;
-		texBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		texBindings[2].descriptorCount = 1;
-		texBindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		VkDescriptorSetLayoutBinding bindings[5] = { };
+		for (int i = 0; i < 4; i++) {
+			bindings[i].binding = i;
+			bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[i].descriptorCount = 1;
+			bindings[i].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		bindings[4].binding = 4;
+		bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		bindings[4].descriptorCount = 1;
+		bindings[4].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo = { };
 		descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorLayoutInfo.bindingCount = 3;
-		descriptorLayoutInfo.pBindings = texBindings;
+		descriptorLayoutInfo.bindingCount = 5;
+		descriptorLayoutInfo.pBindings = bindings;
 
 		if (vkCreateDescriptorSetLayout(sys.inst._device, &descriptorLayoutInfo, nullptr, &_descriptorSetLayout) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor set layout!");
 		}
 
-		VkDescriptorPoolSize poolSize = { };
-		poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSize.descriptorCount = 3;
+		VkDescriptorPoolSize poolSizes[2] = { };
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSizes[0].descriptorCount = 4;
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[1].descriptorCount = 1;
 
 		VkDescriptorPoolCreateInfo poolInfo = { };
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = 1;
-		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.poolSizeCount = 2;
+		poolInfo.pPoolSizes = poolSizes;
 		poolInfo.maxSets = 1;
 
 		if (vkCreateDescriptorPool(sys.inst._device, &poolInfo, nullptr, &_descriptorPool) != VK_SUCCESS) {
@@ -135,7 +161,17 @@ namespace citrus::graphics {
 	void finalPass::preRender(uint32_t const& threadCount) {
 		frameIndex = win.getNextFrameIndex(frameReadySem);
 
-		fillCommandBuffer(frameIndex, fStore.getColorInfo(sys.frameIndex), fStore.getDepthInfo(sys.frameIndex), fStore.getIndexInfo(sys.frameIndex));
+
+		uniformBlock& data = *(uniformBlock*)uniformData.mapped;
+		data.vp = glm::inverse(sys.frameVP);
+		data.cameraPos = vec4(sys.frameCam.pos, 0.0f);
+		data.ncp = sys.frameCam.zNear;
+		data.fcp = sys.frameCam.zFar;
+		data.widthPX = sys.inst.width;
+		data.heightPX = sys.inst.height;
+		uniformData.flushAll();
+
+		fillCommandBuffer(frameIndex, fStore.getColorInfo(sys.frameIndex), fStore.getIndexInfo(sys.frameIndex), fStore.getDepthInfo(sys.frameIndex));
 		vector<VkSemaphore> waits = getWaitSems();
 		waits.push_back(frameReadySem);
 		
@@ -155,6 +191,8 @@ namespace citrus::graphics {
 	finalPass::finalPass(system& sys, window& win, frameStore& store, fpath vertLoc, fpath fragLoc) : sysNode(sys),
 		frameReadySem(sys.inst.createSemaphore()), frameDoneSem(sys.inst.createSemaphore()), win(win), fStore(store) {
 		frameIndex = 0;
+
+		uniformData.init(&sys.inst, sizeof(uniformBlock) + 1024, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, true);
 
 		VkShaderModule vertModule = VK_NULL_HANDLE;
 		VkShaderModule fragModule = VK_NULL_HANDLE;

@@ -4,12 +4,6 @@
 #include <shared_mutex>
 
 namespace citrus::graphics {
-	void system::createFramebufferData() {
-		
-	}
-	void system::freeFramebufferData() {
-		
-	}
 	void system::loadTextures() {
 		if (texturePaths.size() == 0) throw std::runtime_error("there must be at least one texture to load");
 		uint64_t addr = 0;
@@ -364,10 +358,12 @@ namespace citrus::graphics {
 			passes[i]->postRender((uint32_t) renderThreads.size());
 		}
 	}
-	system::system(instance& vkinst, fpath texturePath, fpath modelPath, fpath animationPath) : inst(vkinst), renderGo(4) {
+	system::system(instance& vkinst, fpath texturePath, fpath modelPath, fpath animationPath) : inst(vkinst), renderGo(4), cubemaps(&inst) {
 		texturePaths = util::filesInDirectory(texturePath, ".png");
 		modelPaths = util::filesInDirectory(modelPath, ".dae");
 		animationPaths = util::filesInDirectory(animationPath, ".cta");
+
+		cubemaps.addImage(image4b((texturePath / "cubemaps" / "sky.png").string()));
 
 		util::sout("Render System:\n");
 		util::sout("  Models: " + std::to_string(modelPaths.size()) + "\n");
@@ -384,8 +380,6 @@ namespace citrus::graphics {
 		}
 
 		frameIndex = SWAP_FRAMES - 1;
-
-		createFramebufferData();
 
 		loadTextures();
 
@@ -404,8 +398,6 @@ namespace citrus::graphics {
 		freeTextures();
 
 		freeModels();
-
-		freeFramebufferData();
 
 		freeThreads();
 	}

@@ -7,7 +7,10 @@ layout(set = 0, binding = 0) uniform sampler2D colorTex;
 layout(set = 0, binding = 1) uniform usampler2D indexTex;
 layout(set = 0, binding = 2) uniform sampler2D depthTex;
 
+layout(set = 0, binding = 3) uniform samplerCube cubeMap;
+
 layout(location = 0) in vec2 fragUVCoord;
+layout(location = 1) in vec3 fcpPos;
 
 /*
 float linearize(float v) {
@@ -31,19 +34,34 @@ float zdif(vec2 uv) {
 	if(mav - miv > 0.01) return 0.5; else return 1;
 }*/
 
+layout (set = 0, binding = 4) uniform UniformData {
+	mat4 vp;
+	vec4 cameraPos; //not sure of alignment, vec4 just in case
+	float ncp;
+	float fcp;
+	uint widthPX;
+	uint heightPX;
+} uniformData;
+
 float idif(vec2 uv) {
 	#define RS 1
-	#define SF 0.001
+	float SX = 1.0 / float(uniformData.widthPX);
+	float SY = 1.0 / float(uniformData.heightPX);
 	uint mv = texture(indexTex, uv).r;
 	float weight = 0;
 	for(int y = -RS; y <= RS; y++) {
 		for(int x = -RS; x <= RS; x++) {
-			if(mv != texture(indexTex, uv + vec2(x*SF, y*SF)).r) weight += (abs(x) + abs(y));
+			if(mv != texture(indexTex, uv + vec2(x*SX, y*SY)).r) weight += (abs(x) + abs(y));
 		}
 	}
 	return 1 - weight / 12.0;
 }
 
 void main() {
-	color = texture(colorTex, fragUVCoord) * idif(fragUVCoord);
+	vec3 dir = fcpPos - uniformData.cameraPos.xyz;
+	if(texture(indexTex, fragUVCoord).r == 0) {
+		color = texture(cubeMap, dir);
+	} else {
+		color = texture(colorTex, fragUVCoord) * idif(fragUVCoord);
+	}
 }

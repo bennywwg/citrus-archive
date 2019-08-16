@@ -3,7 +3,7 @@
 #include <shared_mutex>
 #include <atomic>
 
-#include "citrus/graphics/system/instance.h"
+#include "citrus/graphics/system/runtimeResource.h"
 #include "citrus/graphics/image.h"
 #include "citrus/graphics/mesh/mesh.h"
 #include "citrus/graphics/camera.h"
@@ -14,8 +14,6 @@
 #else
 #define stdioDebug(str)
 #endif
-
-#define SWAP_FRAMES 2
 
 namespace citrus::graphics {
 	class system;
@@ -44,12 +42,6 @@ namespace citrus::graphics {
 		vector<fpath>		animationPaths;
 		#pragma endregion
 
-		#pragma region(framebuffer stuff)
-
-		void				createFramebufferData();
-		void				freeFramebufferData();
-		#pragma endregion
-
 		#pragma region(texture stuff)
 		struct texture {
 			image4b			data;											// CPU image object
@@ -63,6 +55,8 @@ namespace citrus::graphics {
 		VkDeviceMemory		textureMem;										// texture memory
 		VkDescriptorPool	texPool;										// pool for allocating texture descriptors
 		VkDescriptorSet		texSet;											// set of textures.size()
+
+		cubemapStore		cubemaps;
 
 		void loadTextures();
 		void freeTextures();

@@ -30,11 +30,11 @@ namespace citrus::graphics {
 
 		bool					transitionToRead;
 
-		VkDescriptorSetLayout	uboLayout, ssboLayout, texLayout;
-		VkDescriptorPool		uboPool, ssboPool, texPool;
+		VkDescriptorSetLayout	uboLayout, ssboLayout, texLayout, cubeLayout;
+		VkDescriptorPool		uboPool, ssboPool, texPool, cubePool;
 		VkDescriptorSet			uboSets[SWAP_FRAMES];
 		VkDescriptorSet			ssboSets[SWAP_FRAMES];
-		VkDescriptorSet			texSet;
+		VkDescriptorSet			texSet, cubeSet;
 
 		VkRenderPass			pass;
 		VkPipelineLayout		pipelineLayout;

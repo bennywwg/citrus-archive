@@ -109,6 +109,41 @@ namespace citrus::graphics {
 			vkAllocateDescriptorSets(sys.inst._device, &texAllocInfo, &texSet);
 		}
 
+		{
+			VkDescriptorSetLayoutBinding cubeLayoutBinding = {};
+			cubeLayoutBinding.binding = 0;
+			cubeLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			cubeLayoutBinding.descriptorCount = (uint32_t)sys.cubemaps.cubemaps.size();
+			cubeLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			VkDescriptorSetLayoutCreateInfo cubeLayoutInfo = {};
+			cubeLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			cubeLayoutInfo.bindingCount = 1;
+			cubeLayoutInfo.pBindings = &cubeLayoutBinding;
+
+			if (vkCreateDescriptorSetLayout(sys.inst._device, &cubeLayoutInfo, nullptr, &cubeLayout) != VK_SUCCESS) throw std::runtime_error("failed to create cubemap descriptor set layout");
+
+			VkDescriptorPoolSize cubePoolSize = { };
+			cubePoolSize.descriptorCount = (uint32_t)sys.cubemaps.cubemaps.size();
+			cubePoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+			VkDescriptorPoolCreateInfo cubePoolInfo = { };
+			cubePoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			cubePoolInfo.poolSizeCount = 1;
+			cubePoolInfo.maxSets = (uint32_t)sys.cubemaps.cubemaps.size();
+			cubePoolInfo.pPoolSizes = &cubePoolSize;
+
+			vkCreateDescriptorPool(sys.inst._device, &cubePoolInfo, nullptr, &cubePool);
+
+			VkDescriptorSetAllocateInfo cubeAllocInfo = { };
+			cubeAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			cubeAllocInfo.descriptorPool = cubePool;
+			cubeAllocInfo.descriptorSetCount = 1;
+			cubeAllocInfo.pSetLayouts = &cubeLayout;
+
+			vkAllocateDescriptorSets(sys.inst._device, &cubeAllocInfo, &cubeSet);
+		}
+
 		for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
 			VkDescriptorBufferInfo uboBufInfo = { };
 			uboBufInfo.buffer = ubos[i].buf;
@@ -143,77 +178,57 @@ namespace citrus::graphics {
 				vkUpdateDescriptorSets(sys.inst._device, 1, &ssboWrite, 0, nullptr);
 			}
 		}
+		
+		{
+			vector<VkDescriptorImageInfo> imageInfos;
+			for (uint32_t i = 0; i < sys.textures.size(); i++) {
+				imageInfos.push_back({});
+				imageInfos[i].sampler = sys.textures[i].samp;
+				imageInfos[i].imageView = sys.textures[i].view;
+				imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			}
 
-		vector<VkDescriptorImageInfo> imageInfos;
-		for (uint32_t i = 0; i < sys.textures.size(); i++) {
-			imageInfos.push_back({});
-			imageInfos[i].sampler = sys.textures[i].samp;
-			imageInfos[i].imageView = sys.textures[i].view;
-			imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			VkWriteDescriptorSet texWrite = {};
+			texWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			texWrite.descriptorCount = (uint32_t)sys.textures.size();
+			texWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			texWrite.dstBinding = 0;
+			texWrite.dstSet = texSet;
+			texWrite.pImageInfo = imageInfos.data();
+
+			vkUpdateDescriptorSets(sys.inst._device, 1, &texWrite, 0, nullptr);
 		}
 
-		VkWriteDescriptorSet texWrite = {};
-		texWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		texWrite.descriptorCount = (uint32_t)sys.textures.size();
-		texWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		texWrite.dstBinding = 0;
-		texWrite.dstSet = texSet;
-		texWrite.pImageInfo = imageInfos.data();
+		{
+			vector<VkDescriptorImageInfo> cubeInfos;
+			for (uint32_t i = 0; i < sys.cubemaps.cubemaps.size(); i++) {
+				cubeInfos.push_back({});
+				cubeInfos[i].sampler = sys.cubemaps.cubemaps[i].samp;
+				cubeInfos[i].imageView = sys.cubemaps.cubemaps[i].view;
+				cubeInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			}
 
-		vkUpdateDescriptorSets(sys.inst._device, 1, &texWrite, 0, nullptr);
+			VkWriteDescriptorSet cubeWrite = {};
+			cubeWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			cubeWrite.descriptorCount = (uint32_t)sys.cubemaps.cubemaps.size();
+			cubeWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			cubeWrite.dstBinding = 0;
+			cubeWrite.dstSet = cubeSet;
+			cubeWrite.pImageInfo = cubeInfos.data();
+
+			vkUpdateDescriptorSets(sys.inst._device, 1, &cubeWrite, 0, nullptr);
+		}
 	}
     void meshPass::initializeRenderPass() {
-        VkAttachmentDescription colorAttachment = {};
-		colorAttachment.format = VK_FORMAT_R8G8B8A8_UNORM;
-		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		colorAttachment.finalLayout = transitionToRead ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentDescription indexAttachment = {};
-		indexAttachment.format = VK_FORMAT_R16_UINT;
-		indexAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		indexAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		indexAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		indexAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		indexAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		indexAttachment.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		indexAttachment.finalLayout = transitionToRead ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentDescription depthAttachment = {};
-		depthAttachment.format = sys.inst.findDepthFormat();
-		depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		depthAttachment.finalLayout = transitionToRead ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentDescription attachments[] = { colorAttachment, indexAttachment, depthAttachment };
-
-		VkAttachmentReference colorAttachmentRef = {};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference indexAttachmentRef = {};
-		indexAttachmentRef.attachment = 1;
-		indexAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference colorRefs[2] = { colorAttachmentRef, indexAttachmentRef };
-
-		VkAttachmentReference depthAttachmentRef = {};
-		depthAttachmentRef.attachment = 2;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		vector<VkAttachmentDescription> attachments = frame->getAttachmentDescriptions(transitionToRead);
+		vector<VkAttachmentReference> colorRefs = frame->getColorAttachmentRefs();
+		VkAttachmentReference depthRef = frame->getDepthAttachmentRef();
 
 		VkSubpassDescription subpass = {};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 2;
-		subpass.pColorAttachments = colorRefs;
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+		subpass.colorAttachmentCount = colorRefs.size();
+		subpass.pColorAttachments = colorRefs.data();
+		subpass.pDepthStencilAttachment = &depthRef;
 
 		VkSubpassDependency dependency = {};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -225,8 +240,8 @@ namespace citrus::graphics {
 
 		VkRenderPassCreateInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 3;
-		renderPassInfo.pAttachments = attachments;
+		renderPassInfo.attachmentCount = attachments.size();
+		renderPassInfo.pAttachments = attachments.data();
 		renderPassInfo.subpassCount = 1;
 		renderPassInfo.pSubpasses = &subpass;
 		renderPassInfo.dependencyCount = 1;
@@ -249,9 +264,9 @@ namespace citrus::graphics {
 
 		vector<VkDescriptorSetLayout> setLayouts;
 		if (!rigged) {
-			setLayouts = { uboLayout, texLayout };
+			setLayouts = { uboLayout, texLayout, cubeLayout };
 		} else {
-			setLayouts = { uboLayout, texLayout, ssboLayout };
+			setLayouts = { uboLayout, texLayout, cubeLayout, ssboLayout };
 		}
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = { };
@@ -376,7 +391,7 @@ namespace citrus::graphics {
 															 colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 															 colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;*/
 
-		VkPipelineColorBlendAttachmentState states[3] = { colorBlendAttachment, colorBlendAttachment, colorBlendAttachment };
+		VkPipelineColorBlendAttachmentState states[2] = { colorBlendAttachment, colorBlendAttachment };
 
 		VkPipelineColorBlendStateCreateInfo colorBlending = {};
 		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -425,9 +440,8 @@ namespace citrus::graphics {
 		vkDestroyShaderModule(sys.inst._device, fragInfo.module, nullptr);
 	}
 	void meshPass::initializeFramebuffers() {
-
 		for (int i = 0; i < SWAP_FRAMES; i++) {
-			VkImageView views[3] = { frame->frames[i].color.view, frame->frames[i].index.view, frame->frames[i].depth.view, };
+			vector<VkImageView> views = frame->getViews(i);
 
 			VkFramebufferCreateInfo fbInfo = {};
 			fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -435,8 +449,8 @@ namespace citrus::graphics {
 			fbInfo.height = sys.inst.height;
 			fbInfo.layers = 1;
 			fbInfo.renderPass = pass;
-			fbInfo.attachmentCount = 3;
-			fbInfo.pAttachments = views;
+			fbInfo.attachmentCount = views.size();
+			fbInfo.pAttachments = views.data();
 
 			if (vkCreateFramebuffer(sys.inst._device, &fbInfo, nullptr, &fbos[i]) != VK_SUCCESS) throw std::runtime_error("couldn't create meshPass FBO");
 		}
@@ -528,6 +542,7 @@ namespace citrus::graphics {
 
 		vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboSets[sys.frameIndex], 0, nullptr);
 		vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &texSet, 0, nullptr);
+		vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &cubeSet, 0, nullptr);
 
 		uint32_t lastModelBindIndex = 999999;
 		for(uint32_t i = ranges[threadIndex].begin; i < ranges[threadIndex].end; i++) {
@@ -550,7 +565,7 @@ namespace citrus::graphics {
 				
 				if (rigged) {
 					uint32_t val = boneOffsets[i - ranges[threadIndex].begin];
-					vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &ssboSets[sys.frameIndex], 1, &val);
+					vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 3, 1, &ssboSets[sys.frameIndex], 1, &val);
 				}
 
 				vkCmdDrawIndexed(buf, mappings[items[i].modelIndex].desc.indexCount, 1, 0, 0, 0);
@@ -702,9 +717,11 @@ namespace citrus::graphics {
 		vkDestroyDescriptorPool(sys.inst._device, uboPool, nullptr);
 		vkDestroyDescriptorPool(sys.inst._device, texPool, nullptr);
 		vkDestroyDescriptorPool(sys.inst._device, ssboPool, nullptr);
+		vkDestroyDescriptorPool(sys.inst._device, cubePool, nullptr);
 		vkDestroyDescriptorSetLayout(sys.inst._device, uboLayout, nullptr);
 		vkDestroyDescriptorSetLayout(sys.inst._device, texLayout, nullptr);
 		vkDestroyDescriptorSetLayout(sys.inst._device, ssboLayout, nullptr);
+		vkDestroyDescriptorSetLayout(sys.inst._device, cubeLayout, nullptr);
 		vkDestroyPipeline(sys.inst._device, pipeline, nullptr);
 		vkDestroyPipelineLayout(sys.inst._device, pipelineLayout, nullptr);
 		vkDestroyRenderPass(sys.inst._device, pass, nullptr);

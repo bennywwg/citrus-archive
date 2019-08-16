@@ -5,6 +5,8 @@
 
 #include "citrus/util.h"
 
+#define SWAP_FRAMES 2
+
 namespace citrus::graphics {
 
 	class instance;
