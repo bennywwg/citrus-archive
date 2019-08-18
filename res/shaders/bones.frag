@@ -17,8 +17,14 @@ layout (push_constant) uniform FragPushConstants {
 	layout(offset = 124) uint val3;
 } frag_pc;
 
+layout (set = 0, binding = 0) uniform UniformData {
+	vec4 camDir;
+	vec4 lightDir;
+} uniformData;
+
 void main() {
-	//color = vec4(texture(colorTex[frag_pc.texIndex], vec2(frag_uv.x, -frag_uv.y)).rgb, 1);
-	color = texture(cubeMaps[0], frag_norm);
+	color = vec4(texture(colorTex[frag_pc.texIndex], vec2(frag_uv.x, -frag_uv.y)).rgb, 1);
+	color = color * 0.125 + texture(cubeMaps[0], frag_norm) * 0.875;
+	color = color * dot(uniformData.lightDir.xyz, frag_norm);
 	index = frag_pc.itemIndex;
 }

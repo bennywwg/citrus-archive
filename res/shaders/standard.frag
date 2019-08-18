@@ -3,6 +3,7 @@
 
 layout(location = 0) in vec3 frag_norm;
 layout(location = 1) in vec2 frag_uv;
+layout(location = 2) in vec3 frag_tangent;
 
 layout(location = 0) out vec4 color;
 layout(location = 1) out uint index;
@@ -11,6 +12,7 @@ layout(set = 1, binding = 0) uniform sampler2D colorTex[4];
 layout(set = 2, binding = 0) uniform samplerCube cubeMaps[1];
 
 layout (set = 0, binding = 0) uniform UniformData {
+	vec4 camDir;
 	vec4 lightDir;
 } uniformData;
 
@@ -26,6 +28,7 @@ void main() {
 	if(brightness < 0.5) brightness = 0.5; else brightness = 1;
 	color = vec4(texture(colorTex[frag_pc.texIndex], frag_uv).xyz
 	* brightness, 1);
+	color = vec4(frag_tangent, 1);
 	//color = vec4(frag_norm, 1);
 	index = frag_pc.itemIndex;
 }

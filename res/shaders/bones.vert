@@ -4,12 +4,15 @@
 layout(location = 0) in vec3 vert_position;
 layout(location = 1) in vec3 vert_normal;
 layout(location = 2) in vec2 vert_uv;
-layout(location = 3) in int vert_bone0;
-layout(location = 4) in int vert_bone1;
-layout(location = 5) in float vert_weight0;
-layout(location = 6) in float vert_weight1;
+layout(location = 3) in vec3 vert_tangent;
+layout(location = 4) in vec3 vert_bitangent;
+layout(location = 5) in int vert_bone0;
+layout(location = 6) in int vert_bone1;
+layout(location = 7) in float vert_weight0;
+layout(location = 8) in float vert_weight1;
 
 layout (set = 0, binding = 0) uniform UniformData {
+	vec4 camDir;
 	vec4 lightDir;
 } uniformData;
 
@@ -31,12 +34,12 @@ void main() {
   vec3 normal0 = vert_normal * vert_weight0;
   vec3 normal1 = vert_normal * vert_weight1;
   if(vert_bone0 != -1) {
-    transformed0 = vec3(boneData.transforms[vert_bone0] * vec4(vert_position, 1.0))	* vert_weight0;
-	normal0 = vec3(boneData.transforms[vert_bone0] * vec4(vert_normal, 0.0))		* vert_weight0;
+    transformed0 =	vec3(boneData.transforms[vert_bone0] * vec4(vert_position, 1.0))	* vert_weight0;
+	normal0 =		vec3(boneData.transforms[vert_bone0] * vec4(vert_normal, 0.0))		* vert_weight0;
   }
   if(vert_bone1 != -1) {
-    transformed1 = vec3(boneData.transforms[vert_bone1] * vec4(vert_position, 1.0))	* vert_weight1;
-	normal1 = vec3(boneData.transforms[vert_bone1] * vec4(vert_normal, 0.0))		* vert_weight1;
+    transformed1 =	vec3(boneData.transforms[vert_bone1] * vec4(vert_position, 1.0))	* vert_weight1;
+	normal1 =		vec3(boneData.transforms[vert_bone1] * vec4(vert_normal, 0.0))		* vert_weight1;
   }
   gl_Position = pushConstants.mvp * vec4(transformed0 + transformed1, 1.0);
   frag_norm	= pushConstants.model * vec4(normal0 + normal1, 0.0);

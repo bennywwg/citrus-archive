@@ -573,7 +573,7 @@ namespace citrus::graphics {
 			region.imageExtent.width = data.width();
 			region.imageExtent.height = data.height() / 6;
 			region.imageExtent.depth = 1;
-			region.bufferOffset = res.offset;
+			region.bufferOffset = res.offset + (layer * data.width() * data.height() / 6 * 4);
 		}
 
 		VkCommandBufferBeginInfo beginInfo = {};

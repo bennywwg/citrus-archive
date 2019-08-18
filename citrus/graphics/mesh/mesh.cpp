@@ -391,6 +391,7 @@ namespace citrus::graphics {
 		}
 		if (hasTangent()) {
 			usages.push_back(meshAttributeUsage::tangentType);
+			usages.push_back(meshAttributeUsage::bitangentType);
 		}
 		if (hasUV()) {
 			usages.push_back(meshAttributeUsage::uvType);
@@ -512,6 +513,11 @@ namespace citrus::graphics {
 					mesh->mTangents[j].y,
 					mesh->mTangents[j].z
 				));
+				bitangent.push_back(glm::vec3(
+					mesh->mBitangents[j].x,
+					mesh->mBitangents[j].y,
+					mesh->mBitangents[j].z
+				));
 			}
 		}
 
@@ -629,6 +635,8 @@ namespace citrus::graphics {
 			return sizeof(vec3);
 		} else if (usage == meshAttributeUsage::tangentType) {
 			return sizeof(vec3);
+		} else if (usage == meshAttributeUsage::bitangentType) {
+			return sizeof(vec3);
 		} else if (usage == meshAttributeUsage::uvType) {
 			return sizeof(vec2);
 		} else if (usage == meshAttributeUsage::colorType) {
@@ -653,6 +661,9 @@ namespace citrus::graphics {
 			return VK_FORMAT_R32G32B32_SFLOAT;
 		}
 		else if (usage == meshAttributeUsage::tangentType) {
+			return VK_FORMAT_R32G32B32_SFLOAT;
+		}
+		else if (usage == meshAttributeUsage::bitangentType) {
 			return VK_FORMAT_R32G32B32_SFLOAT;
 		}
 		else if (usage == meshAttributeUsage::uvType) {
@@ -687,6 +698,9 @@ namespace citrus::graphics {
 		else if (usage == meshAttributeUsage::tangentType) {
 			return "tangnent";
 		}
+		else if (usage == meshAttributeUsage::bitangentType) {
+			return "bitangnent";
+		}
 		else if (usage == meshAttributeUsage::uvType) {
 			return "uv";
 		}
@@ -715,6 +729,8 @@ namespace citrus::graphics {
 		} else if (usage == meshAttributeUsage::normalType) {
 			return "vec3";
 		} else if (usage == meshAttributeUsage::tangentType) {
+			return "vec3";
+		} else if (usage == meshAttributeUsage::bitangentType) {
 			return "vec3";
 		} else if (usage == meshAttributeUsage::uvType) {
 			return "vec2";

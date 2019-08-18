@@ -43,6 +43,10 @@ namespace citrus::graphics {
 		vector<VkCommandBuffer>	secBufs[SWAP_FRAMES];
 		VkFence					waitFences[SWAP_FRAMES];
 		
+		struct uniformBlock {
+			vec4 camPos;
+			vec4 lightDir;
+		};
 		buffer					ubos[SWAP_FRAMES];
 		buffer					ssbos[SWAP_FRAMES];
 		buffer					stagings[SWAP_FRAMES];

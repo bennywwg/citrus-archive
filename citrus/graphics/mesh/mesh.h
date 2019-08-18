@@ -117,7 +117,8 @@ namespace citrus::graphics {
 		bone0Type =			(1 << 5),
 		bone1Type =			(1 << 6),
 		weight0Type =		(1 << 7),
-		weight1Type =		(1 << 8)
+		weight1Type =		(1 << 8),
+		bitangentType =		(1 << 9)
 	};
 
 	class meshAttributeUtils {
@@ -183,6 +184,7 @@ namespace citrus::graphics {
 		vector<vec3>			pos;
 		vector<vec3>			norm;
 		vector<vec3>			tangent;
+		vector<vec3>			bitangent;
 		vector<vec2>			uv;
 		vector<vec3>			color;
 		vector<int32_t>			bone0;
@@ -211,7 +213,7 @@ namespace citrus::graphics {
 		void					clearBones();
 
 		// get description of mesh
-		meshMemoryStructure			getDescription(uint64_t vertStart, uint64_t vertAlign, uint64_t indexStart, uint64_t indexAlign) const;
+		meshMemoryStructure		getDescription(uint64_t vertStart, uint64_t vertAlign, uint64_t indexStart, uint64_t indexAlign) const;
 		float					getMaxRadius() const; // largest distance from origin
 
 		// fill data

@@ -481,9 +481,10 @@ namespace citrus::graphics {
 		sys.inst.waitForFence(waitFences[sys.frameIndex]);
 		sys.inst.resetFence(waitFences[sys.frameIndex]);
 		
-		vec4 v = vec4(0.0f, 1.0f, 0.0f, 0.0f);
-		memcpy(ubos[sys.frameIndex].mapped, &v, sizeof(vec4));
-		ubos[sys.frameIndex].flushRange(0, sizeof(vec4));
+		uniformBlock& uniData = *(uniformBlock*)ubos[sys.frameIndex].mapped;
+		uniData.lightDir = vec4(1.0f, 1.0f, 0.0f, 0.0f);
+		uniData.camPos = vec4(sys.frameCam.pos, 1.0f);
+		ubos[sys.frameIndex].flushRange(0, sizeof(uniformBlock));
 
 		ranges.resize(threadCount);
 		ranges[0].begin = 0;
@@ -559,7 +560,7 @@ namespace citrus::graphics {
 				util::copyMat4x3ToRowMajor(modTmp, pushData.rowMajorModel);
 				pushData.mvp = sys.frameVP * mat4(modTmp);
 				pushData.uints[0] = items[i].texIndex;
-				pushData.uints[1] = i;
+				pushData.uints[1] = i + 1;
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, pcVertSize, &pushData);
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, pcVertSize, pcFragSize, &pushData.uints);
 				
@@ -674,11 +675,15 @@ namespace citrus::graphics {
 		locMap[meshAttributeUsage::positionType] = 0;
 		if(lit) locMap[meshAttributeUsage::normalType] = 1;
 		if(textured) locMap[meshAttributeUsage::uvType] = 2;
+		if (lit && textured) {
+			locMap[meshAttributeUsage::tangentType] = 3;
+			locMap[meshAttributeUsage::bitangentType] = 4;
+		}
 		if (rigged) {
-			locMap[meshAttributeUsage::bone0Type] = 3;
-			locMap[meshAttributeUsage::bone1Type] = 4;
-			locMap[meshAttributeUsage::weight0Type] = 5;
-			locMap[meshAttributeUsage::weight1Type] = 6;
+			locMap[meshAttributeUsage::bone0Type] = 5;
+			locMap[meshAttributeUsage::bone1Type] = 6;
+			locMap[meshAttributeUsage::weight0Type] = 7;
+			locMap[meshAttributeUsage::weight1Type] = 8;
 
 			for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
 				ssbos[i].init(&sys.inst, ssboSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, false);
