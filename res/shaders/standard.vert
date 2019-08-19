@@ -9,7 +9,10 @@ layout(location = 4) in vec3 vert_bitangent;
 
 layout(location = 0) out vec3 frag_norm;
 layout(location = 1) out vec2 frag_uv;
-layout(location = 2) out vec3 frag_tangent;
+layout(location = 2) out Lights {
+	vec3 directions_tangentSpace[4];
+	vec3 colors[4];
+} lights;
 
 layout (set = 0, binding = 0) uniform UniformData {
 	vec4 camDir;
@@ -21,9 +24,16 @@ layout (push_constant) uniform PushConstants {
 	layout( row_major ) mat4x3	model;
 } pushConstants;
 
-void main() {
+void main() {	
+	mat3 toTangentSpace = transpose(mat3(
+		pushConstants.model * vec4(vert_tangent, 0.0),
+		pushConstants.model * vec4(vert_bitangent, 0.0),
+		pushConstants.model * vec4(vert_norm, 0.0)
+	));
+	
+	lights.directions_tangentSpace[0] = toTangentSpace * vec3(uniformData.lightDir);
+
     gl_Position	= pushConstants.mvp * vec4(vert_pos, 1.0);
     frag_norm	= pushConstants.model * vec4(vert_norm, 0.0);
 	frag_uv		= vert_uv;
-	frag_tangent = vert_tangent;
 }

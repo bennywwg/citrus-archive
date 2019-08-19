@@ -482,7 +482,7 @@ namespace citrus::graphics {
 		sys.inst.resetFence(waitFences[sys.frameIndex]);
 		
 		uniformBlock& uniData = *(uniformBlock*)ubos[sys.frameIndex].mapped;
-		uniData.lightDir = vec4(1.0f, 1.0f, 0.0f, 0.0f);
+		uniData.lightDir = vec4(0.0f, 0.0f, 1.0f, 0.0f);
 		uniData.camPos = vec4(sys.frameCam.pos, 1.0f);
 		ubos[sys.frameIndex].flushRange(0, sizeof(uniformBlock));
 
@@ -561,6 +561,7 @@ namespace citrus::graphics {
 				pushData.mvp = sys.frameVP * mat4(modTmp);
 				pushData.uints[0] = items[i].texIndex;
 				pushData.uints[1] = i + 1;
+				pushData.uints[2] = items[i].normalTexIndex;
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, pcVertSize, &pushData);
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, pcVertSize, pcFragSize, &pushData.uints);
 				

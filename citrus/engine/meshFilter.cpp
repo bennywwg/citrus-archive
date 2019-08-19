@@ -25,10 +25,14 @@ namespace citrus::engine {
 		p.items[foundSlot].enabled = true;
 		p.items[foundSlot].modelIndex = modelIndex;
 		p.items[foundSlot].texIndex = texIndex;
+		p.items[foundSlot].normalTexIndex = 0;
 		p.items[foundSlot].pos = ent().getGlobalTransform().getPosition();
 		p.items[foundSlot].ori = ent().getGlobalTransform().getOrientation();
 
 		this->itemIndex = foundSlot;
+	}
+	void meshFilter::setNormalMap(int texIndex) {
+		if (materialIndex != -1) eng()->sys->meshPasses[materialIndex]->items[itemIndex].normalTexIndex = texIndex;
 	}
 	void meshFilter::reset() {
 		if (materialIndex != -1) {

@@ -433,9 +433,9 @@ namespace citrus::graphics {
 		VkMappedMemoryRange range = { };
 		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		range.memory = mem;
-		range.offset = util::roundDownAlign(start, align);
+		range.offset = util::roundDownAlign(start, inst->flushAlign);
 		range.pNext = nullptr;
-		range.size = util::roundUpAlign(size, align);
+		range.size = util::roundUpAlign(size, inst->flushAlign);
 		if (vkFlushMappedMemoryRanges(inst->_device, 1, &range) != VK_SUCCESS) throw std::runtime_error("failed to map flush memory range");
 	}
 	void buffer::init(instance* inst, uint64_t size, VkBufferUsageFlags usages, VkMemoryPropertyFlags props, bool map) {

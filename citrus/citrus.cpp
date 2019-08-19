@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
 		}, util::nextID());
 		playerModel.setParent(ent2);
 		//playerModel.setLocalScale(vec3(0.5f, 0.4f, 0.5f));
-		playerModel.setLocalPosition(glm::vec3(0.0f, -0.55f, 0.0f));
+		playerModel.setLocalPosition(glm::vec3(0.0f, -0.67f, 0.0f));
 		//playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
 		playerModel.setLocalOrientation(glm::rotate(-3.1415926f / 2, glm::vec3(0.0f, 1.0f, 0.0f)));
 
@@ -116,6 +116,7 @@ int main(int argc, char **argv) {
 					}),
 					engine::eleInit<engine::meshFilter>::run([x,z](engine::meshFilter& m) {
 						m.setState(0, 0, 0);
+						m.setNormalMap(10);
 						m.visible = true;
 					}),
 					//engine::eleInit<engine::sensorEle>()

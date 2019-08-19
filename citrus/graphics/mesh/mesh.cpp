@@ -437,7 +437,10 @@ namespace citrus::graphics {
 		uint8_t* data = (uint8_t*)vdata;
 		memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::positionType)], pos.data(), pos.size() * sizeof(vec3));
 		if (hasNorm()) memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::normalType)], norm.data(), norm.size() * sizeof(vec3));
-		if (hasTangent()) memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::tangentType)], tangent.data(), tangent.size() * sizeof(vec3));
+		if (hasTangent()) {
+			memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::tangentType)], tangent.data(), tangent.size() * sizeof(vec3));
+			memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::bitangentType)], bitangent.data(), bitangent.size() * sizeof(vec3));
+		}
 		if (hasUV()) memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::uvType)], uv.data(), uv.size() * sizeof(vec2));
 		if (hasColor()) memcpy(data + desc.offsets[desc.findAttrib(meshAttributeUsage::colorType)], color.data(), color.size() * sizeof(vec3));
 		if (hasBones()) {
@@ -696,10 +699,10 @@ namespace citrus::graphics {
 			return "normal";
 		}
 		else if (usage == meshAttributeUsage::tangentType) {
-			return "tangnent";
+			return "tangent";
 		}
 		else if (usage == meshAttributeUsage::bitangentType) {
-			return "bitangnent";
+			return "bitangent";
 		}
 		else if (usage == meshAttributeUsage::uvType) {
 			return "uv";

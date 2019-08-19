@@ -18,6 +18,7 @@ namespace citrus::engine {
 		bool visible = true;
 
 		void setState(int matIndex, int modelIndex, int texIndex);
+		void setNormalMap(int texIndex);
 		
 		void reset();
 		int model() const;

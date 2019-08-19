@@ -59,6 +59,7 @@ namespace citrus::graphics {
 		VkCommandPool _commandPool;
 		VkSemaphore _imgAvailableSemaphore, _renderFinishedSemaphore;
 
+		uint64_t	flushAlign;
 
 		void initInstance(string name);
 		void destroyInstance();

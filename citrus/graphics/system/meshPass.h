@@ -88,6 +88,7 @@ namespace citrus::graphics {
 			quat				ori;
 			uint32_t			modelIndex;
 			uint32_t			texIndex;
+			uint32_t			normalTexIndex;
 			uint32_t			animationIndex;
 			float				aniTime;
 			uint32_t			uniformOffset;

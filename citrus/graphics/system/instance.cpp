@@ -1171,6 +1171,10 @@ namespace citrus::graphics {
 		initCommandPool();
 		initSemaphores();
 		initMemory();
+
+		VkPhysicalDeviceProperties props;
+		vkGetPhysicalDeviceProperties(_chosenDevice, &props);
+		flushAlign = props.limits.nonCoherentAtomSize;
 	}
 	instance::~instance() {
 		vertexMem.freeResources();
