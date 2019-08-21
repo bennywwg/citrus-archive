@@ -45,7 +45,9 @@ namespace citrus::graphics {
 		
 		struct uniformBlock {
 			vec4 camPos;
-			vec4 lightDir;
+			vec4 lightDirs[4];
+			vec4 lightColors[4];
+			uint32_t lightCount;
 		};
 		buffer					ubos[SWAP_FRAMES];
 		buffer					ssbos[SWAP_FRAMES];

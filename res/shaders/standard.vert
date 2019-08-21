@@ -10,13 +10,15 @@ layout(location = 4) in vec3 vert_bitangent;
 layout(location = 0) out vec3 frag_norm;
 layout(location = 1) out vec2 frag_uv;
 layout(location = 2) out Lights {
+	vec4 wp_tangentSpace;
 	vec3 directions_tangentSpace[4];
-	vec3 colors[4];
 } lights;
 
 layout (set = 0, binding = 0) uniform UniformData {
-	vec4 camDir;
-	vec4 lightDir;
+	vec4 camPos;
+	vec4 lightDirs[4];
+	vec4 lightColors[4];
+	uint lightCount;
 } uniformData;
 
 layout (push_constant) uniform PushConstants {
@@ -31,9 +33,14 @@ void main() {
 		pushConstants.model * vec4(vert_norm, 0.0)
 	));
 	
-	lights.directions_tangentSpace[0] = toTangentSpace * vec3(uniformData.lightDir);
+	for(int i = 0; i < uniformData.lightCount; i++) {
+		lights.directions_tangentSpace[i] = toTangentSpace * uniformData.lightDirs[i].xyz;
+	}
 
     gl_Position	= pushConstants.mvp * vec4(vert_pos, 1.0);
+	
+	lights.wp_tangentSpace = vec4(toTangentSpace * gl_Position.xyz, 0);
+	
     frag_norm	= pushConstants.model * vec4(vert_norm, 0.0);
 	frag_uv		= vert_uv;
 }

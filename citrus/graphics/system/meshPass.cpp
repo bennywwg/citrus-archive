@@ -482,7 +482,9 @@ namespace citrus::graphics {
 		sys.inst.resetFence(waitFences[sys.frameIndex]);
 		
 		uniformBlock& uniData = *(uniformBlock*)ubos[sys.frameIndex].mapped;
-		uniData.lightDir = vec4(0.0f, 0.0f, 1.0f, 0.0f);
+		uniData.lightCount = 1;
+		uniData.lightDirs[0] = vec4(0.0f, 1.0f, 0.0f, 0.0f);
+		uniData.lightDirs[1] = vec4(0.0f, 4.0f, 0.0f, 1.0f);
 		uniData.camPos = vec4(sys.frameCam.pos, 1.0f);
 		ubos[sys.frameIndex].flushRange(0, sizeof(uniformBlock));
 
