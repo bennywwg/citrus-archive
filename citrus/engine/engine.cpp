@@ -108,6 +108,11 @@ namespace citrus::engine {
 				/*if (!ed || ed->playing || ed->doFrame)*/ man->preRender();
 				man->render();
 
+				cf->cursorX = (int)_win->getCursorPos().x;
+				if (cf->cursorX >= _win->framebufferSize().x) cf->cursorX = 0;
+				cf->cursorY = _win->framebufferSize().y - (int)_win->getCursorPos().y - 1;
+				if (cf->cursorY >= _win->framebufferSize().y) cf->cursorY = 0;
+
 				sys->render();
 
 				fpsSample++;

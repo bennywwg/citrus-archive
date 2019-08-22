@@ -1,7 +1,7 @@
 #include "runtimeResource.h"
 
 namespace citrus::graphics {
-	/*uint16_t frameStore::getPixelIndex(uint32_t frameIndex, uint32_t x, uint32_t y) {
+	uint16_t frameStore::getPixelIndex(uint32_t frameIndex, uint32_t x, uint32_t y) {
 		VkCommandBuffer buf = inst.createCommandBuffer(inst._commandPool);
 
 		VkCommandBufferBeginInfo inf = {};
@@ -16,7 +16,7 @@ namespace citrus::graphics {
 			//	VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 			VkImageMemoryBarrier imgBarrier = {};
 			imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			imgBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			imgBarrier.srcAccessMask = 0;
 			imgBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 			imgBarrier.image = frames[frameIndex].index.img;
 			imgBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -25,6 +25,7 @@ namespace citrus::graphics {
 			imgBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			imgBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			imgBarrier.subresourceRange.layerCount = 1;
+			imgBarrier.subresourceRange.levelCount = 1;
 			vkCmdPipelineBarrier(buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imgBarrier);
 		}
 
@@ -36,12 +37,12 @@ namespace citrus::graphics {
 		region.imageSubresource.baseArrayLayer = 0;
 		region.imageSubresource.mipLevel = 0;
 		region.bufferOffset = 0;
-		vkCmdCopyImageToBuffer(buf, frames[frameIndex].index.img, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, tmpRes.buf, 1, &region);
+		vkCmdCopyImageToBuffer(buf, frames[frameIndex].index.img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, tmpRes.buf, 1, &region);
 
 		{
 			VkBufferMemoryBarrier bufBarrier = {};
 			bufBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-			bufBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			bufBarrier.srcAccessMask = 0;
 			bufBarrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
 			bufBarrier.offset = 0;
 			bufBarrier.size = 2;
@@ -61,7 +62,9 @@ namespace citrus::graphics {
 		subInf.pCommandBuffers = &buf;
 		vkQueueSubmit(inst._graphicsQueue, 1, &subInf, fen);
 
-		inst.waitForFence(fen);
+		//inst.waitForFence(fen);
+
+		vkQueueWaitIdle(inst._graphicsQueue);
 
 		inst.destroyCommandBuffer(buf, inst._commandPool);
 
@@ -71,13 +74,15 @@ namespace citrus::graphics {
 		invRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		invRange.memory = tmpRes.mem;
 		invRange.offset = 0;
-		invRange.size = 2;
+		invRange.size = 1024;
 		vkInvalidateMappedMemoryRanges(inst._device, 1, &invRange);
 
 		uint16_t finalRes = *(uint16_t*)(tmpRes.mapped);
+
+		util::sout(std::to_string(finalRes) + "\n");
 		
 		return finalRes;
-	}*/
+	}
 	void frameStore::initColor() {
 		VkImageCreateInfo imgInfo = {};
 		imgInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -156,7 +161,7 @@ namespace citrus::graphics {
 		imgInfo.format = VK_FORMAT_R16_UINT;
 		imgInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imgInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		imgInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;// | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		imgInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		imgInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imgInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -356,7 +361,7 @@ namespace citrus::graphics {
 		initColor();
 		initIndex();
 		initDepth();
-		//tmpRes.init(&inst, 2, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, true);
+		tmpRes.init(&inst, 1024, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, true);
 	}
 	frameStore::~frameStore() {
 		for (int i = 0; i < SWAP_FRAMES; i++) {

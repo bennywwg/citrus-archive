@@ -82,8 +82,8 @@ namespace citrus::graphics {
 
 		frame				frames[SWAP_FRAMES];
 
-		//buffer				tmpRes;
-		//uint16_t			getPixelIndex(uint32_t frameIndex, uint32_t x, uint32_t y);
+		buffer				tmpRes;
+		uint16_t			getPixelIndex(uint32_t frameIndex, uint32_t x, uint32_t y);
 
 	private:
 		void initColor();

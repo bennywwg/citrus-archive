@@ -31,8 +31,11 @@ namespace citrus::graphics {
 
 		virtual void			initializeRenderPass();
 		virtual void			initializeFramebuffers();
+
+		int frameNum = 0;
 	public:
 
+		uint32_t				cursorX, cursorY;
 		uint16_t				selectedIndex;
 
 		virtual void			preRender(uint32_t const& threadCount);
