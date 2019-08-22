@@ -7,9 +7,10 @@ layout(location = 1) out uint index;
 layout (set = 0, binding = 0) uniform UniformBlock {
 	mat4	mvp;
 	vec4	color;
+	uint	index;
 } uboData;
 
 void main() {
 	color = uboData.color;
-	index = 65535;
+	index = uboData.index;
 }

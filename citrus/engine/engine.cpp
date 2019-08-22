@@ -58,8 +58,8 @@ namespace citrus::engine {
 				fp = new graphics::finalPass(*sys, *_win, *fs, shaderPath / "finalPass.vert.spv", shaderPath / "finalPass.frag.spv");
 				cf = new graphics::clearFrame(*sys, fs);
 
-				mp->addDependency(cf);
-				bp->addDependency(cf);
+				mp->addDependency(cf); mp->initialIndex = (1 << 14)             + 1;
+				bp->addDependency(cf); bp->initialIndex = (1 << 14) + (1 << 13) + 1;
 				ip->addDependency(cf);
 
 				fp->addDependency(mp);

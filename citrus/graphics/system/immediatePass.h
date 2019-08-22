@@ -51,6 +51,7 @@ namespace citrus::graphics {
 		struct uniformBlock {
 			mat4 mvp;
 			vec4 color;
+			uint32_t index;
 		};
 
 		vector<grouping>	groupings;

@@ -344,6 +344,7 @@ namespace citrus::graphics {
 				uniformBlock bk = { };
 				bk.color = vec4(groupings[i].color, 1.0f);
 				bk.mvp = sys.frameVP * groupings[i].tr;
+				bk.index = (1 << 15) | i;
 				memcpy(ubos[sys.frameIndex].mapped + currentUniformOffset, &bk, sizeof(uniformBlock));
 				uniformOffsets.push_back(currentUniformOffset);
 				currentUniformOffset = util::roundUpAlign(currentUniformOffset + sizeof(uniformBlock), ubos[sys.frameIndex].align);
@@ -425,18 +426,40 @@ namespace citrus::graphics {
 		initializeFramebuffers();
 
 		{
+			float radMajor = 1.0f;
+			float radMinor = 0.1f;
+			const int majorCount = 18;
+			const int minorCount = 4;
 			groupings.push_back({});
 			grouping& gp = groupings.back();
+			gp.data.reserve(6 * 6 * 2 * 3); //6 major segs * 6 minor segs * 2 tris per quad * 3 verts per tri
 			gp.color = vec3(1.0f, 1.0f, 1.0f);
-			gp.data = {
-				vec3(0.0f, 0.0f, 0.0f),
-				vec3(1.0f, 0.0f, 0.0f),
-				vec3(0.0f, 0.0f, 1.0f),
-				vec3(0.0f, 0.0f, 0.0f),
-				vec3(0.0f, 0.0f, 1.0f),
-				vec3(1.0f, 0.0f, 0.0f)
-			};
-			gp.tr = glm::translate(vec3(0.0f, 0.0f, 0.0f));
+			vector<vec3> data2;
+			for (int i = 0; i < majorCount; i++) {
+				float ama0 = float(i    ) / float(majorCount) * glm::pi<float>() * 2.0f;
+				float ama1 = float(i + 1) / float(majorCount) * glm::pi<float>() * 2.0f;
+				for (int j = 0; j < minorCount; j++) {
+					float ami0 = float(j    ) / float(minorCount) * glm::pi<float>() * 2.0f;
+					float ami1 = float(j + 1) / float(minorCount) * glm::pi<float>() * 2.0f;
+
+					vec2 mi0 = radMinor * vec2(glm::cos(ami0), glm::sin(ami0));
+					vec2 mi1 = radMinor * vec2(glm::cos(ami1), glm::sin(ami1));
+
+					vec3 p0((radMajor + mi0.y) * glm::cos(ama0), (radMajor + mi0.y) * glm::sin(ama0), mi0.x);
+					vec3 p1((radMajor + mi0.y) * glm::cos(ama1), (radMajor + mi0.y) * glm::sin(ama1), mi0.x);
+					vec3 p2((radMajor + mi1.y) * glm::cos(ama1), (radMajor + mi1.y) * glm::sin(ama1), mi1.x);
+					vec3 p3((radMajor + mi1.y) * glm::cos(ama0), (radMajor + mi1.y) * glm::sin(ama0), mi1.x);
+
+					gp.data.push_back(p0);
+					gp.data.push_back(p1);
+					gp.data.push_back(p2);
+
+					gp.data.push_back(p0);
+					gp.data.push_back(p2);
+					gp.data.push_back(p3);
+				}
+			}
+			gp.tr = glm::translate(vec3(1.0f, 0.0f, 0.0f));
 		}
 		{
 			groupings.push_back({});
@@ -450,8 +473,9 @@ namespace citrus::graphics {
 				vec3(0.0f, 0.0f, 1.0f),
 				vec3(1.0f, 0.0f, 0.0f)
 			};
-			gp.tr = glm::translate(vec3(1.0f, 0.0f, 0.0f));
+			gp.tr = glm::translate(vec3(0.0f, 0.0f, 0.0f));
 		}
+		
 	}
 	immediatePass::~immediatePass() {
 		vkDestroyDescriptorPool(sys.inst._device, uboPool, nullptr);

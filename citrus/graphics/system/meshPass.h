@@ -125,6 +125,8 @@ namespace citrus::graphics {
     public:
 		#pragma endregion
 
+		uint32_t				initialIndex;
+
 		virtual void			preRender(uint32_t const& threadCount);
 		virtual void 			renderPartial(uint32_t const& threadIndex);
         virtual void            postRender(uint32_t const& threadCount);

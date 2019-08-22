@@ -562,7 +562,7 @@ namespace citrus::graphics {
 				util::copyMat4x3ToRowMajor(modTmp, pushData.rowMajorModel);
 				pushData.mvp = sys.frameVP * mat4(modTmp);
 				pushData.uints[0] = items[i].texIndex;
-				pushData.uints[1] = i + 1;
+				pushData.uints[1] = i + initialIndex;
 				pushData.uints[2] = items[i].normalTexIndex;
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, pcVertSize, &pushData);
 				vkCmdPushConstants(buf, pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, pcVertSize, pcFragSize, &pushData.uints);
