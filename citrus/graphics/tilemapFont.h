@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef TILEMAPFONT_H
-#define TILEMAPFONT_H
-
 #include <string>
 #include <memory>
 #include "citrus/util.h"
@@ -18,5 +15,3 @@ namespace citrus {
 		};
 	}
 }
-
-#endif

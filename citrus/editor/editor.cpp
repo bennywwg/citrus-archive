@@ -90,87 +90,11 @@ namespace citrus::editor {
 	}
 
 	void ctEditor::render(graphics::camera& cam) {
-		//graphics::shader& colorSh = *rm.drawable[2].sh;
-		//graphics::vertexArray& sphereVao = rm.eng()->getAllOfType<meshManager>()[0]->getModel(6);
-
-		//vec2 ssCursor = (vec2)rm.eng()->getWindow()->getCursorPos() / (vec2)rm.eng()->getWindow()->framebufferSize() * 2.0f - 1.0f;
-		//auto line = cam.getRayFromScreenSpace(vec2(ssCursor.x, -ssCursor.y));
-
-		//std::vector<entityRef> entities = rm.eng()->man->allEntities();
-
-		//rm.textFBO->bind();
-		//rm.textFBO->clearDepth();
-		//
-
-		//colorSh.use();
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		//glm::mat4 viewProjection = cam.getViewProjectionMatrix();
-		//for(int i = 0; i < entities.size()/* && i < 1*/; i++) {
-		//	entityRef& r = entities[i];
-
-		//	colorSh.setUniform("modelViewProjectionMat", viewProjection * glm::translate(r.getGlobalTransform().getPosition()) * glm::scale(glm::vec3(0.1f)));
-		//	if(r == selected) {
-		//		colorSh.setUniform("drawColor", glm::vec3(1.0f, 1.0f, 1.0f));
-		//		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		//		sphereVao.drawAll();
-		//		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		//	} else {
-		//		colorSh.setUniform("drawColor", glm::vec3(0.4f, 0.4f, 0.6f));
-		//		sphereVao.drawAll();
-		//	}
-		//}
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-		//auto& arrowVao = rm.eng()->getAllOfType<meshManager>()[0]->getModel(7);
-		//if(selected) {
-		//	glm::mat4 preTrans =
-		//		viewProjection *
-		//		glm::translate(selected.getGlobalTransform().getPosition()) *
-		//		glm::toMat4(selected.getGlobalTransform().getOrientation());
-		//	colorSh.setUniform("drawColor", glm::vec3(1.0f, 0.0f, 0.0f));
-		//	colorSh.setUniform("modelViewProjectionMat",
-		//		preTrans *
-		//		glm::rotate(3.14159f / 2, glm::vec3(0.0f, 1.0f, 0.0f)));
-		//	arrowVao.drawAll();
-
-		//	colorSh.setUniform("drawColor", glm::vec3(0.0f, 1.0f, 0.0f));
-		//	colorSh.setUniform("modelViewProjectionMat",
-		//		preTrans *
-		//		glm::rotate(-3.14159f / 2, glm::vec3(1.0f, 0.0f, 0.0f)));
-		//	arrowVao.drawAll();
-
-		//	colorSh.setUniform("drawColor", glm::vec3(0.0f, 0.0f, 1.0f));
-		//	colorSh.setUniform("modelViewProjectionMat",
-		//		preTrans *
-		//		glm::rotate(3.14159f / 2, glm::vec3(0.0f, 0.0f, 1.0f)));
-		//	arrowVao.drawAll();
-		//}
-
-
-		//rm.textFBO->bind();
-
-		//rm.rectshader->use();
-		//rm.rectshader->setUniform("screen", rm.eng()->getWindow()->framebufferSize());
-		//
-		///*if(selected) {
-		//	auto gui = selected.renderGUI();
-		//	gui->render(ivec2(0, topBar->dimensions().y), views, 0);
-		//}*/
-
-		//glDisable(GL_DEPTH_TEST);
-
-		//for(editor::view& v : currentViews) {
-		//	rm.rectshader->setUniform("position", v.loc);
-		//	rm.rectshader->setUniform("size", v.size);
-		//	rm.rectshader->setUniform("drawColor", v.color);
-		//	rm.rectshader->setUniform("depth", v.depth);
-		//	graphics::vertexArray::drawOne();
-		//	rm.font.streamText(v.text, v.loc + ivec2(margin, 0), glm::vec3(0, 0, 0), v.depth + 0.05f, rm.eng()->getWindow()->framebufferSize());
-		//}
 	}
 
 	ctEditor::ctEditor() {
 		horiBar* c = new horiBar();
+
 
 		button* fileButton = new button();
 		fileButton->info = "File";
@@ -297,5 +221,7 @@ namespace citrus::editor {
 
 		topBar.reset(c);
 		topBar->render(ivec2(0, 0), currentViews, 0);
+
+		playing = true;
 	}
 }

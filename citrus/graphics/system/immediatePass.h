@@ -11,9 +11,10 @@ namespace citrus::graphics {
 	protected:
 		fpath vert, frag;
 
-		VkDescriptorSetLayout	uboLayout;
-		VkDescriptorPool		uboPool;
+		VkDescriptorSetLayout	uboLayout, texLayout;
+		VkDescriptorPool		uboPool, texPool;
 		VkDescriptorSet			uboSets[SWAP_FRAMES];
+		VkDescriptorSet			texSet;
 
 		VkRenderPass			pass;
 		VkPipelineLayout		pipelineLayout;
@@ -46,6 +47,11 @@ namespace citrus::graphics {
 			mat4			tr;
 			vec3			color;
 			vector<vec3>	data;
+			vector<vec2>	uvdata;
+			bool			pixelspace;
+			/// add a mesh presenting a string to this grouping
+			/// fills in any missing uv data if needed
+			void addText(string text, int px);
 		};
 
 		struct uniformBlock {

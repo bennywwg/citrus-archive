@@ -11,6 +11,7 @@
 #include "citrus/graphics/system/finalPass.h"
 #include "citrus/graphics/system/clearFrame.h"
 #include "citrus/graphics/system/immediatePass.h"
+#include "citrus/editor/editor.h"
 
 namespace citrus::engine {
 	void engine::Log(string str) {
@@ -32,7 +33,7 @@ namespace citrus::engine {
 	}
 
 	void engine::_runRender() {
-		//if (ed) ed->eng = this;
+		if (ed) ed->eng = this;
 
 		Log("Render Thread Begin");
 		_renderState.store(render_halted);
@@ -71,12 +72,6 @@ namespace citrus::engine {
 				util::sout(string(re.what()) + "\n");
 				throw re;
 			}
-			//graphics::image4b img(string("C:\\Users\\benny\\Desktop\\citrus\\res") + "/textures/grid.png");
-
-			//graphics::ctTexture tx = _win->inst()->createTexture4b(img.width(), img.height(), false, img.data());
-
-			//_win->inst()->_finalPass->setTexture0(tx);
-			//_win->inst()->_finalPass->buildAllCommandBuffers();
 
 			this->Log(_win->getAdapter());
 
@@ -105,7 +100,7 @@ namespace citrus::engine {
 				_win->poll();
 
 				man->flush();
-				/*if (!ed || ed->playing || ed->doFrame)*/ man->preRender();
+				if (!ed || ed->playing || ed->doFrame) man->preRender();
 				man->render();
 
 				cf->cursorX = (int)_win->getCursorPos().x;
@@ -121,12 +116,12 @@ namespace citrus::engine {
 				while(((clock::now() - fbegin).count() + lastFrameNanos) <= (long long)(_timeStep * 1000000000)) { }
 				lastFrameNanos = nextLastFrame;
 				
-				/*if (!ed || ed->playing || ed->doFrame)*/ frame++;
+				if (!ed || ed->playing || ed->doFrame) frame++;
 					
 				//_win->inst()->destroySemaphore(imageReadySem);
 				//_win->inst()->destroySemaphore(frameDoneSem);
 
-				//if (ed) ed->doFrame = false;
+				if (ed) ed->doFrame = false;
 			}
 		/*} catch(std::runtime_error ex) {
 			Log("Unrecoverable Error in Render Thread: " + std::string(ex.what()));
@@ -217,7 +212,7 @@ namespace citrus::engine {
 	}
 
 	engine::engine(double timeStep) : _timeStep(timeStep) {
-		ed = nullptr;
+		ed = new editor::ctEditor();
 		_closed = false;
 		_renderState = render_halted;
 		_engineStart = clock::now();

@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
 						cmp.body->dynamic = false;
 					}),
 					engine::eleInit<engine::meshFilter>::run([x,z](engine::meshFilter& m) {
-						m.setState(0, 0, 0);
+						m.setState(0, 0, 9);
 						m.setNormalMap(10);
 						m.visible = true;
 					}),

@@ -22,13 +22,14 @@ namespace citrus::graphics {
 
 			VkDescriptorPoolCreateInfo uboPoolInfo = { };
 			uboPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-			uboPoolInfo.poolSizeCount = 1;
 			uboPoolInfo.maxSets = SWAP_FRAMES;
+			uboPoolInfo.poolSizeCount = 1;
 			uboPoolInfo.pPoolSizes = &uboPoolSize;
 
 			if (vkCreateDescriptorPool(sys.inst._device, &uboPoolInfo, nullptr, &uboPool) != VK_SUCCESS) throw std::runtime_error("failed to create UBO descriptor pool");
 
-			VkDescriptorSetLayout uboLayouts[SWAP_FRAMES] = { uboLayout, uboLayout };
+			VkDescriptorSetLayout uboLayouts[2] = { uboLayout, uboLayout };
+
 			VkDescriptorSetAllocateInfo uboAllocInfo = { };
 			uboAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			uboAllocInfo.descriptorPool = uboPool;
@@ -37,6 +38,56 @@ namespace citrus::graphics {
 
 			vkAllocateDescriptorSets(sys.inst._device, &uboAllocInfo, uboSets);
 		}
+
+		{
+			VkDescriptorSetLayoutBinding texLayoutBinding = { };
+			texLayoutBinding.binding = 0;
+			texLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			texLayoutBinding.descriptorCount = 1;
+			texLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			VkDescriptorSetLayoutCreateInfo texLayoutInfo = { };
+			texLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			texLayoutInfo.bindingCount = 1;
+			texLayoutInfo.pBindings = &texLayoutBinding;
+
+			if (vkCreateDescriptorSetLayout(sys.inst._device, &texLayoutInfo, nullptr, &texLayout) != VK_SUCCESS) throw std::runtime_error("failed to create descriptor set layout");
+
+			VkDescriptorPoolSize texPoolSize = { };
+			texPoolSize.descriptorCount = 1;
+			texPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+			VkDescriptorPoolCreateInfo texPoolInfo = { };
+			texPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			texPoolInfo.maxSets = 1;
+			texPoolInfo.poolSizeCount = 1;
+			texPoolInfo.pPoolSizes = &texPoolSize;
+
+			if (vkCreateDescriptorPool(sys.inst._device, &texPoolInfo, nullptr, &texPool) != VK_SUCCESS) throw std::runtime_error("failed to create te descriptor pool");
+
+			VkDescriptorSetAllocateInfo texAllocInfo = { };
+			texAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			texAllocInfo.descriptorPool = texPool;
+			texAllocInfo.descriptorSetCount = 1;
+			texAllocInfo.pSetLayouts = &texLayout;
+
+			vkAllocateDescriptorSets(sys.inst._device, &texAllocInfo, &texSet);
+		}
+
+		VkDescriptorImageInfo texImgInfo = { };
+		texImgInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		texImgInfo.imageView = sys.textures[0].view;
+		texImgInfo.sampler = sys.textures[0].samp;
+
+		VkWriteDescriptorSet texWrite = { };
+		texWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		texWrite.descriptorCount = 1;
+		texWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		texWrite.dstBinding = 0;
+		texWrite.dstSet = texSet;
+		texWrite.pImageInfo = &texImgInfo;
+
+		vkUpdateDescriptorSets(sys.inst._device, 1, &texWrite, 0, nullptr);
 
 		for (uint32_t i = 0; i < SWAP_FRAMES; i++) {
 			VkDescriptorBufferInfo uboBufInfo = { };
@@ -128,10 +179,13 @@ namespace citrus::graphics {
 		if (vkCreateRenderPass(sys.inst._device, &renderPassInfo, nullptr, &pass) != VK_SUCCESS) throw std::runtime_error("failed to create render pass!");
 	}
 	void immediatePass::initializePipelineLayout() {
+
+		VkDescriptorSetLayout layouts[2] = { uboLayout, texLayout };
+
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = { };
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &uboLayout;
+		pipelineLayoutInfo.setLayoutCount = 2;
+		pipelineLayoutInfo.pSetLayouts = layouts;
 
 		if (vkCreatePipelineLayout(sys.inst._device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) throw std::runtime_error("failed to create pipeline layout");
 	}
@@ -178,23 +232,30 @@ namespace citrus::graphics {
 
 		VkPipelineShaderStageCreateInfo stages[] = { vertInfo, fragInfo };
 
-		VkVertexInputBindingDescription bindingDesc = { };
-		bindingDesc.binding = 0;
-		bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		bindingDesc.stride = sizeof(vec3);
+		VkVertexInputBindingDescription bindingDescs[2] = { };
+		bindingDescs[0].binding = 0;
+		bindingDescs[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		bindingDescs[0].stride = sizeof(vec3);
+		bindingDescs[1].binding = 1;
+		bindingDescs[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		bindingDescs[1].stride = sizeof(vec2);
 
-		VkVertexInputAttributeDescription attribDesc = { };
-		attribDesc.binding = 0;
-		attribDesc.format = VK_FORMAT_R32G32B32_SFLOAT;
-		attribDesc.offset = 0;
-		attribDesc.location = 0;
+		VkVertexInputAttributeDescription attribDescs[2] = { };
+		attribDescs[0].binding = 0;
+		attribDescs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attribDescs[0].offset = 0;
+		attribDescs[0].location = 0;
+		attribDescs[1].binding = 1;
+		attribDescs[1].format = VK_FORMAT_R32G32_SFLOAT;
+		attribDescs[1].offset = 0;
+		attribDescs[1].location = 1;
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.vertexAttributeDescriptionCount = 1;
-		vertexInputInfo.pVertexBindingDescriptions = &bindingDesc;
-		vertexInputInfo.pVertexAttributeDescriptions = &attribDesc;
+		vertexInputInfo.vertexBindingDescriptionCount = 2;
+		vertexInputInfo.vertexAttributeDescriptionCount = 2;
+		vertexInputInfo.pVertexBindingDescriptions = bindingDescs;
+		vertexInputInfo.pVertexAttributeDescriptions = attribDescs;
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -226,7 +287,7 @@ namespace citrus::graphics {
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
-		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizer.cullMode = VK_CULL_MODE_NONE;
 		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
@@ -331,7 +392,9 @@ namespace citrus::graphics {
 		if (buf != VK_NULL_HANDLE) sys.inst.destroyCommandBuffer(buf, sys.inst._commandPool);
 		buf = sys.inst.createCommandBuffer(sys.inst._commandPool);
 
-		vector<uint64_t> vertOffsets;
+		mat4 pixelSpaceMat = glm::translate(vec3(-1.0f, 1.0f, 0.0f)) * glm::scale(vec3(2.0f / (float)sys.inst.width, 2.0f / (float)sys.inst.height, 0.0f));
+
+		vector<uint64_t> vertOffsets, uvOffsets;
 		vector<uint32_t> uniformOffsets;
 		if (active) {
 			uint64_t currentOffset = 0;
@@ -340,10 +403,13 @@ namespace citrus::graphics {
 				memcpy(verts[sys.frameIndex].mapped + currentOffset, groupings[i].data.data(), groupings[i].data.size() * sizeof(vec3));
 				vertOffsets.push_back(currentOffset);
 				currentOffset = util::roundUpAlign(currentOffset + groupings[i].data.size() * sizeof(vec3), verts[sys.frameIndex].align);
+				memcpy(verts[sys.frameIndex].mapped + currentOffset, groupings[i].uvdata.data(), groupings[i].uvdata.size() * sizeof(vec2));
+				uvOffsets.push_back(currentOffset);
+				currentOffset = util::roundUpAlign(currentOffset + groupings[i].uvdata.size() * sizeof(vec2), verts[sys.frameIndex].align);
 
 				uniformBlock bk = { };
 				bk.color = vec4(groupings[i].color, 1.0f);
-				bk.mvp = sys.frameVP * groupings[i].tr;
+				bk.mvp = (groupings[i].pixelspace ? pixelSpaceMat : sys.frameVP) * groupings[i].tr;
 				bk.index = (1 << 15) | i;
 				memcpy(ubos[sys.frameIndex].mapped + currentUniformOffset, &bk, sizeof(uniformBlock));
 				uniformOffsets.push_back(currentUniformOffset);
@@ -373,8 +439,10 @@ namespace citrus::graphics {
 		if (active) {
 			for (int i = 0; i < groupings.size(); i++) {
 				vkCmdBindVertexBuffers(buf, 0, 1, &verts[sys.frameIndex].buf, &vertOffsets[i]);
+				vkCmdBindVertexBuffers(buf, 1, 1, &verts[sys.frameIndex].buf, &uvOffsets[i]);
 
 				vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboSets[sys.frameIndex], 1, &uniformOffsets[i]);
+				vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &texSet, 0, nullptr);
 
 				vkCmdDraw(buf, groupings[i].data.size(), 1, 0, 0);
 			}
@@ -465,27 +533,61 @@ namespace citrus::graphics {
 			groupings.push_back({});
 			grouping& gp = groupings.back();
 			gp.color = vec3(1.0f, 1.0f, 1.0f);
-			gp.data = {
-				vec3(0.0f, 0.0f, 0.0f),
-				vec3(1.0f, 0.0f, 0.0f),
-				vec3(0.0f, 0.0f, 1.0f),
-				vec3(0.0f, 0.0f, 0.0f),
-				vec3(0.0f, 0.0f, 1.0f),
-				vec3(1.0f, 0.0f, 0.0f)
-			};
-			gp.tr = glm::translate(vec3(0.0f, 0.0f, 0.0f));
+			gp.tr = glm::identity<mat4>();
+			gp.pixelspace = true;
+			gp.addText("test!\nline2", 32);
 		}
 		
 	}
 	immediatePass::~immediatePass() {
 		vkDestroyDescriptorPool(sys.inst._device, uboPool, nullptr);
+		vkDestroyDescriptorPool(sys.inst._device, texPool, nullptr);
 		vkDestroyDescriptorSetLayout(sys.inst._device, uboLayout, nullptr);
+		vkDestroyDescriptorSetLayout(sys.inst._device, texLayout, nullptr);
 		vkDestroyPipeline(sys.inst._device, pipeline, nullptr);
 		vkDestroyPipelineLayout(sys.inst._device, pipelineLayout, nullptr);
 		vkDestroyRenderPass(sys.inst._device, pass, nullptr);
 		for (int i = 0; i < SWAP_FRAMES; i++) {
 			vkDestroyFence(sys.inst._device, waitFences[i], nullptr);
 			vkDestroyFramebuffer(sys.inst._device, fbos[i], nullptr);
+		}
+	}
+	void immediatePass::grouping::addText(string text, int px) {
+		if (uvdata.size() < data.size()) {
+			uvdata.resize(data.size(), vec2(0.0f, 0.0f));
+		}
+		int xpos = 0;
+		int ypos = 0;
+		for (int i = 0; i < text.length(); i++) {
+			if (text[i] == '\n') {
+				ypos--;
+				xpos = 0;
+				continue;
+			}
+
+			uint8_t const c = *(uint8_t*)(&text[i]);
+
+			vec2 posbase(float(xpos * px / 2), float(ypos * px));
+			vec2 posoff(px / 2, -px);
+
+			data.emplace_back(posbase.x, posbase.y, 0.0f);
+			data.emplace_back(posbase.x + posoff.x, posbase.y, 0.0f);
+			data.emplace_back(posbase.x + posoff.x, posbase.y + posoff.y, 0.0f);
+			data.emplace_back(posbase.x, posbase.y, 0.0f);
+			data.emplace_back(posbase.x + posoff.x, posbase.y + posoff.y, 0.0f);
+			data.emplace_back(posbase.x, posbase.y + posoff.y, 0.0f);
+
+			vec2 uvbase((c % 16) / 16.0f, (c / 16) / 16.0f);
+			vec2 uvoff(1.0f / 32.0f, 1.0f / 16.0f);
+
+			uvdata.emplace_back(uvbase);
+			uvdata.emplace_back(uvbase.x + uvoff.x, uvbase.y);
+			uvdata.emplace_back(uvbase.x + uvoff.x, uvbase.y + uvoff.y);
+			uvdata.emplace_back(uvbase);
+			uvdata.emplace_back(uvbase.x + uvoff.x, uvbase.y + uvoff.y);
+			uvdata.emplace_back(uvbase.x, uvbase.y + uvoff.y);
+
+			xpos++;
 		}
 	}
 }
