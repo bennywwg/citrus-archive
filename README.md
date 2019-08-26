@@ -2,9 +2,13 @@
 A multithreaded ECS game engine using a custom vulkan render engine.
 
 Current status:
-Broken, vulkan is being implemented
+The port to vulkan is nearly complete. The critical features I pan on working on next are:
+* Basic editor functionality such as scene graph and entity transformation
+* Finish the basic lighting model (including point lights)
+* Add shadows (point light shadows not planned)
+* Scene / prefab saving loading
 
-Roadmap as of 2019/01/26:
+For other goals see the roadmap:
 
 ![roadmap](https://raw.githubusercontent.com/bennywwg/citrus/master/media/roadmap.png "Roadmap")
 
