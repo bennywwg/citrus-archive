@@ -535,7 +535,7 @@ namespace citrus::graphics {
 			gp.color = vec3(1.0f, 1.0f, 1.0f);
 			gp.tr = glm::identity<mat4>();
 			gp.pixelspace = true;
-			gp.addText("test!\nline2", 32);
+			gp.addText("test!\nline2", 16);
 		}
 		
 	}

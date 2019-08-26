@@ -110,6 +110,9 @@ namespace citrus::engine {
 
 				sys->render();
 
+				uint16_t selectedIndex = cf->selectedIndex;
+
+
 				fpsSample++;
 
 				long long nextLastFrame = (clock::now() - fbegin).count();
@@ -117,9 +120,6 @@ namespace citrus::engine {
 				lastFrameNanos = nextLastFrame;
 				
 				if (!ed || ed->playing || ed->doFrame) frame++;
-					
-				//_win->inst()->destroySemaphore(imageReadySem);
-				//_win->inst()->destroySemaphore(frameDoneSem);
 
 				if (ed) ed->doFrame = false;
 			}
@@ -132,8 +132,6 @@ namespace citrus::engine {
 		} catch(...) {
 			Log("Unrecoverable Error in Render Thread (Whack error.)");
 		}*/
-
-		//_win->inst()->destroyTexture(tx);
 
 		if (mp) delete mp;
 		if (cf) delete cf;
