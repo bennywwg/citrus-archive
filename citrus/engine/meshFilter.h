@@ -7,13 +7,12 @@
 
 namespace citrus::engine {
 	class meshFilter : public element {
-	private:
+	public:
 		int materialIndex = -1;
 		int itemIndex = -1;
 		graphics::behavior _mode;
 		double _aniStart = 0.0;
 
-	public:
 		glm::vec3 color;
 		bool visible = true;
 

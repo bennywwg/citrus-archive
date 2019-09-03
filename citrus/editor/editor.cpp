@@ -2,9 +2,10 @@
 #include "citrus/graphics/camera.h"
 #include "citrus/engine/engine.h"
 #include "citrus/graphics/system/immediatePass.h"
+#include "citrus/engine/meshFilter.h"
+#include "citrus/engine/manager.inl"
 
 namespace citrus::editor {
-
 	void ctEditor::click(ivec2 cursor) {
 		view* topView = nullptr;
 		float topViewDepth = -999.0f;
@@ -44,50 +45,22 @@ namespace citrus::editor {
 		for (auto& fl : floating) {
 			fl.ele->render(fl.pos, currentViews, fl.depth);
 		}
+
+		if (!topView) {
+			selected = hovered;
+			util::sout("selected = " + std::to_string(selected.id()) + "\n");
+		}
 	}
 
-	void ctEditor::update(graphics::camera& cam) {
-		/*bool clickedThisFrame = false;
-		if(rm.eng()->getKey(graphics::windowInput::leftMouse)) {
-			if(!dragged) {
-				clickedThisFrame = true;
-				dragged = true;
-				startDragPx = rm.eng()->getWindow()->getCursorPos();
-				startDrag = (vec2)startDragPx / (vec2)rm.eng()->getWindow()->framebufferSize() * 2.0f - 1.0f;
-
-				click(rm.eng()->getWindow()->getCursorPos());
-			}
-		} else {
-			dragged = false;
-		}
-
-		auto line = cam.getRayFromScreenSpace(vec2(startDrag.x, -startDrag.y));
-
-		std::vector<entityRef> entities = rm.eng()->man->allEntities();
-
-		entityRef hovered;
-		float nearest = std::numeric_limits<float>::max();
-
-		for(int i = 0; i < entities.size(); i++) {
-			entityRef& r = entities[i];
-
-			geom::sphere s;
-			s.p = r.getGlobalTransform().getPosition();
-			s.r = 0.1f;
-
-			geom::ray ray;
-			ray.p = line.p0;
-			ray.d = line.p1 - line.p0;
-
-			geom::hit res = s.intersects(ray);
-
-			if(res && res.dist() <= nearest) {
-				hovered = r;
-				nearest = res.dist();
+	void ctEditor::update(uint16_t const& selectedIndex) {
+		auto const& items = eng->man->ofType(typeid(engine::meshFilter));
+		hovered = engine::entityRef();
+		for (auto const& eler : items) {
+			auto const& ele = (engine::meshFilter*)eler;
+			if(eng->sys->meshPasses[ele->materialIndex]->initialIndex + ele->itemIndex == selectedIndex) {
+				hovered = ele->ent();
 			}
 		}
-
-		if(clickedThisFrame) selected = hovered;*/
 	}
 
 	void ctEditor::render(graphics::immediatePass & ipass) {

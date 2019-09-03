@@ -12,6 +12,8 @@ namespace citrus {
 	namespace engine {
 		class renderManager;
 		class camera;
+		class manager;
+		class engine;
 	}
 
 	
@@ -33,6 +35,7 @@ namespace citrus {
 			unique_ptr<gui> topBar;
 			vector<guiFloating> floating;
 
+			entityRef hovered;
 			entityRef selected;
 			
 			bool dragged = false;
@@ -53,7 +56,7 @@ namespace citrus {
 
 			void click(ivec2 cursor);
 
-			void update(graphics::camera& cam);
+			void update(uint16_t const& selectedIndex);
 			void render(graphics::immediatePass & ipass);
 
 			ctEditor();

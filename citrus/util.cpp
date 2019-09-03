@@ -409,7 +409,7 @@ namespace citrus::util {
 		return json({
 			{"Position", save(trans.getPosition())},
 			{"Orientation", save(trans.getOrientation())}
-			});
+		});
 	}
 	transform loadTransform(json trans) {
 		return transform(

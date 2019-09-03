@@ -78,8 +78,6 @@ namespace citrus::graphics {
 		vkInvalidateMappedMemoryRanges(inst._device, 1, &invRange);
 
 		uint16_t finalRes = *(uint16_t*)(tmpRes.mapped);
-
-		util::sout(std::to_string(finalRes) + "\n");
 		
 		return finalRes;
 	}

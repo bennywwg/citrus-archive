@@ -123,9 +123,16 @@ namespace citrus::engine {
 
 				uint16_t selectedIndex = cf->selectedIndex;
 
-				for (int i = 0; i < sys->meshPasses.size(); i++) {
-					sys->meshPasses[i]->items - sys->meshPasses[i]->initialIndex;
-				}
+				ed->update(selectedIndex);
+
+				/*for (int i = 0; i < sys->meshPasses.size(); i++) {
+					for (uint32_t j = 0; j < sys->meshPasses[i]->items.size(); j++) {
+						uint32_t relIndex = j + sys->meshPasses[i]->initialIndex;
+						if (relIndex == selectedIndex) {
+							util::sout("pass: " + std::to_string(i) + ", item: " + std::to_string(j) + "\n");
+						}
+					}
+				}*/
 
 				fpsSample++;
 
