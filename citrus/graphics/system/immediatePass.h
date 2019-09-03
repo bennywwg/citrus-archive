@@ -51,7 +51,7 @@ namespace citrus::graphics {
 			bool			pixelspace;
 			/// add a mesh presenting a string to this grouping
 			/// fills in any missing uv data if needed
-			void addText(string text, int px);
+			void addText(string text, int px, ivec2 pos = ivec2(0, 0));
 		};
 
 		struct uniformBlock {

@@ -15,6 +15,9 @@ layout (set = 0, binding = 0) uniform UniformBlock {
 } uboData;
 
 void main() {
-	color = texture(fontTex, frag_uv);
+	float fval =texture(fontTex, frag_uv).r;
+	
+	color = vec4(uboData.color.rgb * (1 - fval), uboData.color.a);
+	
 	index = uboData.index;
 }

@@ -392,7 +392,7 @@ namespace citrus::graphics {
 		if (buf != VK_NULL_HANDLE) sys.inst.destroyCommandBuffer(buf, sys.inst._commandPool);
 		buf = sys.inst.createCommandBuffer(sys.inst._commandPool);
 
-		mat4 pixelSpaceMat = glm::translate(vec3(-1.0f, 1.0f, 0.0f)) * glm::scale(vec3(2.0f / (float)sys.inst.width, 2.0f / (float)sys.inst.height, 0.0f));
+		mat4 pixelSpaceMat = glm::translate(vec3(-1.0f, 1.0f, 0.0f)) * glm::scale(vec3(2.0f / (float)sys.inst.width, -2.0f / (float)sys.inst.height, 0.0f));
 
 		vector<uint64_t> vertOffsets, uvOffsets;
 		vector<uint32_t> uniformOffsets;
@@ -438,6 +438,8 @@ namespace citrus::graphics {
 
 		if (active) {
 			for (int i = 0; i < groupings.size(); i++) {
+				if (groupings[i].data.size() == 0) continue;
+
 				vkCmdBindVertexBuffers(buf, 0, 1, &verts[sys.frameIndex].buf, &vertOffsets[i]);
 				vkCmdBindVertexBuffers(buf, 1, 1, &verts[sys.frameIndex].buf, &uvOffsets[i]);
 
@@ -535,7 +537,7 @@ namespace citrus::graphics {
 			gp.color = vec3(1.0f, 1.0f, 1.0f);
 			gp.tr = glm::identity<mat4>();
 			gp.pixelspace = true;
-			gp.addText("test!\nline2", 16);
+			gp.addText("test!\nline2", 16, ivec2(0, 0));
 		}
 		
 	}
@@ -552,7 +554,7 @@ namespace citrus::graphics {
 			vkDestroyFramebuffer(sys.inst._device, fbos[i], nullptr);
 		}
 	}
-	void immediatePass::grouping::addText(string text, int px) {
+	void immediatePass::grouping::addText(string text, int px, ivec2 pos) {
 		if (uvdata.size() < data.size()) {
 			uvdata.resize(data.size(), vec2(0.0f, 0.0f));
 		}
@@ -560,15 +562,15 @@ namespace citrus::graphics {
 		int ypos = 0;
 		for (int i = 0; i < text.length(); i++) {
 			if (text[i] == '\n') {
-				ypos--;
+				ypos++;
 				xpos = 0;
 				continue;
 			}
 
 			uint8_t const c = *(uint8_t*)(&text[i]);
 
-			vec2 posbase(float(xpos * px / 2), float(ypos * px));
-			vec2 posoff(px / 2, -px);
+			vec2 posbase(float(xpos * px / 2 + pos.x), float(ypos * px + pos.y));
+			vec2 posoff(px / 2, px);
 
 			data.emplace_back(posbase.x, posbase.y, 0.0f);
 			data.emplace_back(posbase.x + posoff.x, posbase.y, 0.0f);

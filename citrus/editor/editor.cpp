@@ -1,6 +1,7 @@
 #include "citrus/editor/editor.h"
 #include "citrus/graphics/camera.h"
 #include "citrus/engine/engine.h"
+#include "citrus/graphics/system/immediatePass.h"
 
 namespace citrus::editor {
 
@@ -89,12 +90,23 @@ namespace citrus::editor {
 		if(clickedThisFrame) selected = hovered;*/
 	}
 
-	void ctEditor::render(graphics::camera& cam) {
+	void ctEditor::render(graphics::immediatePass & ipass) {
+		ipass.groupings.clear();
+
+		for (auto const& view : currentViews) {
+			graphics::immediatePass::grouping gp = { };
+			gp.color = view.color;
+			gp.pixelspace = true;
+			gp.tr = glm::identity<mat4>();
+
+			gp.addText(view.text, 16, view.loc);
+
+			ipass.groupings.emplace_back(gp);
+		}
 	}
 
 	ctEditor::ctEditor() {
 		horiBar* c = new horiBar();
-
 
 		button* fileButton = new button();
 		fileButton->info = "File";

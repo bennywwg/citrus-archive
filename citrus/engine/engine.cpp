@@ -108,15 +108,29 @@ namespace citrus::engine {
 				cf->cursorY = _win->framebufferSize().y - (int)_win->getCursorPos().y - 1;
 				if (cf->cursorY >= _win->framebufferSize().y) cf->cursorY = 0;
 
+				ed->render(*ip);
+				if (_win->getKey(graphics::windowInput::leftMouse)) {
+					if (!ed->dragged) {
+						ed->startDragPx = _win->getCursorPos();
+						ed->click(_win->getCursorPos());
+					}
+					ed->dragged = true;
+				} else {
+					ed->dragged = false;
+				}
+
 				sys->render();
 
 				uint16_t selectedIndex = cf->selectedIndex;
 
+				for (int i = 0; i < sys->meshPasses.size(); i++) {
+					sys->meshPasses[i]->items - sys->meshPasses[i]->initialIndex;
+				}
 
 				fpsSample++;
 
 				long long nextLastFrame = (clock::now() - fbegin).count();
-				while(((clock::now() - fbegin).count() + lastFrameNanos) <= (long long)(_timeStep * 1000000000)) { }
+				//while(((clock::now() - fbegin).count() + lastFrameNanos) <= (long long)(_timeStep * 1000000000)) { }
 				lastFrameNanos = nextLastFrame;
 				
 				if (!ed || ed->playing || ed->doFrame) frame++;

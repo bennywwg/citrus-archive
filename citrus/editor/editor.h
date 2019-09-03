@@ -5,6 +5,7 @@
 
 #include "citrus/editor/gui.h"
 #include "citrus/graphics/camera.h"
+#include "citrus/graphics/system/immediatePass.h"
 #include <memory>
 
 namespace citrus {
@@ -26,10 +27,6 @@ namespace citrus {
 		};
 
 		class ctEditor {
-			void createTopBar();
-			void createFileButton();
-			void createEditButton();
-			void createToolsButton();
 
 			public:
 			vector<view> currentViews;
@@ -57,7 +54,7 @@ namespace citrus {
 			void click(ivec2 cursor);
 
 			void update(graphics::camera& cam);
-			void render(graphics::camera& cam);
+			void render(graphics::immediatePass & ipass);
 
 			ctEditor();
 		};

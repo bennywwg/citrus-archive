@@ -40,8 +40,8 @@ namespace citrus::editor {
 		virtual void mouseDragged(ivec2 cursor, ivec2 myPos) { }
 		virtual void mouseUp(ivec2 cursor, ivec2 myPos) { }
 		virtual vector<gui*> children() { throw std::runtime_error("gui::children"); }
-		virtual ivec2 dimensions() { throw std::runtime_error("gui"); }
-		virtual void render(ivec2 pos, vector<view>& views, float depth) { throw std::runtime_error("gui"); }
+		virtual ivec2 dimensions() { throw std::runtime_error("gui::dimensions"); }
+		virtual void render(ivec2 pos, vector<view>& views, float depth) { throw std::runtime_error("gui::render"); }
 		virtual ~gui() = default;
 	};
 
