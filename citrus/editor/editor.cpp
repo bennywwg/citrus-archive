@@ -79,7 +79,7 @@ namespace citrus::editor {
 				ipass.groupings.push_back({});
 				auto& gp = ipass.groupings.back();
 				gp.addTorus(0.6f, 0.02f, 24, 6);
-				gp.tr = selected.getGlobalTransform().getMatNoScale();
+				gp.tr = selected.getGlobalTransform().getMatNoScale() * glm::rotate(glm::pi<float>() * 0.5f, vec3(0.0f, 1.0f, 0.0f));
 				gp.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 			}
 			{
@@ -93,7 +93,29 @@ namespace citrus::editor {
 				ipass.groupings.push_back({});
 				auto& gp = ipass.groupings.back();
 				gp.addTorus(0.6f, 0.02f, 24, 6);
-				gp.tr =  selected.getGlobalTransform().getMatNoScale() * glm::rotate(glm::pi<float>() * 0.5f, vec3(0.0f, 1.0f, 0.0f));
+				gp.tr = selected.getGlobalTransform().getMatNoScale();
+				gp.color = vec4(0.0f, 0.0f, 1.0f, 1.0f);
+			}
+			
+			{
+				ipass.groupings.push_back({});
+				auto& gp = ipass.groupings.back();
+				gp.addArrow(0.025f, 1.0f, 8);
+				gp.tr = selected.getGlobalTransform().getMatNoScale();// *glm::rotate(glm::pi<float>() * 0.5f, vec3(0.0f, 1.0f, 0.0f));
+				gp.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+			}
+			{
+				ipass.groupings.push_back({});
+				auto& gp = ipass.groupings.back();
+				gp.addArrow(0.025f, 1.0f, 8);
+				gp.tr = selected.getGlobalTransform().getMatNoScale() *glm::rotate(glm::pi<float>() * 0.5f, vec3(0.0f, 0.0f, 1.0f));
+				gp.color = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+			}
+			{
+				ipass.groupings.push_back({});
+				auto& gp = ipass.groupings.back();
+				gp.addArrow(0.025f, 1.0f, 8);
+				gp.tr = selected.getGlobalTransform().getMatNoScale() *glm::rotate(glm::pi<float>() * 0.5f, vec3(0.0f, 1.0f, 0.0f));
 				gp.color = vec4(0.0f, 0.0f, 1.0f, 1.0f);
 			}
 		}

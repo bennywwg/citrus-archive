@@ -634,4 +634,29 @@ namespace citrus::graphics {
 			uvdata.resize(data.size(), vec2(0.0f, 0.0f));
 		}
 	}
+	void immediatePass::grouping::addArrow(float rad, float len, uint32_t majorCount) {
+		for (int i = 0; i < majorCount; i++) {
+			float ama0 = float(i) / float(majorCount) * glm::pi<float>() * 2.0f;
+			float ama1 = float(i + 1) / float(majorCount) * glm::pi<float>() * 2.0f;
+			float cv0 = glm::cos(ama0);
+			float sv0 = glm::sin(ama0);
+			float cv1 = glm::cos(ama1);
+			float sv1 = glm::sin(ama1);
+
+			data.emplace_back(0.0f, cv0 * rad, sv0 * rad);
+			data.emplace_back(0.0f, cv1 * rad, sv1 * rad);
+			data.emplace_back(len * 0.8f, cv1 * rad, sv1 * rad);
+
+			data.emplace_back(0.0f,	cv0 * rad, sv0 * rad);
+			data.emplace_back(len * 0.8f, cv1 * rad, sv1 * rad);
+			data.emplace_back(len * 0.8f, cv0 * rad, sv0 * rad);
+
+			data.emplace_back(len * 0.8f, cv0 * rad * 1.6f, sv0 * rad * 1.6f);
+			data.emplace_back(len * 0.8f, cv1 * rad * 1.6f, sv1 * rad * 1.6f);
+			data.emplace_back(len, 0.0f, 0.0f);
+		}
+		if (uvdata.size() < data.size()) {
+			uvdata.resize(data.size(), vec2(0.0f, 0.0f));
+		}
+	}
 }
