@@ -48,7 +48,6 @@ namespace citrus::editor {
 
 		if (!topView) {
 			selected = hovered;
-			util::sout("selected = " + std::to_string(selected.id()) + "\n");
 		}
 	}
 
@@ -65,6 +64,39 @@ namespace citrus::editor {
 
 	void ctEditor::render(graphics::immediatePass & ipass) {
 		ipass.groupings.clear();
+
+		if (hovered) {
+			{
+				ipass.groupings.push_back({});
+				auto& gp = ipass.groupings.back();
+				gp.addCube(vec3(0.1f, 0.1f, 0.1f));
+				gp.tr = hovered.getGlobalTransform().getMatNoScale();
+				gp.color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+			}
+		}
+		if(selected) {
+			{
+				ipass.groupings.push_back({});
+				auto& gp = ipass.groupings.back();
+				gp.addTorus(0.6f, 0.02f, 24, 6);
+				gp.tr = selected.getGlobalTransform().getMatNoScale();
+				gp.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+			}
+			{
+				ipass.groupings.push_back({});
+				auto& gp = ipass.groupings.back();
+				gp.addTorus(0.6f, 0.02f, 24, 6);
+				gp.tr = selected.getGlobalTransform().getMatNoScale() * glm::rotate(glm::pi<float>() * 0.5f, vec3(1.0f, 0.0f, 0.0f));
+				gp.color = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+			}
+			{
+				ipass.groupings.push_back({});
+				auto& gp = ipass.groupings.back();
+				gp.addTorus(0.6f, 0.02f, 24, 6);
+				gp.tr =  selected.getGlobalTransform().getMatNoScale() * glm::rotate(glm::pi<float>() * 0.5f, vec3(0.0f, 1.0f, 0.0f));
+				gp.color = vec4(0.0f, 0.0f, 1.0f, 1.0f);
+			}
+		}
 
 		for (auto const& view : currentViews) {
 			graphics::immediatePass::grouping gp = { };

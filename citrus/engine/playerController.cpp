@@ -64,7 +64,7 @@ namespace citrus::engine {
 		glm::quat playerOri = glm::toQuat(glm::toMat4(ent().getGlobalTransform().getOrientation()) * glm::rotate(3.141596f * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 
-		if(eng()->controllerButton(ctr_rbump)) {
+		if(eng()->controllerButton(ctr_rtrigger)) {
 			if(!fired) {
 				glm::vec3 projStart = ent().getGlobalTransform().getMat() * glm::translate(glm::vec3(0.0f, 0.0f, 1.5f)) * glm::vec4(0, 0, 0, 1);
 				fired = true;

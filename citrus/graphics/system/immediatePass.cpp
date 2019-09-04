@@ -496,40 +496,7 @@ namespace citrus::graphics {
 		initializeFramebuffers();
 
 		{
-			float radMajor = 1.0f;
-			float radMinor = 0.1f;
-			const int majorCount = 18;
-			const int minorCount = 4;
-			groupings.push_back({});
-			grouping& gp = groupings.back();
-			gp.data.reserve(6 * 6 * 2 * 3); //6 major segs * 6 minor segs * 2 tris per quad * 3 verts per tri
-			gp.color = vec3(1.0f, 1.0f, 1.0f);
-			vector<vec3> data2;
-			for (int i = 0; i < majorCount; i++) {
-				float ama0 = float(i    ) / float(majorCount) * glm::pi<float>() * 2.0f;
-				float ama1 = float(i + 1) / float(majorCount) * glm::pi<float>() * 2.0f;
-				for (int j = 0; j < minorCount; j++) {
-					float ami0 = float(j    ) / float(minorCount) * glm::pi<float>() * 2.0f;
-					float ami1 = float(j + 1) / float(minorCount) * glm::pi<float>() * 2.0f;
-
-					vec2 mi0 = radMinor * vec2(glm::cos(ami0), glm::sin(ami0));
-					vec2 mi1 = radMinor * vec2(glm::cos(ami1), glm::sin(ami1));
-
-					vec3 p0((radMajor + mi0.y) * glm::cos(ama0), (radMajor + mi0.y) * glm::sin(ama0), mi0.x);
-					vec3 p1((radMajor + mi0.y) * glm::cos(ama1), (radMajor + mi0.y) * glm::sin(ama1), mi0.x);
-					vec3 p2((radMajor + mi1.y) * glm::cos(ama1), (radMajor + mi1.y) * glm::sin(ama1), mi1.x);
-					vec3 p3((radMajor + mi1.y) * glm::cos(ama0), (radMajor + mi1.y) * glm::sin(ama0), mi1.x);
-
-					gp.data.push_back(p0);
-					gp.data.push_back(p1);
-					gp.data.push_back(p2);
-
-					gp.data.push_back(p0);
-					gp.data.push_back(p2);
-					gp.data.push_back(p3);
-				}
-			}
-			gp.tr = glm::translate(vec3(1.0f, 0.0f, 0.0f));
+			
 		}
 		{
 			groupings.push_back({});
@@ -590,6 +557,81 @@ namespace citrus::graphics {
 			uvdata.emplace_back(uvbase.x, uvbase.y + uvoff.y);
 
 			xpos++;
+		}
+	}
+	void immediatePass::grouping::addCube(vec3 halfDims) {
+		data.emplace_back(-halfDims.x, -halfDims.y, halfDims.z);
+		data.emplace_back(halfDims.x, -halfDims.y, halfDims.z);
+		data.emplace_back(halfDims.x, halfDims.y, halfDims.z);
+		data.emplace_back(-halfDims.x, -halfDims.y, halfDims.z);
+		data.emplace_back(-halfDims.x, halfDims.y, halfDims.z);
+		data.emplace_back(halfDims.x, halfDims.y, halfDims.z);
+
+		data.emplace_back(-halfDims.x, -halfDims.y, -halfDims.z);
+		data.emplace_back(halfDims.x, -halfDims.y, -halfDims.z);
+		data.emplace_back(halfDims.x, halfDims.y, -halfDims.z);
+		data.emplace_back(-halfDims.x, -halfDims.y, -halfDims.z);
+		data.emplace_back(-halfDims.x, halfDims.y, -halfDims.z);
+		data.emplace_back(halfDims.x, halfDims.y, -halfDims.z);
+
+		data.emplace_back(halfDims.x, -halfDims.y, -halfDims.z);
+		data.emplace_back(halfDims.x, -halfDims.y, halfDims.z);
+		data.emplace_back(halfDims.x, halfDims.y, halfDims.z);
+		data.emplace_back(halfDims.x, -halfDims.y, -halfDims.z);
+		data.emplace_back(halfDims.x, halfDims.y, -halfDims.z);
+		data.emplace_back(halfDims.x, halfDims.y, halfDims.z);
+
+		data.emplace_back(-halfDims.x, -halfDims.y, -halfDims.z);
+		data.emplace_back(-halfDims.x, -halfDims.y, halfDims.z);
+		data.emplace_back(-halfDims.x, halfDims.y, halfDims.z);
+		data.emplace_back(-halfDims.x, -halfDims.y, -halfDims.z);
+		data.emplace_back(-halfDims.x, halfDims.y, -halfDims.z);
+		data.emplace_back(-halfDims.x, halfDims.y, halfDims.z);
+
+		data.emplace_back(-halfDims.x, halfDims.y, -halfDims.z);
+		data.emplace_back(-halfDims.x, halfDims.y, halfDims.z);
+		data.emplace_back(halfDims.x, halfDims.y, halfDims.z);
+		data.emplace_back(-halfDims.x, halfDims.y, -halfDims.z);
+		data.emplace_back(halfDims.x, halfDims.y, -halfDims.z);
+		data.emplace_back(halfDims.x, halfDims.y, halfDims.z);
+
+		data.emplace_back(-halfDims.x, -halfDims.y, -halfDims.z);
+		data.emplace_back(-halfDims.x, -halfDims.y, halfDims.z);
+		data.emplace_back(halfDims.x, -halfDims.y, halfDims.z);
+		data.emplace_back(-halfDims.x, -halfDims.y, -halfDims.z);
+		data.emplace_back(halfDims.x, -halfDims.y, -halfDims.z);
+		data.emplace_back(halfDims.x, -halfDims.y, halfDims.z);
+		if (uvdata.size() < data.size()) {
+			uvdata.resize(data.size(), vec2(0.0f, 0.0f));
+		}
+	}
+	void immediatePass::grouping::addTorus(float radMajor, float radMinor, uint32_t majorCount, uint32_t minorCount) {
+		for (int i = 0; i < majorCount; i++) {
+			float ama0 = float(i) / float(majorCount) * glm::pi<float>() * 2.0f;
+			float ama1 = float(i + 1) / float(majorCount) * glm::pi<float>() * 2.0f;
+			for (int j = 0; j < minorCount; j++) {
+				float ami0 = float(j) / float(minorCount) * glm::pi<float>() * 2.0f;
+				float ami1 = float(j + 1) / float(minorCount) * glm::pi<float>() * 2.0f;
+
+				vec2 mi0 = radMinor * vec2(glm::cos(ami0), glm::sin(ami0));
+				vec2 mi1 = radMinor * vec2(glm::cos(ami1), glm::sin(ami1));
+
+				vec3 p0((radMajor + mi0.y) * glm::cos(ama0), (radMajor + mi0.y) * glm::sin(ama0), mi0.x);
+				vec3 p1((radMajor + mi0.y) * glm::cos(ama1), (radMajor + mi0.y) * glm::sin(ama1), mi0.x);
+				vec3 p2((radMajor + mi1.y) * glm::cos(ama1), (radMajor + mi1.y) * glm::sin(ama1), mi1.x);
+				vec3 p3((radMajor + mi1.y) * glm::cos(ama0), (radMajor + mi1.y) * glm::sin(ama0), mi1.x);
+
+				data.push_back(p0);
+				data.push_back(p1);
+				data.push_back(p2);
+
+				data.push_back(p0);
+				data.push_back(p2);
+				data.push_back(p3);
+			}
+		}
+		if (uvdata.size() < data.size()) {
+			uvdata.resize(data.size(), vec2(0.0f, 0.0f));
 		}
 	}
 }

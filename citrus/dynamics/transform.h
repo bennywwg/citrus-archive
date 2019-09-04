@@ -21,6 +21,7 @@ namespace citrus {
 		transform getTranslated(vec3 trans);
 
 		mat4 getMat() const;
+		mat4 getMatNoScale() const;
 
 		transform operator*(const transform& rhs) const;
 		bool operator==(const transform& other) const;
