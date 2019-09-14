@@ -6,7 +6,7 @@
 #include "citrus/engine/manager.inl"
 
 namespace citrus::editor {
-	void ctEditor::click(ivec2 cursor) {
+	view* ctEditor::getHoveredView(ivec2 cursor) {
 		view* topView = nullptr;
 		float topViewDepth = -999.0f;
 		for (auto& view : currentViews) {
@@ -18,13 +18,26 @@ namespace citrus::editor {
 			}
 		}
 
+		return topView;
+	}
+	weak_ptr<guiFloating> ctEditor::getHoveredFloating(ivec2 cursor) {
+		view* v = getHoveredView(cursor);
+		if (!v) return weak_ptr<guiFloating>();
 		for (int i = 0; i < floating.size(); i++) {
-			gui* cur = topView ? topView->owner : nullptr;
+			if (floating[i]->ele.get() == v->owner) {
+				return weak_ptr<guiFloating>(floating[i]);
+			}
+		}
+		return weak_ptr<guiFloating>();
+	}
+	void ctEditor::clearFloating(view* hovered) {
+		for (int i = 0; i < floating.size(); i++) {
+			gui* cur = hovered ? hovered->owner : nullptr;
 			auto& fl = floating[i];
-			if (fl.persistent) continue;
+			if (fl->persistent) continue;
 			bool preserve = false;
 			while (cur) {
-				if (&(*fl.ele) == cur) {
+				if (&(*fl->ele) == cur) {
 					preserve = true;
 				}
 				cur = cur->parent;
@@ -34,24 +47,42 @@ namespace citrus::editor {
 				i--;
 			}
 		}
-
-		if (topView && topView->owner) {
-			topView->owner->mouseDown(cursor, topView->loc);
-		}
-
+	}
+	void ctEditor::renderAllGui() {
 		currentViews.clear();
 		topBar->render(ivec2(0, 0), currentViews, 0);
-		
 		for (auto& fl : floating) {
-			fl.ele->render(fl.pos, currentViews, fl.depth);
+			fl->ele->render(fl->pos, currentViews, fl->depth);
 		}
+	}
+	void ctEditor::mouseDown(ivec2 cursor) {
+		view* topView = getHoveredView(cursor);
+		
+		draggedGui = getHoveredFloating(cursor);
+		if (!draggedGui.expired()) {
+			draggedGuiStart = draggedGui.lock()->pos;
+		}
+		clearFloating(topView);
 
-		if (!topView) {
+		if (topView) {
+			if (topView->owner) {
+				topView->owner->mouseDown(cursor, topView->loc);
+			}
+		}
+		renderAllGui();
+
+	}
+	void ctEditor::mouseUp(ivec2 cursor) {
+		view* topView = getHoveredView(cursor);
+
+		draggedGui.reset();
+
+		if (cursor == startDragPx && !topView) {
 			selected = hovered;
 		}
 	}
 
-	void ctEditor::update(uint16_t const& selectedIndex) {
+	void ctEditor::update(ivec2 cursor, uint16_t const& selectedIndex) {
 		auto const& items = eng->man->ofType(typeid(engine::meshFilter));
 		hovered = engine::entityRef();
 		for (auto const& eler : items) {
@@ -59,6 +90,11 @@ namespace citrus::editor {
 			if(eng->sys->meshPasses[ele->materialIndex]->initialIndex + ele->itemIndex == selectedIndex) {
 				hovered = ele->ent();
 			}
+		}
+
+		if (!draggedGui.expired()) {
+			draggedGui.lock()->pos = draggedGuiStart + (cursor - startDragPx);
+			renderAllGui();
 		}
 	}
 
@@ -139,12 +175,12 @@ namespace citrus::editor {
 		fileButton->info = "File";
 		fileButton->parent = c;
 		fileButton->onClick = [this](button& b) {
-			this->floating.emplace_back();
-			this->floating.back().depth = 100;
-			this->floating.back().pos = this->startDragPx;
-			this->floating.back().persistent = false;
-			this->floating.back().ele.reset(new dropDown());
-			auto& dd = *(dropDown*)&(*this->floating.back().ele);
+			this->floating.emplace_back(std::make_shared<guiFloating>());
+			this->floating.back()->depth = 100;
+			this->floating.back()->pos = this->startDragPx;
+			this->floating.back()->persistent = false;
+			this->floating.back()->ele.reset(new dropDown());
+			auto& dd = *(dropDown*)&(*this->floating.back()->ele);
 			dd.title = "- File -";
 			
 			{
@@ -176,12 +212,12 @@ namespace citrus::editor {
 		editButton->info = "Edit";
 		editButton->parent = c;
 		editButton->onClick = [this](button& b) {
-			this->floating.emplace_back();
-			this->floating.back().depth = 100;
-			this->floating.back().pos = this->startDragPx;
-			this->floating.back().persistent = false;
-			this->floating.back().ele.reset(new dropDown());
-			auto& dd = *(dropDown*)&(*this->floating.back().ele);
+			this->floating.emplace_back(std::make_shared<guiFloating>());
+			this->floating.back()->depth = 100;
+			this->floating.back()->pos = this->startDragPx;
+			this->floating.back()->persistent = false;
+			this->floating.back()->ele.reset(new dropDown());
+			auto& dd = *(dropDown*)&(*this->floating.back()->ele);
 			dd.title = "- Edit -";
 
 			{
@@ -213,26 +249,26 @@ namespace citrus::editor {
 		toolsButton->info = "Tools";
 		toolsButton->parent = c;
 		toolsButton->onClick = [this](button& b) {
-			this->floating.emplace_back();
+			this->floating.emplace_back(std::make_shared<guiFloating>());
 			auto& ddCont = this->floating.back();
-			ddCont.depth = 100;
-			ddCont.pos = this->startDragPx;
-			ddCont.persistent = false;
-			ddCont.ele.reset(new dropDown());
-			auto& dd = *(dropDown*)&(*ddCont.ele);
+			ddCont->depth = 100;
+			ddCont->pos = this->startDragPx;
+			ddCont->persistent = false;
+			ddCont->ele.reset(new dropDown());
+			auto& dd = *(dropDown*)&(*ddCont->ele);
 			dd.title = "- Tools -";
 
 			{
 				dd.buttons.emplace_back(new button());
 				dd.buttons.back()->info = "Entity List";
 				dd.buttons.back()->onClick = [this](button& but) {
-					this->floating.emplace_back();
+					this->floating.emplace_back(std::make_shared<guiFloating>());
 					auto& ddCont = this->floating.back();
-					ddCont.depth = 50.0f;
-					ddCont.pos = this->startDragPx;
-					ddCont.persistent = true;
-					ddCont.ele.reset(new dropDown());
-					auto& dd = *(dropDown*)&(*ddCont.ele);
+					ddCont->depth = 50.0f;
+					ddCont->pos = this->startDragPx;
+					ddCont->persistent = true;
+					ddCont->ele.reset(new dropDown());
+					auto& dd = *(dropDown*)&(*ddCont->ele);
 				};
 				dd.buttons.back()->parent = &dd;
 			} {

@@ -6,8 +6,8 @@
 
 namespace citrus::graphics {
 	class immediatePass : public sysNode {
-		uint64_t const			uboSize = 4 * 1024;
-		uint64_t const			vertSize = 4 * 1024 * 1024;
+		uint64_t const			uboSize = 1024 * 1024;
+		uint64_t const			vertSize = 128 * 1024 * 1024;
 	protected:
 		fpath vert, frag;
 

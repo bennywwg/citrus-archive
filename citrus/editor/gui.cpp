@@ -188,6 +188,28 @@ namespace citrus::editor {
 	}
 	void dropDown::render(ivec2 pos, vector<view>& views, float depth) {
 		int yOffset = 0;
+		{
+			views.emplace_back();
+			auto& xb = views.back();
+			xb.color = vec3(1.0f, 1.0f, 1.0f);
+			xb.depth = depth + 0.1;
+			xb.loc = pos;
+			xb.text = ".";
+			xb.size = ivec2(margin + textWidth + margin, margin + textHeight + margin);
+			xb.owner = this;
+			xb.type = viewType::buttonType;
+		}
+		{
+			views.emplace_back();
+			auto& xb = views.back();
+			xb.color = vec3(1.0f, 1.0f, 1.0f);
+			xb.depth = depth + 0.1;
+			xb.loc = pos;
+			xb.text = ".";
+			xb.size = ivec2(margin + textWidth + margin, margin + textHeight + margin);
+			xb.owner = this;
+			xb.type = viewType::buttonType;
+		}
 		if (!title.empty()) {
 			views.emplace_back();
 			views.back().color = vec3(0.0f, 0.8f, 0.0f);
@@ -196,6 +218,7 @@ namespace citrus::editor {
 			views.back().text = title;
 			views.back().size = ivec2(margin + title.length() * textWidth + margin, margin + textHeight + margin);
 			views.back().owner = this;
+			views.back().type = viewType::handleType;
 			yOffset = margin + textHeight + margin;
 		}
 		for (auto& button : buttons) {

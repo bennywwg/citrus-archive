@@ -112,10 +112,13 @@ namespace citrus::engine {
 				if (_win->getKey(graphics::windowInput::leftMouse)) {
 					if (!ed->dragged) {
 						ed->startDragPx = _win->getCursorPos();
-						ed->click(_win->getCursorPos());
+						ed->mouseDown(_win->getCursorPos());
 					}
 					ed->dragged = true;
 				} else {
+					if (ed->dragged) {
+						ed->mouseUp(_win->getCursorPos());
+					}
 					ed->dragged = false;
 				}
 
@@ -123,7 +126,7 @@ namespace citrus::engine {
 
 				uint16_t selectedIndex = cf->selectedIndex;
 
-				ed->update(selectedIndex);
+				ed->update(_win->getCursorPos(), selectedIndex);
 
 				/*for (int i = 0; i < sys->meshPasses.size(); i++) {
 					for (uint32_t j = 0; j < sys->meshPasses[i]->items.size(); j++) {

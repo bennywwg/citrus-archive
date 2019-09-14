@@ -496,9 +496,6 @@ namespace citrus::graphics {
 		initializeFramebuffers();
 
 		{
-			
-		}
-		{
 			groupings.push_back({});
 			grouping& gp = groupings.back();
 			gp.color = vec3(1.0f, 1.0f, 1.0f);

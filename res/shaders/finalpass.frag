@@ -41,6 +41,7 @@ layout (set = 0, binding = 4) uniform UniformData {
 	float fcp;
 	uint widthPX;
 	uint heightPX;
+	//uint specialIndex;
 } uniformData;
 
 float idif(vec2 uv) {

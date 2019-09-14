@@ -21,6 +21,13 @@ namespace citrus::editor {
 	const int textWidth = 8;
 	const int textHeight = 16;
 
+	enum struct viewType {
+		noType,
+		handleType,
+		buttonType,
+		fieldType
+	};
+
 	struct gui;
 	
 	struct view {
@@ -31,6 +38,7 @@ namespace citrus::editor {
 		bool border;
 		float depth;
 		gui* owner;
+		viewType type;
 	};
 
 	struct gui {
