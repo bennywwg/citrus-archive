@@ -14,6 +14,10 @@ namespace citrus::editor {
 	using glm::vec4;
 	using std::string;
 	using std::vector;
+	using std::shared_ptr;
+	using std::weak_ptr;
+	using std::make_unique;
+	using std::make_shared;
 	using std::unique_ptr;
 
 	const int itemHeight = 24;
@@ -37,24 +41,25 @@ namespace citrus::editor {
 		vec3 color;
 		bool border;
 		float depth;
-		gui* owner;
+		std::weak_ptr<gui> owner;
 		viewType type;
 	};
 
-	struct gui {
-		gui* parent = nullptr;
+	struct gui : std::enable_shared_from_this<gui> {
+		weak_ptr<gui> parent;
 		bool focused = false;
+		weak_ptr<gui> topLevelParent();
 		virtual void mouseDown(ivec2 cursor, ivec2 myPos) { }
 		virtual void mouseDragged(ivec2 cursor, ivec2 myPos) { }
 		virtual void mouseUp(ivec2 cursor, ivec2 myPos) { }
-		virtual vector<gui*> children() { throw std::runtime_error("gui::children"); }
+		virtual vector<weak_ptr<gui>> children() { throw std::runtime_error("gui::children"); }
 		virtual ivec2 dimensions() { throw std::runtime_error("gui::dimensions"); }
 		virtual void render(ivec2 pos, vector<view>& views, float depth) { throw std::runtime_error("gui::render"); }
 		virtual ~gui() = default;
 	};
 
 	struct guiLeaf : public gui {
-		vector<gui*> children();
+		vector<weak_ptr<gui>> children();
 	};
 
 
@@ -62,11 +67,11 @@ namespace citrus::editor {
 		vec3 color;
 		string title;
 
-		vector<unique_ptr<gui>> items;
+		vector<shared_ptr<gui>> items;
 
 		void click(vec2 point, vector<view>& view);
 
-		vector<gui*> children();
+		vector<weak_ptr<gui>> children();
 		ivec2 dimensions();
 		void render(ivec2 pos, vector<view>& views, float depth);
 	};
@@ -109,7 +114,7 @@ namespace citrus::editor {
 	};
 
 	struct horiBar : public guiLeaf {
-		vector<unique_ptr<button>> buttons;
+		vector<shared_ptr<button>> buttons;
 
 		ivec2 dimensions();
 		void render(ivec2 pos, vector<view>& views, float depth);
@@ -117,10 +122,15 @@ namespace citrus::editor {
 
 	struct dropDown : public gui {
 		string title;
-		vector<unique_ptr<button>> buttons;
+		shared_ptr<button> pinButton;
+		shared_ptr<button> exitButton;
+		vector<shared_ptr<button>> buttons;
+		bool shouldClose = false;
+		bool shouldPin = false;
 
-		vector<gui*> children();
+		vector<weak_ptr<gui>> children();
 		ivec2 dimensions();
 		void render(ivec2 pos, vector<view>& views, float depth);
+		void addButtons();
 	};
 }

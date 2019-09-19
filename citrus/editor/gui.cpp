@@ -1,4 +1,5 @@
 #include "citrus/editor/gui.h"
+#include "citrus/util.h"
 #include <algorithm>
 
 namespace citrus::editor {
@@ -7,10 +8,10 @@ namespace citrus::editor {
 
 		}
 	}
-	vector<gui*> container::children() {
-		vector<gui*> res(items.size());
+	vector<weak_ptr<gui>> container::children() {
+		vector<weak_ptr<gui>> res(items.size());
 		for (int i = 0; i < items.size(); i++) {
-			res[i] = &(*items[i]);
+			res[i] = items[i];
 		}
 		return res;
 	}
@@ -30,7 +31,7 @@ namespace citrus::editor {
 			views.back().size = dimensions();
 			views.back().color = vec3(0.8f);
 			views.back().depth = depth;
-			views.back().owner = this;
+			views.back().owner = shared_from_this();
 			h = textHeight + margin;
 		}
 		for(int i = 0; i < items.size(); i++) {
@@ -50,7 +51,7 @@ namespace citrus::editor {
 		v.loc = pos;
 		v.border = true;
 		v.depth = depth;
-		v.owner = this;
+		v.owner = shared_from_this();
 	}
 	void button::mouseDown(ivec2 cursor, ivec2 myPos) {
 		if(onClick) onClick(*this);
@@ -68,7 +69,7 @@ namespace citrus::editor {
 			v.loc = pos;
 			v.border = false;
 			v.depth = depth;
-			v.owner = this;
+			v.owner = shared_from_this();
 		}
 		{
 			views.emplace_back();
@@ -79,7 +80,7 @@ namespace citrus::editor {
 			v.loc = pos + ivec2(0, margin);
 			v.border = false;
 			v.depth = depth;
-			v.owner = this;
+			v.owner = shared_from_this();
 		}
 		{
 			views.emplace_back();
@@ -90,7 +91,7 @@ namespace citrus::editor {
 			v.loc = pos + ivec2(margin + textWidth * info.length() + margin, 0);
 			v.border = true;
 			v.depth = depth;
-			v.owner = this;
+			v.owner = shared_from_this();
 		}
 	}
 	ivec2 slider::dimensions() {
@@ -106,7 +107,7 @@ namespace citrus::editor {
 			v.text = info;
 			v.size = ivec2(margin + textWidth * info.length() + margin, margin + textHeight + margin);
 			v.depth = depth;
-			v.owner = this;
+			v.owner = shared_from_this();
 		}
 		{
 			views.emplace_back();
@@ -117,7 +118,7 @@ namespace citrus::editor {
 			v.text = info;
 			v.size = ivec2(250 - (margin + textWidth * info.length() + margin) - margin, 8);
 			v.depth = depth;
-			v.owner = this;
+			v.owner = shared_from_this();
 		}
 		{
 			views.emplace_back();
@@ -128,7 +129,7 @@ namespace citrus::editor {
 			v.text = info;
 			v.size = ivec2(16, 16);
 			v.depth = depth;
-			v.owner = this;
+			v.owner = shared_from_this();
 		}
 	}
 	ivec2 textField::dimensions() {
@@ -143,7 +144,7 @@ namespace citrus::editor {
 		v.border = true;
 		v.size = ivec2(250, margin + textHeight + margin + textHeight * (1 + std::count(state.begin(), state.end(), '\n')) + margin);
 		v.depth = depth;
-		v.owner = this;
+		v.owner = shared_from_this();
 	}
 	ivec2 horiBar::dimensions() {
 		int widthSum = 0;
@@ -166,14 +167,14 @@ namespace citrus::editor {
 			xAdd += b->dimensions().x + ((i != buttons.size() - 1) ? margin : 0);
 		}
 	}
-	vector<gui*> guiLeaf::children() {
-		return vector<gui*>();
+	vector<weak_ptr<gui>> guiLeaf::children() {
+		return vector<weak_ptr<gui>>();
 	}
 	
-	vector<gui*> dropDown::children() {
-		vector<gui*> res(buttons.size());
+	vector<weak_ptr<gui>> dropDown::children() {
+		vector<weak_ptr<gui>> res(buttons.size());
 		for (int i = 0; i < buttons.size(); i++) {
-			res[i] = &(*buttons[i]);
+			res[i] = buttons[i];
 		}
 		return res;
 	}
@@ -188,36 +189,16 @@ namespace citrus::editor {
 	}
 	void dropDown::render(ivec2 pos, vector<view>& views, float depth) {
 		int yOffset = 0;
-		{
-			views.emplace_back();
-			auto& xb = views.back();
-			xb.color = vec3(1.0f, 1.0f, 1.0f);
-			xb.depth = depth + 0.1;
-			xb.loc = pos;
-			xb.text = ".";
-			xb.size = ivec2(margin + textWidth + margin, margin + textHeight + margin);
-			xb.owner = this;
-			xb.type = viewType::buttonType;
-		}
-		{
-			views.emplace_back();
-			auto& xb = views.back();
-			xb.color = vec3(1.0f, 1.0f, 1.0f);
-			xb.depth = depth + 0.1;
-			xb.loc = pos;
-			xb.text = ".";
-			xb.size = ivec2(margin + textWidth + margin, margin + textHeight + margin);
-			xb.owner = this;
-			xb.type = viewType::buttonType;
-		}
+		if(pinButton) pinButton->render(pos, views, depth + 0.1f);
+		if(exitButton) exitButton->render(pos + ivec2(margin + textWidth + margin, 0), views, depth + 0.1f);
 		if (!title.empty()) {
 			views.emplace_back();
 			views.back().color = vec3(0.0f, 0.8f, 0.0f);
 			views.back().depth = depth + 0.1;
-			views.back().loc = pos;
+			views.back().loc = pos + ivec2((margin + textWidth + margin) * 2, 0);
 			views.back().text = title;
 			views.back().size = ivec2(margin + title.length() * textWidth + margin, margin + textHeight + margin);
-			views.back().owner = this;
+			views.back().owner = shared_from_this();
 			views.back().type = viewType::handleType;
 			yOffset = margin + textHeight + margin;
 		}
@@ -225,5 +206,29 @@ namespace citrus::editor {
 			button->render(pos + ivec2(0, yOffset), views, depth + 0.1f);
 			yOffset += button->dimensions().y;
 		}
+	}
+	void dropDown::addButtons() {
+		pinButton = std::make_shared<button>();
+		pinButton->parent = shared_from_this();
+		pinButton->info = ".";
+		pinButton->focused = false;
+		pinButton->onClick = [this](button& b) {
+			this->shouldPin = !this->shouldPin;
+			this->pinButton->info = this->shouldPin ? "!" : ".";
+		};
+		exitButton = std::make_shared<button>();
+		exitButton->parent = shared_from_this();
+		exitButton->info = "x";
+		exitButton->focused = false;
+		exitButton->onClick = [this](button& b) {
+			this->shouldClose = true;
+		};
+	}
+	weak_ptr<gui> gui::topLevelParent() {
+		weak_ptr<gui> cur = shared_from_this();
+		while (!cur.lock()->parent.expired()) {
+			cur = cur.lock()->parent;
+		}
+		return cur;
 	}
 }

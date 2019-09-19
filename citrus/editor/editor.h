@@ -24,15 +24,15 @@ namespace citrus {
 		struct guiFloating {
 			ivec2 pos;
 			float depth;
+			bool justCreated = true;
 			bool persistent; //whether or not this floating GUI should continue existing even if it is clicked away from
 			shared_ptr<gui> ele;
 		};
 
 		class ctEditor {
-
 			public:
 			vector<view> currentViews;
-			unique_ptr<gui> topBar;
+			shared_ptr<gui> topBar;
 			vector<shared_ptr<guiFloating>> floating;
 
 			entityRef hovered;

@@ -24,7 +24,7 @@ namespace citrus::editor {
 		view* v = getHoveredView(cursor);
 		if (!v) return weak_ptr<guiFloating>();
 		for (int i = 0; i < floating.size(); i++) {
-			if (floating[i]->ele.get() == v->owner) {
+			if (floating[i]->ele == v->owner.lock()) {
 				return weak_ptr<guiFloating>(floating[i]);
 			}
 		}
@@ -32,20 +32,21 @@ namespace citrus::editor {
 	}
 	void ctEditor::clearFloating(view* hovered) {
 		for (int i = 0; i < floating.size(); i++) {
-			gui* cur = hovered ? hovered->owner : nullptr;
+			weak_ptr<gui> cur = hovered ? hovered->owner : weak_ptr<gui>();
+			weak_ptr<dropDown> dd = cur.expired() ? weak_ptr<dropDown>() : (cur.lock()->topLevelParent().expired() ? weak_ptr<dropDown>() : std::dynamic_pointer_cast<dropDown>(cur.lock()->topLevelParent().lock()));
 			auto& fl = floating[i];
-			if (fl->persistent) continue;
-			bool preserve = false;
-			while (cur) {
-				if (&(*fl->ele) == cur) {
+			bool preserve = fl->persistent;
+			while (!cur.expired()) {
+				if (fl->ele == cur.lock()) {
 					preserve = true;
 				}
-				cur = cur->parent;
+				cur = cur.lock()->parent;
 			}
-			if (!preserve) {
+			if (!fl->justCreated && (!preserve || (!dd.expired() && dd.lock()->shouldClose))) {
 				floating.erase(floating.begin() + i);
 				i--;
 			}
+			fl->justCreated = false;
 		}
 	}
 	void ctEditor::renderAllGui() {
@@ -53,6 +54,10 @@ namespace citrus::editor {
 		topBar->render(ivec2(0, 0), currentViews, 0);
 		for (auto& fl : floating) {
 			fl->ele->render(fl->pos, currentViews, fl->depth);
+			auto ddc = std::dynamic_pointer_cast<dropDown>(fl->ele);
+			if (ddc) {
+				fl->persistent = ddc->shouldPin;
+			}
 		}
 	}
 	void ctEditor::mouseDown(ivec2 cursor) {
@@ -62,15 +67,16 @@ namespace citrus::editor {
 		if (!draggedGui.expired()) {
 			draggedGuiStart = draggedGui.lock()->pos;
 		}
-		clearFloating(topView);
 
 		if (topView) {
-			if (topView->owner) {
-				topView->owner->mouseDown(cursor, topView->loc);
+			if (!topView->owner.expired()) {
+				topView->owner.lock()->mouseDown(cursor, topView->loc);
 			}
 		}
-		renderAllGui();
 
+		clearFloating(topView);
+
+		renderAllGui();
 	}
 	void ctEditor::mouseUp(ivec2 cursor) {
 		view* topView = getHoveredView(cursor);
@@ -169,9 +175,9 @@ namespace citrus::editor {
 	}
 
 	ctEditor::ctEditor() {
-		horiBar* c = new horiBar();
+		shared_ptr<horiBar> c(make_shared<horiBar>());
 
-		button* fileButton = new button();
+		shared_ptr<button> fileButton = make_shared<button>();
 		fileButton->info = "File";
 		fileButton->parent = c;
 		fileButton->onClick = [this](button& b) {
@@ -179,36 +185,37 @@ namespace citrus::editor {
 			this->floating.back()->depth = 100;
 			this->floating.back()->pos = this->startDragPx;
 			this->floating.back()->persistent = false;
-			this->floating.back()->ele.reset(new dropDown());
-			auto& dd = *(dropDown*)&(*this->floating.back()->ele);
-			dd.title = "- File -";
+			shared_ptr<dropDown> dd = make_shared<dropDown>();
+			this->floating.back()->ele = dd;
+			dd->title = "- File -";
+			dd->addButtons();
 			
 			{
-				dd.buttons.emplace_back(new button());
-				dd.buttons.back()->info = "Save Scene";
-				dd.buttons.back()->onClick = [this](button& but) {
+				dd->buttons.emplace_back(make_shared<button>());
+				dd->buttons.back()->info = "Save Scene";
+				dd->buttons.back()->onClick = [this](button& but) {
 					std::cout << "Save Scene = " << util::selectFile("cts") << "\n";
 				};
-				dd.buttons.back()->parent = &dd;
+				dd->buttons.back()->parent = dd;
 			} {
-				dd.buttons.emplace_back(new button());
-				dd.buttons.back()->info = "Load Scene";
-				dd.buttons.back()->onClick = [this](button& but) {
+				dd->buttons.emplace_back(make_shared<button>());
+				dd->buttons.back()->info = "Load Scene";
+				dd->buttons.back()->onClick = [this](button& but) {
 					std::cout << "Load Scene = " << util::selectFile("cts") << "\n";
 				};
-				dd.buttons.back()->parent = &dd;
+				dd->buttons.back()->parent = dd;
 			} {
-				dd.buttons.emplace_back(new button());
-				dd.buttons.back()->info = "Exit";
-				dd.buttons.back()->onClick = [this](button& but) {
+				dd->buttons.emplace_back(make_shared<button>());
+				dd->buttons.back()->info = "Exit";
+				dd->buttons.back()->onClick = [this](button& but) {
 					eng->stop();
 				};
-				dd.buttons.back()->parent = &dd;
+				dd->buttons.back()->parent = dd;
 			}
 		};
 		c->buttons.emplace_back(fileButton);
 
-		button* editButton = new button();
+		shared_ptr<button> editButton = make_shared<button>();
 		editButton->info = "Edit";
 		editButton->parent = c;
 		editButton->onClick = [this](button& b) {
@@ -216,36 +223,37 @@ namespace citrus::editor {
 			this->floating.back()->depth = 100;
 			this->floating.back()->pos = this->startDragPx;
 			this->floating.back()->persistent = false;
-			this->floating.back()->ele.reset(new dropDown());
-			auto& dd = *(dropDown*)&(*this->floating.back()->ele);
-			dd.title = "- Edit -";
+			shared_ptr<dropDown> dd = make_shared<dropDown>();
+			this->floating.back()->ele = dd;
+			dd->title = "- Edit -";
+			dd->addButtons();
 
 			{
-				dd.buttons.emplace_back(new button());
-				dd.buttons.back()->info = "Pause";
-				dd.buttons.back()->onClick = [this](button& but) {
+				dd->buttons.emplace_back(new button());
+				dd->buttons.back()->info = "Pause";
+				dd->buttons.back()->onClick = [this](button& but) {
 					this->playing = false;
 				};
-				dd.buttons.back()->parent = &dd;
+				dd->buttons.back()->parent = dd;
 			} {
-				dd.buttons.emplace_back(new button());
-				dd.buttons.back()->info = "Play";
-				dd.buttons.back()->onClick = [this](button& but) {
+				dd->buttons.emplace_back(new button());
+				dd->buttons.back()->info = "Play";
+				dd->buttons.back()->onClick = [this](button& but) {
 					this->playing = true;
 				};
-				dd.buttons.back()->parent = &dd;
+				dd->buttons.back()->parent = dd;
 			} {
-				dd.buttons.emplace_back(new button());
-				dd.buttons.back()->info = "One Frame";
-				dd.buttons.back()->onClick = [this](button& but) {
+				dd->buttons.emplace_back(new button());
+				dd->buttons.back()->info = "One Frame";
+				dd->buttons.back()->onClick = [this](button& but) {
 					this->doFrame = true;
 				};
-				dd.buttons.back()->parent = &dd;
+				dd->buttons.back()->parent = dd;
 			}
 		};
 		c->buttons.emplace_back(editButton);
 
-		button* toolsButton = new button();
+		shared_ptr<button> toolsButton = make_shared<button>();
 		toolsButton->info = "Tools";
 		toolsButton->parent = c;
 		toolsButton->onClick = [this](button& b) {
@@ -254,14 +262,14 @@ namespace citrus::editor {
 			ddCont->depth = 100;
 			ddCont->pos = this->startDragPx;
 			ddCont->persistent = false;
-			ddCont->ele.reset(new dropDown());
-			auto& dd = *(dropDown*)&(*ddCont->ele);
-			dd.title = "- Tools -";
-
+			shared_ptr<dropDown> dd = make_shared<dropDown>();
+			ddCont->ele = dd;
+			dd->title = "- Tools -";
+			dd->addButtons();
 			{
-				dd.buttons.emplace_back(new button());
-				dd.buttons.back()->info = "Entity List";
-				dd.buttons.back()->onClick = [this](button& but) {
+				dd->buttons.emplace_back(make_shared<button>());
+				dd->buttons.back()->info = "Entity List";
+				dd->buttons.back()->onClick = [this](button& but) {
 					this->floating.emplace_back(std::make_shared<guiFloating>());
 					auto& ddCont = this->floating.back();
 					ddCont->depth = 50.0f;
@@ -270,31 +278,31 @@ namespace citrus::editor {
 					ddCont->ele.reset(new dropDown());
 					auto& dd = *(dropDown*)&(*ddCont->ele);
 				};
-				dd.buttons.back()->parent = &dd;
+				dd->buttons.back()->parent = dd;
 			} {
-				dd.buttons.emplace_back(new button());
-				dd.buttons.back()->info = "Inspector";
-				dd.buttons.back()->onClick = [this](button& but) {
+				dd->buttons.emplace_back(make_shared<button>());
+				dd->buttons.back()->info = "Inspector";
+				dd->buttons.back()->onClick = [this](button& but) {
 					
 				};
-				dd.buttons.back()->parent = &dd;
+				dd->buttons.back()->parent = dd;
 			} {
-				dd.buttons.emplace_back(new button());
-				dd.buttons.back()->info = "Profiler";
-				dd.buttons.back()->onClick = [this](button& but) {
+				dd->buttons.emplace_back(make_shared<button>());
+				dd->buttons.back()->info = "Profiler";
+				dd->buttons.back()->onClick = [this](button& but) {
 					util::sout("Nothing happened");
 				};
-				dd.buttons.back()->parent = &dd;
+				dd->buttons.back()->parent = dd;
 			}
 		};
 		c->buttons.emplace_back(toolsButton);
 
-		button* aboutButton = new button();
+		shared_ptr<button> aboutButton = make_shared<button>();
 		aboutButton->info = "About";
 		aboutButton->parent = c;
 		c->buttons.emplace_back(aboutButton);
 
-		topBar.reset(c);
+		topBar = c;
 		topBar->render(ivec2(0, 0), currentViews, 0);
 
 		playing = true;
