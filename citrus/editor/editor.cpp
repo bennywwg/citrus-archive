@@ -20,44 +20,35 @@ namespace citrus::editor {
 
 		return topView;
 	}
-	weak_ptr<guiFloating> ctEditor::getHoveredFloating(ivec2 cursor) {
+	weak_ptr<floatingGui> ctEditor::getHoveredFloating(ivec2 cursor) {
 		view* v = getHoveredView(cursor);
-		if (!v) return weak_ptr<guiFloating>();
+		if (!v) return weak_ptr<floatingGui>();
 		for (int i = 0; i < floating.size(); i++) {
-			if (floating[i]->ele == v->owner.lock()) {
-				return weak_ptr<guiFloating>(floating[i]);
+			if (floating[i] == v->owner.lock()) {
+				return weak_ptr<floatingGui>(floating[i]);
 			}
 		}
-		return weak_ptr<guiFloating>();
+		return weak_ptr<floatingGui>();
 	}
 	void ctEditor::clearFloating(view* hovered) {
+		weak_ptr<gui> owner = hovered ? hovered->owner : weak_ptr<gui>();
+		shared_ptr<floatingGui> hoveredFloating = owner.expired() ? shared_ptr<floatingGui>() : std::dynamic_pointer_cast<floatingGui>(owner.lock()->topLevelParent().lock());
 		for (int i = 0; i < floating.size(); i++) {
-			weak_ptr<gui> cur = hovered ? hovered->owner : weak_ptr<gui>();
-			weak_ptr<dropDown> dd = cur.expired() ? weak_ptr<dropDown>() : (cur.lock()->topLevelParent().expired() ? weak_ptr<dropDown>() : std::dynamic_pointer_cast<dropDown>(cur.lock()->topLevelParent().lock()));
-			auto& fl = floating[i];
-			bool preserve = fl->persistent;
-			while (!cur.expired()) {
-				if (fl->ele == cur.lock()) {
-					preserve = true;
-				}
-				cur = cur.lock()->parent;
+			if (floating[i]->justCreated) {
+				floating[i]->justCreated = false;
+				continue;
 			}
-			if (!fl->justCreated && (!preserve || (!dd.expired() && dd.lock()->shouldClose))) {
+			if (floating[i]->shouldClose || (!floating[i]->shouldPin && floating[i] != hoveredFloating)) {
 				floating.erase(floating.begin() + i);
 				i--;
 			}
-			fl->justCreated = false;
 		}
 	}
 	void ctEditor::renderAllGui() {
 		currentViews.clear();
 		topBar->render(ivec2(0, 0), currentViews, 0);
 		for (auto& fl : floating) {
-			fl->ele->render(fl->pos, currentViews, fl->depth);
-			auto ddc = std::dynamic_pointer_cast<dropDown>(fl->ele);
-			if (ddc) {
-				fl->persistent = ddc->shouldPin;
-			}
+			fl->render(fl->pos, currentViews, 10.0f);
 		}
 	}
 	void ctEditor::mouseDown(ivec2 cursor) {
@@ -88,7 +79,7 @@ namespace citrus::editor {
 		}
 	}
 
-	void ctEditor::update(ivec2 cursor, uint16_t const& selectedIndex) {
+	void ctEditor::update(graphics::immediatePass& ipass, ivec2 cursor, uint16_t const& selectedIndex) {
 		auto const& items = eng->man->ofType(typeid(engine::meshFilter));
 		hovered = engine::entityRef();
 		for (auto const& eler : items) {
@@ -102,6 +93,13 @@ namespace citrus::editor {
 			draggedGui.lock()->pos = draggedGuiStart + (cursor - startDragPx);
 			renderAllGui();
 		}
+
+		topBar->update(*this);
+		for (auto& dd : floating) {
+			dd->update(*this);
+		}
+
+		render(ipass);
 	}
 
 	void ctEditor::render(graphics::immediatePass & ipass) {
@@ -175,134 +173,76 @@ namespace citrus::editor {
 	}
 
 	ctEditor::ctEditor() {
-		shared_ptr<horiBar> c(make_shared<horiBar>());
+		topBar = make_shared<horiBar>();
 
 		shared_ptr<button> fileButton = make_shared<button>();
 		fileButton->info = "File";
-		fileButton->parent = c;
+		fileButton->parent = topBar;
 		fileButton->onClick = [this](button& b) {
-			this->floating.emplace_back(std::make_shared<guiFloating>());
-			this->floating.back()->depth = 100;
-			this->floating.back()->pos = this->startDragPx;
-			this->floating.back()->persistent = false;
-			shared_ptr<dropDown> dd = make_shared<dropDown>();
-			this->floating.back()->ele = dd;
-			dd->title = "- File -";
-			dd->addButtons();
-			
-			{
-				dd->buttons.emplace_back(make_shared<button>());
-				dd->buttons.back()->info = "Save Scene";
-				dd->buttons.back()->onClick = [this](button& but) {
-					std::cout << "Save Scene = " << util::selectFile("cts") << "\n";
-				};
-				dd->buttons.back()->parent = dd;
-			} {
-				dd->buttons.emplace_back(make_shared<button>());
-				dd->buttons.back()->info = "Load Scene";
-				dd->buttons.back()->onClick = [this](button& but) {
-					std::cout << "Load Scene = " << util::selectFile("cts") << "\n";
-				};
-				dd->buttons.back()->parent = dd;
-			} {
-				dd->buttons.emplace_back(make_shared<button>());
-				dd->buttons.back()->info = "Exit";
-				dd->buttons.back()->onClick = [this](button& but) {
-					eng->stop();
-				};
-				dd->buttons.back()->parent = dd;
-			}
+			auto saveButton = button::create("Save Scene", [](button& but) { std::cout << "Save Scene = " << util::selectFile("cts") << "\n"; } );
+			auto loadButton = button::create("Load Scene", [](button& but) { std::cout << "Load Scene = " << util::selectFile("cts") << "\n"; } );
+			auto exitButton = button::create("Exit", [this](button& but) { eng->stop(); } );
+			auto fileDropDown = dropDown::create("File->", { saveButton, loadButton, exitButton });
+			floating.emplace_back(fileDropDown);
 		};
-		c->buttons.emplace_back(fileButton);
+		topBar->buttons.emplace_back(fileButton);
 
 		shared_ptr<button> editButton = make_shared<button>();
 		editButton->info = "Edit";
-		editButton->parent = c;
+		editButton->parent = topBar;
 		editButton->onClick = [this](button& b) {
-			this->floating.emplace_back(std::make_shared<guiFloating>());
-			this->floating.back()->depth = 100;
-			this->floating.back()->pos = this->startDragPx;
-			this->floating.back()->persistent = false;
-			shared_ptr<dropDown> dd = make_shared<dropDown>();
-			this->floating.back()->ele = dd;
-			dd->title = "- Edit -";
-			dd->addButtons();
-
-			{
-				dd->buttons.emplace_back(new button());
-				dd->buttons.back()->info = "Pause";
-				dd->buttons.back()->onClick = [this](button& but) {
-					this->playing = false;
-				};
-				dd->buttons.back()->parent = dd;
-			} {
-				dd->buttons.emplace_back(new button());
-				dd->buttons.back()->info = "Play";
-				dd->buttons.back()->onClick = [this](button& but) {
-					this->playing = true;
-				};
-				dd->buttons.back()->parent = dd;
-			} {
-				dd->buttons.emplace_back(new button());
-				dd->buttons.back()->info = "One Frame";
-				dd->buttons.back()->onClick = [this](button& but) {
-					this->doFrame = true;
-				};
-				dd->buttons.back()->parent = dd;
-			}
+			auto playButton = button::create("Play", [this](button& but) { playing = true; });
+			auto pauseButton = button::create("Pause", [this](button& but) { playing = false; });
+			auto editDropDown = dropDown::create("Edit->", { playButton, pauseButton });
+			floating.emplace_back(editDropDown);
 		};
-		c->buttons.emplace_back(editButton);
-
+		topBar->buttons.emplace_back(editButton);
+		
 		shared_ptr<button> toolsButton = make_shared<button>();
 		toolsButton->info = "Tools";
-		toolsButton->parent = c;
+		toolsButton->parent = topBar;
 		toolsButton->onClick = [this](button& b) {
-			this->floating.emplace_back(std::make_shared<guiFloating>());
-			auto& ddCont = this->floating.back();
-			ddCont->depth = 100;
-			ddCont->pos = this->startDragPx;
-			ddCont->persistent = false;
-			shared_ptr<dropDown> dd = make_shared<dropDown>();
-			ddCont->ele = dd;
-			dd->title = "- Tools -";
-			dd->addButtons();
-			{
-				dd->buttons.emplace_back(make_shared<button>());
-				dd->buttons.back()->info = "Entity List";
-				dd->buttons.back()->onClick = [this](button& but) {
-					this->floating.emplace_back(std::make_shared<guiFloating>());
-					auto& ddCont = this->floating.back();
-					ddCont->depth = 50.0f;
-					ddCont->pos = this->startDragPx;
-					ddCont->persistent = true;
-					ddCont->ele.reset(new dropDown());
-					auto& dd = *(dropDown*)&(*ddCont->ele);
-				};
-				dd->buttons.back()->parent = dd;
-			} {
-				dd->buttons.emplace_back(make_shared<button>());
-				dd->buttons.back()->info = "Inspector";
-				dd->buttons.back()->onClick = [this](button& but) {
+			auto inspectorButton = button::create("Inspector", [this](button& but) {
+				auto inspectorCont = make_shared<floatingContainer>();
+				inspectorCont->addButtons();
+				inspectorCont->title = "Entity Inspector";
+
+				auto name = make_shared<textField>();
+				name->parent = inspectorCont;
+
+				auto vec = make_shared<vecField>();
+				vec->parent = inspectorCont;
+
+				auto ori = make_shared<vecField>();
+				ori->parent = inspectorCont;
+				ori->numComponents = 4;
+
+				inspectorCont->items.emplace_back(name);
+				inspectorCont->items.emplace_back(vec);
+				inspectorCont->items.emplace_back(ori);
+
+				floating.emplace_back(inspectorCont);
+
+				inspectorCont->updateFunc = [name, vec, ori](ctEditor& ed) {
+					if (ed.selected) {
+						name->info = ed.selected.name();
+						vec->vec = vec4(ed.selected.getGlobalTransform().getPosition(), 0.f);
+						auto quat = ed.selected.getGlobalTransform().getOrientation();
+						ori->vec = vec4(quat.x, quat.y, quat.z, quat.w);
+						util::sout("updated\n");
+					} else {
+						name->info = "(No Selection)";
+						vec->vec = vec4(0, 0, 0, 0);
+						ori->vec = vec4(0, 0, 0, 0);
+					}
 					
 				};
-				dd->buttons.back()->parent = dd;
-			} {
-				dd->buttons.emplace_back(make_shared<button>());
-				dd->buttons.back()->info = "Profiler";
-				dd->buttons.back()->onClick = [this](button& but) {
-					util::sout("Nothing happened");
-				};
-				dd->buttons.back()->parent = dd;
-			}
+			});
+			auto editDropDown = dropDown::create("Tools->", { inspectorButton });
+			floating.emplace_back(editDropDown);
 		};
-		c->buttons.emplace_back(toolsButton);
+		topBar->buttons.emplace_back(toolsButton);
 
-		shared_ptr<button> aboutButton = make_shared<button>();
-		aboutButton->info = "About";
-		aboutButton->parent = c;
-		c->buttons.emplace_back(aboutButton);
-
-		topBar = c;
 		topBar->render(ivec2(0, 0), currentViews, 0);
 
 		playing = true;

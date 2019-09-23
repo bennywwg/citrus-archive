@@ -33,6 +33,8 @@ namespace citrus::editor {
 	};
 
 	struct gui;
+
+	class ctEditor;
 	
 	struct view {
 		ivec2 loc;
@@ -47,21 +49,23 @@ namespace citrus::editor {
 
 	struct gui : std::enable_shared_from_this<gui> {
 		weak_ptr<gui> parent;
-		bool focused = false;
+		std::function<void(ctEditor&)> updateFunc;
+
 		weak_ptr<gui> topLevelParent();
 		virtual void mouseDown(ivec2 cursor, ivec2 myPos) { }
 		virtual void mouseDragged(ivec2 cursor, ivec2 myPos) { }
 		virtual void mouseUp(ivec2 cursor, ivec2 myPos) { }
 		virtual vector<weak_ptr<gui>> children() { throw std::runtime_error("gui::children"); }
+		inline void update(ctEditor& ed) { if (updateFunc) updateFunc(ed); for (auto& child : children()) if (!child.expired()) child.lock()->update(ed); }
 		virtual ivec2 dimensions() { throw std::runtime_error("gui::dimensions"); }
 		virtual void render(ivec2 pos, vector<view>& views, float depth) { throw std::runtime_error("gui::render"); }
 		virtual ~gui() = default;
 	};
 
+	// just a gui with no children
 	struct guiLeaf : public gui {
 		vector<weak_ptr<gui>> children();
 	};
-
 
 	struct container : public gui {
 		vec3 color;
@@ -83,6 +87,27 @@ namespace citrus::editor {
 		ivec2 dimensions();
 		void render(ivec2 pos, vector<view>& views, float depth);
 		void mouseDown(ivec2 cursor, ivec2 myPos);
+
+		static shared_ptr<button> create(string const& info, std::function<void(button&)> click);
+	};
+
+	struct floatingGui : public gui {
+		ivec2 pos;
+		shared_ptr<button> pinButton;
+		shared_ptr<button> exitButton;
+		bool shouldClose = false;
+		bool shouldPin = false;
+		bool justCreated = true;
+		void addButtons();
+	};
+
+	struct floatingContainer : public floatingGui {
+		string title;
+		vector<shared_ptr<gui>> items;
+
+		vector<weak_ptr<gui>> children();
+		ivec2 dimensions();
+		void render(ivec2 pos, vector<view>& views, float depth);
 	};
 
 	struct toggle : public guiLeaf {
@@ -113,24 +138,32 @@ namespace citrus::editor {
 		void render(ivec2 pos, vector<view>& views, float depth);
 	};
 
-	struct horiBar : public guiLeaf {
-		vector<shared_ptr<button>> buttons;
+	struct vecField : public guiLeaf {
+		int charsPerFloat = 10;
+		int numComponents = 3;
+		vec4 vec;
 
 		ivec2 dimensions();
 		void render(ivec2 pos, vector<view>& views, float depth);
 	};
 
-	struct dropDown : public gui {
-		string title;
-		shared_ptr<button> pinButton;
-		shared_ptr<button> exitButton;
+	struct horiBar : public gui {
 		vector<shared_ptr<button>> buttons;
-		bool shouldClose = false;
-		bool shouldPin = false;
 
 		vector<weak_ptr<gui>> children();
 		ivec2 dimensions();
 		void render(ivec2 pos, vector<view>& views, float depth);
-		void addButtons();
+	};
+
+
+	struct dropDown : public floatingGui {
+		string title;
+		vector<shared_ptr<button>> buttons;
+
+		vector<weak_ptr<gui>> children();
+		ivec2 dimensions();
+		void render(ivec2 pos, vector<view>& views, float depth);
+
+		static shared_ptr<dropDown> create(string const& title, vector<shared_ptr<button>> const& buts);
 	};
 }

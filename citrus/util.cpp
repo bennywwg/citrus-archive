@@ -483,6 +483,12 @@ namespace citrus::util {
 		return ss.str();
 	}
 
+	string formatFloat(float val) {
+		char buf[50];
+		sprintf(buf, "%10.3f", val);
+		return buf;
+	}
+
 	scopedProfiler::scopedProfiler(const string& name) : name(name), start(std::chrono::high_resolution_clock::now()) { }
 	scopedProfiler::~scopedProfiler() {
 		auto elapsed = std::chrono::high_resolution_clock::now() - start;

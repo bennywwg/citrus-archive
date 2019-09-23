@@ -15,25 +15,16 @@ namespace citrus {
 		class manager;
 		class engine;
 	}
-
 	
 	namespace editor {
 		using ::citrus::engine::entityRef;
 		using ::citrus::engine::camera;
 
-		struct guiFloating {
-			ivec2 pos;
-			float depth;
-			bool justCreated = true;
-			bool persistent; //whether or not this floating GUI should continue existing even if it is clicked away from
-			shared_ptr<gui> ele;
-		};
-
 		class ctEditor {
 			public:
 			vector<view> currentViews;
-			shared_ptr<gui> topBar;
-			vector<shared_ptr<guiFloating>> floating;
+			shared_ptr<horiBar> topBar;
+			vector<shared_ptr<floatingGui>> floating;
 
 			entityRef hovered;
 			entityRef selected;
@@ -41,7 +32,7 @@ namespace citrus {
 			bool dragged = false;
 			vec2 startDrag;
 			ivec2 startDragPx;
-			weak_ptr<guiFloating> draggedGui;
+			weak_ptr<floatingGui> draggedGui;
 			ivec2 draggedGuiStart;
 
 			bool playing = false;
@@ -57,13 +48,13 @@ namespace citrus {
 			engine::engine* eng;
 			
 			view* getHoveredView(ivec2 cursor);
-			weak_ptr<guiFloating> getHoveredFloating(ivec2 cursor);
+			weak_ptr<floatingGui> getHoveredFloating(ivec2 cursor);
 			void clearFloating(view* hovered);
 			void renderAllGui();
 			void mouseDown(ivec2 cursor);
 			void mouseUp(ivec2 cursor);
 
-			void update(ivec2 cursor, uint16_t const& selectedIndex);
+			void update(graphics::immediatePass& ipass, ivec2 cursor, uint16_t const& selectedIndex);
 			void render(graphics::immediatePass & ipass);
 
 			ctEditor();

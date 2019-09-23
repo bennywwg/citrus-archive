@@ -126,7 +126,7 @@ namespace citrus::engine {
 
 				uint16_t selectedIndex = cf->selectedIndex;
 
-				ed->update(_win->getCursorPos(), selectedIndex);
+				ed->update(*ip, _win->getCursorPos(), selectedIndex);
 
 				/*for (int i = 0; i < sys->meshPasses.size(); i++) {
 					for (uint32_t j = 0; j < sys->meshPasses[i]->items.size(); j++) {

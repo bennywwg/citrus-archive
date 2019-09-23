@@ -56,6 +56,12 @@ namespace citrus::editor {
 	void button::mouseDown(ivec2 cursor, ivec2 myPos) {
 		if(onClick) onClick(*this);
 	}
+	shared_ptr<button> button::create(string const& info, std::function<void(button&)> click) {
+		auto res = make_shared<button>();
+		res->info = info;
+		res->onClick = click;
+		return res;
+	}
 	ivec2 toggle::dimensions() {
 		return ivec2(margin + textWidth * info.length() + margin + margin + textWidth + margin, margin + textHeight + margin);
 	}
@@ -146,6 +152,13 @@ namespace citrus::editor {
 		v.depth = depth;
 		v.owner = shared_from_this();
 	}
+	vector<weak_ptr<gui>> horiBar::children() {
+		vector<weak_ptr<gui>> res;
+		for (int i = 0; i < buttons.size(); i++) {
+			res.emplace_back(buttons[i]);
+		}
+		return res;
+	}
 	ivec2 horiBar::dimensions() {
 		int widthSum = 0;
 		int maxHeight = 0;
@@ -207,11 +220,10 @@ namespace citrus::editor {
 			yOffset += button->dimensions().y;
 		}
 	}
-	void dropDown::addButtons() {
+	void floatingGui::addButtons() {
 		pinButton = std::make_shared<button>();
 		pinButton->parent = shared_from_this();
 		pinButton->info = ".";
-		pinButton->focused = false;
 		pinButton->onClick = [this](button& b) {
 			this->shouldPin = !this->shouldPin;
 			this->pinButton->info = this->shouldPin ? "!" : ".";
@@ -219,10 +231,19 @@ namespace citrus::editor {
 		exitButton = std::make_shared<button>();
 		exitButton->parent = shared_from_this();
 		exitButton->info = "x";
-		exitButton->focused = false;
 		exitButton->onClick = [this](button& b) {
 			this->shouldClose = true;
 		};
+	}
+	shared_ptr<dropDown> dropDown::create(string const& title, vector<shared_ptr<button>> const& buts) {
+		auto res = make_shared<dropDown>();
+		res->addButtons();
+		res->buttons = buts;
+		for (auto& but : buts) {
+			but->parent = res;
+		}
+		res->title = title;
+		return res;
 	}
 	weak_ptr<gui> gui::topLevelParent() {
 		weak_ptr<gui> cur = shared_from_this();
@@ -230,5 +251,56 @@ namespace citrus::editor {
 			cur = cur.lock()->parent;
 		}
 		return cur;
+	}
+	ivec2 vecField::dimensions() {
+		return ivec2(textWidth * charsPerFloat * 4 + margin * 5, margin * 2 + textHeight);
+	}
+	void vecField::render(ivec2 pos, vector<view>& views, float depth) {
+		for (int i = 0; i < 4; i++) {
+			views.emplace_back();
+			view& v = views.back();
+			v.text = i < numComponents ? util::formatFloat(vec[i]) : string(charsPerFloat, 'X');
+			v.color = vec3(1.0f, 1.0f, 1.0f);
+			v.loc = pos + ivec2(charsPerFloat * textWidth * i, 0);
+			v.border = true;
+			v.size = ivec2(textWidth * charsPerFloat, textHeight);
+			v.depth = depth;
+			v.owner = shared_from_this();
+		}
+	}
+	vector<weak_ptr<gui>> floatingContainer::children() {
+		vector<weak_ptr<gui>> res;
+		if (pinButton) res.emplace_back(pinButton);
+		if (exitButton) res.emplace_back(exitButton);
+		for (int i = 0; i < items.size(); i++) {
+			res.emplace_back(items[i]);
+		}
+		return res;
+	}
+	ivec2 floatingContainer::dimensions() {
+		ivec2 res = ivec2(250, title.empty() ? 0 : (margin + textHeight + margin));
+		for (int i = 0; i < items.size(); i++) {
+			res.y += items[i]->dimensions().y;
+		}
+		return res;
+	}
+	void floatingContainer::render(ivec2 pos, vector<view>& views, float depth) {
+		int h = pos.y;
+		if (pinButton) pinButton->render(pos, views, depth + 0.1f);
+		if (exitButton) exitButton->render(pos + ivec2(margin + textWidth + margin, 0), views, depth + 0.1f);
+		if (!title.empty()) {
+			views.emplace_back();
+			views.back().text = title;
+			views.back().loc = pos + ivec2(pinButton ? (margin + textWidth + margin) * 2 : 0, margin);
+			views.back().size = dimensions();
+			views.back().color = vec3(0.8f);
+			views.back().depth = depth;
+			views.back().owner = shared_from_this();
+			h = textHeight + margin;
+		}
+		for (auto item : items) {
+			item->render(pos + ivec2(0, h), views, depth + 1.0f);
+			h += item->dimensions().y;
+		}
 	}
 }

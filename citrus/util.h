@@ -144,6 +144,7 @@ namespace citrus {
 
 		string toString(vec3 vec, int precision = 3);
 		string toString(vec2 vec, int precision = 3);
+		string formatFloat(float val);
 
 		vec3 btToGlm(btVector3 vec);
 		btVector3 glmToBt(vec3 vec);
