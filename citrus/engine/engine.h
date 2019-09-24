@@ -114,6 +114,8 @@ namespace citrus {
 			void stop();
 			bool stopped();
 
+			void shell(std::string const& ex);
+
 			engine(double timeStep);
 			~engine();
 			

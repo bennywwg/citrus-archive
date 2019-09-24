@@ -132,35 +132,10 @@ int main(int argc, char **argv) {
 
 		while(!e.stopped()) {
 			std::string line;
-			std::cout << "citrus $ ";
+			std::cout << "esh$ ";
 			std::getline(std::cin, line);
 
-			if(line == "save") {
-				//json savedJS = e.man->savePrefab(world);
-				//std::string saved = savedJS.dump(2);
-			} else if(line == "log") {
-				for(auto l : e.flushLog()) {
-					std::stringstream ss;
-					ss << std::fixed << std::setfill('0') << std::setw(8) << std::setprecision(3) << l.first;
-					util::sout(ss.str() + ": " + l.second + "\n");
-				}
-			} else if(line == "fps") {
-				util::sout(std::to_string(e.fps()) + "\n");
-			} else if(line == "obj") {
-				for(auto ent : e.man->allEntities()) {
-					glm::vec3 pos = ent.getGlobalTransform().getPosition();
-					util::sout(ent.name() + util::toString(pos) + "\n");
-					
-				}
-			} else if(line == "exit" || line == "stop") {
-				util::sout("Halting...\n");
-				e.stop();
-				exited = false;
-				std::this_thread::sleep_for(std::chrono::milliseconds(250));
-			} else {
-				std::cout << line << "\n";
-			}
-
+			e.shell(line);
 		}
 	}
 	

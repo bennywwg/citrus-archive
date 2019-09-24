@@ -233,6 +233,10 @@ namespace citrus::engine {
 		return _closed;
 	}
 
+	void engine::shell(string const& ex) {
+		ed->shell(ex);
+	}
+
 	engine::engine(double timeStep) : _timeStep(timeStep) {
 		ed = new editor::ctEditor();
 		_closed = false;

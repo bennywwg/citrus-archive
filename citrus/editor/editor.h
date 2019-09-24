@@ -8,6 +8,8 @@
 #include "citrus/graphics/system/immediatePass.h"
 #include <memory>
 
+#include <sol/sol.hpp>
+
 namespace citrus {
 	namespace engine {
 		class renderManager;
@@ -22,6 +24,8 @@ namespace citrus {
 
 		class ctEditor {
 			public:
+			sol::state lua;
+
 			vector<view> currentViews;
 			shared_ptr<horiBar> topBar;
 			vector<shared_ptr<floatingGui>> floating;
@@ -56,6 +60,11 @@ namespace citrus {
 
 			void update(graphics::immediatePass& ipass, ivec2 cursor, uint16_t const& selectedIndex);
 			void render(graphics::immediatePass & ipass);
+
+			vector<string> toExec;
+			std::mutex toExecMut;
+			void setupShell();
+			void shell(std::string const& ex);
 
 			ctEditor();
 		};

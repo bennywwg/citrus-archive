@@ -100,6 +100,17 @@ namespace citrus::editor {
 		}
 
 		render(ipass);
+		
+		std::lock_guard<std::mutex> lock(toExecMut);
+		for (int i = 0; i < toExec.size(); i++) {
+			try {
+				auto res = lua.script(toExec[i]);
+			}
+			catch (std::runtime_error const& ex) {
+				util::sout(ex.what());
+			}
+		}
+		toExec.clear();
 	}
 
 	void ctEditor::render(graphics::immediatePass & ipass) {
@@ -172,7 +183,34 @@ namespace citrus::editor {
 		}
 	}
 
+	void ctEditor::setupShell() {
+		lua.open_libraries(sol::lib::base, sol::lib::package);
+
+		lua["load"] = [](std::string str) {
+			util::sout("LOADED\n" + str + "\n");
+		};
+
+		lua["save"] = [](std::string str) {
+			util::sout("SAVED\n" + str + "\n");
+		};
+
+		lua["sel"] = [this]() {
+			return selected.id();
+		};
+
+		lua["exit"] = [this]() {
+			eng->stop();
+		};
+	}
+
+	void ctEditor::shell(std::string const& ex) {
+		std::lock_guard<std::mutex> lock(toExecMut);
+		toExec.push_back(ex);
+	}
+
 	ctEditor::ctEditor() {
+		setupShell();
+
 		topBar = make_shared<horiBar>();
 
 		shared_ptr<button> fileButton = make_shared<button>();
