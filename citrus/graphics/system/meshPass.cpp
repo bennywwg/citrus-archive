@@ -549,7 +549,7 @@ namespace citrus::graphics {
 
 		uint32_t lastModelBindIndex = 999999;
 		for(uint32_t i = ranges[threadIndex].begin; i < ranges[threadIndex].end; i++) {
-			if (!cullObscured || sys.frameCull.testSphere(items[i].pos, sys.models[mappings[items[i].modelIndex].modelIndex].radius)) {
+			if (items[i].enabled && (!cullObscured || sys.frameCull.testSphere(items[i].pos, sys.models[mappings[items[i].modelIndex].modelIndex].radius))) {
 				if (lastModelBindIndex != items[i].modelIndex) {
 					vkCmdBindVertexBuffers(buf, 0, meshMappings.usages.size(), sys.vertexBuffers, mappings[items[i].modelIndex].desc.offsets.data());
 					vkCmdBindIndexBuffer(buf, sys.indexBuffer, mappings[items[i].modelIndex].desc.indexOffset, VK_INDEX_TYPE_UINT16);

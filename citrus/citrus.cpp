@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
 			})
 		}, util::nextID());*/
 
-
+		auto par = e.man->create("Environment", { }, util::nextID());
 		for(int x = -6; x < 6; x++) {
 			for(int z = -6; z < 6; z++) {
 				e.man->create("Floor: <" + std::to_string(x) + ", " + std::to_string(z) + ">", {
@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
 						m.visible = true;
 					}),
 					//engine::eleInit<engine::sensorEle>()
-				}, util::nextID());
+					}, util::nextID()).setParent(par);
 			}
 		}
 
@@ -132,7 +132,6 @@ int main(int argc, char **argv) {
 
 		while(!e.stopped()) {
 			std::string line;
-			std::cout << "esh$ ";
 			std::getline(std::cin, line);
 
 			e.shell(line);

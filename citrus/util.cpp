@@ -190,7 +190,7 @@ namespace citrus::util {
 
 	mutex _soutMut;
 	mutex _idMut;
-	int _currentID = 0;
+	int _currentID = 1;
 
 	string selectFolder() {
 		nfdchar_t *outPath = nullptr;

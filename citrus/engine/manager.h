@@ -155,6 +155,8 @@ namespace citrus {
 			void						  destroyUnsafe(entityRef ent);
 			vector<entityRef>				allEntities();
 			entityRef						   findByID(uint64_t uuid);
+			entityRef						   findByID(string const& uuid);
+			entityRef						   findByName(string const& name);
 			template<class T> vector<eleRef<T>>	 ofType();
 			vector<element*>					 ofType(const type_index& index);
 

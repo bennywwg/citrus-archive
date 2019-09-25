@@ -162,6 +162,30 @@ namespace citrus {
 			return entityRef();
 		}
 
+		entityRef manager::findByID(string const& st_uuid) {
+			uint64_t uuid = strtoull(st_uuid.c_str(), nullptr, 0);
+			std::lock_guard<std::recursive_mutex> lock0(entitiesMut), lock1(toCreateMut);
+			if (uuid == entity::nullID) return entityRef();
+			for (shared_ptr<entity>& ent : _entities)
+				if (ent->id == uuid)
+					return entityRef(ent);
+			for (shared_ptr<entity>& ent : _toCreate)
+				if (ent->id == uuid)
+					return entityRef(ent);
+			return entityRef();
+		}
+
+		entityRef manager::findByName(string const& name) {
+			std::lock_guard<std::recursive_mutex> lock0(entitiesMut), lock1(toCreateMut);
+			for (shared_ptr<entity>& ent : _entities)
+				if (ent->name == name)
+					return entityRef(ent);
+			for (shared_ptr<entity>& ent : _toCreate)
+				if (ent->name == name)
+					return entityRef(ent);
+			return entityRef();
+		}
+
 		eleInitBase manager::remapEleInitIDs(eleInitBase info, const std::map<uint64_t, uint64_t>& remappedIDs) {
 			json remappedData = info.data;
 			util::recursive_iterate(remappedData, [this, &remappedIDs](json::iterator it) {

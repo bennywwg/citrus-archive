@@ -67,13 +67,15 @@ namespace citrus::engine {
 		if(null()) throw entDereferenceException("setParent(): null entity");
 		_ref.lock()->setParent(parent._ref.lock().get());
 	}
-	entityRef entityRef::getRoot() const {
+	entityRef entityRef::getRoot() const { // TODO: check if this works
 		if(null()) throw entDereferenceException("getRoot(): null entity");
-		return entityRef(_ref.lock()->getRoot()->_this.lock());
+		entity* sp = _ref.lock()->getRoot();
+		return sp ? entityRef(sp->_this.lock()) : entityRef();
 	}
 	entityRef entityRef::getParent() const {
 		if(null()) throw entDereferenceException("getParent(): null entity");
-		return entityRef(_ref.lock()->getParent()->_this.lock());
+		entity* sp = _ref.lock()->getParent();
+		return sp ? entityRef(sp->_this.lock()) : entityRef();
 	}
 	std::vector<entityRef> entityRef::getChildren() const {
 		if(null()) throw entDereferenceException("getChildren(): null entity");

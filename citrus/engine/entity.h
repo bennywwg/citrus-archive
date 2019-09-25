@@ -55,7 +55,7 @@ namespace citrus {
 			element* getElement(const std::type_index& type) const;
 
 			public:
-			constexpr static uint64_t nullID = std::numeric_limits<uint64_t>::max();
+			constexpr static uint64_t nullID = 0;// std::numeric_limits<uint64_t>::max();
 
 			private:
 			entity(const std::vector<std::pair<std::type_index, element*>>& toCreate, engine* eng, const std::string& name, const uint64_t id);

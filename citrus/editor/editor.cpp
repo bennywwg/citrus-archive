@@ -4,6 +4,7 @@
 #include "citrus/graphics/system/immediatePass.h"
 #include "citrus/engine/meshFilter.h"
 #include "citrus/engine/manager.inl"
+#include <stdlib.h>
 
 namespace citrus::editor {
 	view* ctEditor::getHoveredView(ivec2 cursor) {
@@ -186,20 +187,68 @@ namespace citrus::editor {
 	void ctEditor::setupShell() {
 		lua.open_libraries(sol::lib::base, sol::lib::package);
 
-		lua["load"] = [](std::string str) {
+		// clear terminal (windows only)
+		lua["clear"] = []() {
+			system("cls");
+		};
+
+		// load prefab
+		lua["load"] = [](string str) {
 			util::sout("LOADED\n" + str + "\n");
 		};
 
-		lua["save"] = [](std::string str) {
+		// save prefab
+		lua["save"] = [](string str) {
 			util::sout("SAVED\n" + str + "\n");
 		};
 
-		lua["sel"] = [this]() {
-			return selected.id();
+		// return selected entity id
+		lua["selected"] = [this]() {
+			return std::to_string(selected.id());
+		};
+
+		// select entity by id
+		lua["select"] = [this](string id) {
+			selected = eng->man->findByID(id);
+		};
+
+		// find by name
+		lua["find"] = [this](string name) {
+			return std::to_string(eng->man->findByName(name).id());
+		};
+
+		lua["parent"] = [this](string id) {
+			auto er = eng->man->findByID(id);
+			return std::to_string(er ? er.getParent().id() : entityRef::nullID);
+		};
+
+		lua["children"] = [this](string id) {
+			auto er = eng->man->findByID(id);
+			if (er) {
+				auto vec = er.getChildren();
+				std::vector<string> res; res.resize(vec.size());
+				for (int i = 0; i < vec.size(); i++) {
+					res[i] = std::to_string(vec[i].id());
+				}
+				return res;
+			} else {
+				return std::vector<string>();
+			}
 		};
 
 		lua["exit"] = [this]() {
 			eng->stop();
+		};
+
+		lua["setpos"] = [this](string id, float x, float y, float z) {
+			auto er = eng->man->findByID(id);
+			if (er) {
+				er.setLocalPosition(vec3(x, y, z));
+			}
+		};
+
+		lua["destroy"] = [this](string id) {
+			eng->man->destroy(eng->man->findByID(id));
 		};
 	}
 
