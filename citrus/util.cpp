@@ -376,6 +376,9 @@ namespace citrus::util {
 		res.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
 		return res;
 	}
+	void saveEntireFile(string path, string content) {
+		std::ofstream(path, std::ofstream::out | std::ofstream::trunc) << content;
+	}
 
 	template<typename T>
 	T rmod(T val, T mod) {

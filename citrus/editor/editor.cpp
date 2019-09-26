@@ -193,13 +193,22 @@ namespace citrus::editor {
 		};
 
 		// load prefab
-		lua["load"] = [](string str) {
-			util::sout("LOADED\n" + str + "\n");
+		lua["load"] = [this](string str) {
+			auto st = util::loadEntireFile(str);
+			auto js = json::parse(st);
+			eng->man->loadPrefab(js);
 		};
 
 		// save prefab
-		lua["save"] = [](string str) {
-			util::sout("SAVED\n" + str + "\n");
+		lua["save"] = [this](string id, string str) {
+			auto e = eng->man->findByID(id);
+			if (e) {
+				auto js = eng->man->savePrefab(e);
+				auto st = js.dump();
+				util::saveEntireFile(str, st);
+			} else {
+				util::sout("couldn't find id");
+			}
 		};
 
 		// return selected entity id

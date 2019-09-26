@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef ELEMENT_H
-#define ELEMENT_H
-
 #include <type_traits>
 #include <typeindex>
 
@@ -40,14 +37,12 @@ namespace citrus::engine {
 
 		virtual std::unique_ptr<editor::gui> renderGUI();
 
-		virtual void load(const nlohmann::json& parsed);
+		virtual void load(const citrus::json& parsed);
 		virtual void preRender();
 		virtual void render();
-		virtual nlohmann::json save();
+		virtual citrus::json save();
 
 	protected:
 		element(entityRef ent, std::type_index const& type);
 	};
 }
-
-#endif

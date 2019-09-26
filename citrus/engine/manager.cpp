@@ -105,37 +105,41 @@ namespace citrus {
 
 		// GOOD !
 		void manager::destroyUnsafe(entityRef ent) {
-			entity* rent = ent._ref.lock().get();
+			vector<entity*> rents = { ent._ref.lock().get() };
+			rents[0]->_accumulateAllChildren(rents);
 
-			//try and remove ent from the _toCreate list if its in it
-			int entIndex = findEntity(_toCreate, ent._ref.lock());
-			if(entIndex != -1) {
-				//if ent is in _toCreate, also remove the elements from their lists
-				for(auto& pair : rent->_elements) {
-					element* ele = pair.second;
-					auto& info = *getInfo(ele->_type);
+			for (entity* rent : rents) {
 
-					int eleIndex = info.findInToCreate(ele);
-					if(eleIndex != -1) {
-						::operator delete(ele);
-						info.toCreate.erase(info.toCreate.begin() + eleIndex);
-					} else {
-						throw std::runtime_error("Couldn't find a certain element that should exist");
+				//try and remove ent from the _toCreate list if its in it
+				int entIndex = findEntity(_toCreate, rent->_this.lock());
+				if (entIndex != -1) {
+					//if ent is in _toCreate, also remove the elements from their lists
+					for (auto& pair : rent->_elements) {
+						element* ele = pair.second;
+						auto& info = *getInfo(ele->_type);
+
+						int eleIndex = info.findInToCreate(ele);
+						if (eleIndex != -1) {
+							::operator delete(ele);
+							info.toCreate.erase(info.toCreate.begin() + eleIndex);
+						} else {
+							throw std::runtime_error("Couldn't find a certain element that should exist");
+						}
 					}
+
+					_toCreate.erase(_toCreate.begin() + entIndex);
+
+					continue;
 				}
 
-				_toCreate.erase(_toCreate.begin() + entIndex);
+				//if it's already in _toDestroy, just do nothing
+				if (findEntity(_toDestroy, rent->_this.lock()) != -1) continue;
 
-				return;
+				//otherwise add it and all of its elements to _toDestroy
+				_toDestroy.push_back(rent->_this.lock());
+				for (auto& pair : rent->_elements)
+					getInfo(pair.first)->toDestroy.emplace_back(pair.second, ent);
 			}
-
-			//if it's already in _toDestroy, just do nothing
-			if(findEntity(_toDestroy, ent._ref.lock()) != -1) return;
-
-			//otherwise add it and all of its elements to _toDestroy
-			_toDestroy.push_back(ent._ref.lock());
-			for(auto& pair : rent->_elements)
-				getInfo(pair.first)->toDestroy.emplace_back(pair.second, ent);
 		}
 
 		vector<element*> manager::ofType(const type_index & index) {

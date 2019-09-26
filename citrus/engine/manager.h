@@ -69,6 +69,18 @@ namespace citrus {
 					render = std::chrono::nanoseconds::zero();
 					save = std::chrono::nanoseconds::zero();
 				}
+				inline void print() {
+					auto format = [](string name, std::chrono::nanoseconds t) {
+						char data[512];
+						sprintf(data, "%10%s |%20ll n\n", name.c_str(), t.count());
+						return string(data);
+					};
+					std::chrono::nanoseconds times[] = { dtor, ctor, load, preRender, render, save };
+					string names[] = { "dtor", "ctor", "load", "preRender", "render", "save" };
+					for (int i = 0; i < 6; i++) {
+						util::sout(format(names[i], times[i]));
+					}
+				}
 			};
 
 			struct elementInfo {

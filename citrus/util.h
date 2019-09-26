@@ -79,6 +79,7 @@ namespace citrus {
 		vector<fpath> filesInDirectory(fpath path, string suffix = "");
 
 		string loadEntireFile(string path);
+		void saveEntireFile(string path, string content);
 
 		uint64_t roundUpAlign(uint64_t val, uint64_t align);
 		uint64_t roundDownAlign(uint64_t val, uint64_t align);

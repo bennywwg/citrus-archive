@@ -31,7 +31,8 @@ namespace citrus::engine {
 
 		void preRender();
 
-		void load(const json&);
+		void load(const citrus::json&);
+		citrus::json save();
 
 		meshFilter(entityRef ent);
 		~meshFilter();

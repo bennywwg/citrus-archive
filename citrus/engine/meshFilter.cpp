@@ -83,7 +83,23 @@ namespace citrus::engine {
 			inf.aniTime = float(eng()->time() - _aniStart);
 		}
 	}
-	void meshFilter::load(const json& js) {
+	void meshFilter::load(const citrus::json& js) {
+		reset();
+		if (!js.empty()) {
+			setState(js[0], js[1], js[2]);
+		}
+	}
+	citrus::json meshFilter::save() {
+		if (materialIndex != -1) {
+			graphics::meshPass& p = *eng()->sys->meshPasses[materialIndex];
+			return {
+				materialIndex,
+				p.items[itemIndex].modelIndex,
+				p.items[itemIndex].texIndex
+			};
+		} else {
+			return { };
+		}
 	}
 
 	meshFilter::meshFilter(entityRef ent) : element(ent, typeid(meshFilter)) {
