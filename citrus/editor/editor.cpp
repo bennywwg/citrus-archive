@@ -100,7 +100,7 @@ namespace citrus::editor {
 			dd->update(*this);
 		}
 
-		render(ipass);
+		renderAllGui();
 		
 		std::lock_guard<std::mutex> lock(toExecMut);
 		for (int i = 0; i < toExec.size(); i++) {
@@ -345,16 +345,30 @@ namespace citrus::editor {
 						vec->vec = vec4(ed.selected.getGlobalTransform().getPosition(), 0.f);
 						auto quat = ed.selected.getGlobalTransform().getOrientation();
 						ori->vec = vec4(quat.x, quat.y, quat.z, quat.w);
-						util::sout("updated\n");
-					} else {
+					}
+					else {
 						name->info = "(No Selection)";
 						vec->vec = vec4(0, 0, 0, 0);
 						ori->vec = vec4(0, 0, 0, 0);
 					}
-					
+
 				};
 			});
-			auto editDropDown = dropDown::create("Tools->", { inspectorButton });
+			auto hierarchyButton = button::create("Inspector", [this](button& but) {
+				auto hierarchyCont = make_shared<floatingContainer>();
+				hierarchyCont->addButtons();
+				hierarchyCont->title = "Scene Hierarchy";
+
+				hierarchyCont->updateFunc = [this, hierarchyCont](ctEditor& ed) {
+					hierarchyCont->items.clear();
+					auto txt = make_shared<textField>();
+					hierarchyCont->items.push_back(txt);
+					txt->info = "abc";
+				};
+
+				floating.emplace_back(hierarchyCont);
+			});
+			auto editDropDown = dropDown::create("Tools->", { inspectorButton, hierarchyButton });
 			floating.emplace_back(editDropDown);
 		};
 		topBar->buttons.emplace_back(toolsButton);
