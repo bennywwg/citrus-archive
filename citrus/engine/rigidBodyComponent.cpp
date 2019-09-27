@@ -14,14 +14,14 @@ namespace citrus::engine {
 	}
 
 	void rigidBodyComponent::setToSphere(float radius) {
-		type = sphere;
+		type = shapeType::sphere;
 		body.reset();
 		shape.reset(new dynamics::collisionShape(radius));
 		body.reset(new dynamics::rigidBody(shape.get(), w));
 	}
 
 	void rigidBodyComponent::setToBox(glm::vec3 boxSize) {
-		type = box;
+		type = shapeType::box;
 		body.reset();
 		shape.reset(new dynamics::collisionShape(boxSize.x, boxSize.y, boxSize.z));
 		body.reset(new dynamics::rigidBody(shape.get(), w));
@@ -60,6 +60,39 @@ namespace citrus::engine {
 
 	void rigidBodyComponent::setDynamic(bool d) {
 		body->dynamic = d;
+	}
+
+	void rigidBodyComponent::load(citrus::json const& data) {
+		if (data.empty()) return;
+		auto type = (shapeType)data["type"].get<int>();
+		switch (type) {
+		case citrus::engine::rigidBodyComponent::shapeType::sphere:
+			setToSphere(data["radius"]);
+			break;
+		case citrus::engine::rigidBodyComponent::shapeType::box:
+			setToBox(util::loadVec3(data["dims"]));
+			break;
+		default:
+			break;
+		}
+		if (body) {
+			body->dynamic = data["dynamic"];
+			body->mass = data["mass"];
+		}
+	}
+
+	citrus::json rigidBodyComponent::save() {
+		json res;
+		res["type"] = (int)type;
+		res["dynamic"] = body->dynamic;
+		res["mass"] = body->mass;
+		if (type == shapeType::sphere) {
+			res["radius"] = (float)((btSphereShape*)shape->ptr())->getRadius();
+		} else if(type == shapeType::box) {
+			auto vec = util::btToGlm(((btBoxShape*)shape->ptr())->getHalfExtentsWithoutMargin());
+			res["dims"] = util::save(vec);
+		}
+		return res;
 	}
 
 	rigidBodyComponent::rigidBodyComponent(entityRef owner) : element(owner, typeid(rigidBodyComponent)) {

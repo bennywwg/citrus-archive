@@ -255,9 +255,29 @@ namespace citrus::editor {
 				er.setLocalPosition(vec3(x, y, z));
 			}
 		};
+		
+		lua["getpos"] = [this](string id) {
+			auto er = eng->man->findByID(id);
+			if (er) {
+				auto vec = er.getLocalPosition();
+				return vector<float> { vec.x, vec.y, vec.z };
+			}
+		};
 
 		lua["destroy"] = [this](string id) {
 			eng->man->destroy(eng->man->findByID(id));
+		};
+		
+		lua["pause"] = [this]() {
+			playing = false;
+		};
+
+		lua["play"] = [this]() {
+			playing = true;
+		};
+
+		lua["step"] = [this]() {
+			doFrame = true;
 		};
 	}
 

@@ -7,13 +7,12 @@
 
 namespace citrus::engine {
 	class rigidBodyComponent : public element {
-
 		public:
-		enum shapeType {
-			sphere,
-			box,
-			hull,
-			none
+		enum class shapeType : int {
+			none = 0,
+			sphere = 1,
+			box = 2,
+			hull = 3
 		};
 		shapeType type;
 
@@ -36,6 +35,9 @@ namespace citrus::engine {
 		transform getTransform();
 
 		void setDynamic(bool d);
+
+		void load(citrus::json const& data);
+		citrus::json save();
 
 		rigidBodyComponent(entityRef owner);
 	};

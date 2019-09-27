@@ -87,6 +87,7 @@ namespace citrus::engine {
 		reset();
 		if (!js.empty()) {
 			setState(js[0], js[1], js[2]);
+			setNormalMap(js[3]);
 		}
 	}
 	citrus::json meshFilter::save() {
@@ -95,10 +96,11 @@ namespace citrus::engine {
 			return {
 				materialIndex,
 				p.items[itemIndex].modelIndex,
-				p.items[itemIndex].texIndex
+				p.items[itemIndex].texIndex,
+				p.items[itemIndex].normalTexIndex
 			};
 		} else {
-			return { };
+			return json();
 		}
 	}
 

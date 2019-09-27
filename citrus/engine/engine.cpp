@@ -73,7 +73,7 @@ namespace citrus::engine {
 				throw re;
 			}
 
-			this->Log(_win->getAdapter());
+			Log(_win->getAdapter());
 
 			Log(_win->controllers());
 			
@@ -100,7 +100,10 @@ namespace citrus::engine {
 				_win->poll();
 
 				man->flush();
-				if (!ed || ed->playing || ed->doFrame) man->preRender();
+				if (!ed || ed->playing || ed->doFrame) {
+					man->preRender();
+					if (ed) ed->doFrame = false;
+				}
 				man->render();
 
 				cf->cursorX = (int)_win->getCursorPos().x;
@@ -144,8 +147,6 @@ namespace citrus::engine {
 				lastFrameNanos = nextLastFrame;
 				
 				if (!ed || ed->playing || ed->doFrame) frame++;
-
-				if (ed) ed->doFrame = false;
 			}
 		/*} catch(std::runtime_error ex) {
 			Log("Unrecoverable Error in Render Thread: " + std::string(ex.what()));
