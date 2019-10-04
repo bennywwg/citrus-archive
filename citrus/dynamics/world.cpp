@@ -34,7 +34,7 @@ namespace citrus {
 					body->_body->setMassProps(0.0, btVector3(1.0, 1.0, 1.0));
 				}
 			}
-			_world->stepSimulation(1.0 / 100.0, 1, 1.0 / 100.0);
+			_world->stepSimulation(1.0 / 50.0, 1, 1.0 / 50.0);
 		}
 		world::world() :
 			_collisionConfiguration(new btDefaultCollisionConfiguration()),

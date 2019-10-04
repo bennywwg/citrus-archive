@@ -356,13 +356,14 @@ namespace citrus::editor {
 			});
 			auto hierarchyButton = button::create("Inspector", [this](button& but) {
 				auto hierarchyCont = make_shared<floatingContainer>();
+				weak_ptr<floatingContainer> weakRef = hierarchyCont;
 				hierarchyCont->addButtons();
 				hierarchyCont->title = "Scene Hierarchy";
 
-				hierarchyCont->updateFunc = [this, hierarchyCont](ctEditor& ed) {
-					hierarchyCont->items.clear();
+				hierarchyCont->updateFunc = [this, weakRef](ctEditor& ed) {
+					weakRef.lock()->items.clear();
 					auto txt = make_shared<textField>();
-					hierarchyCont->items.push_back(txt);
+					weakRef.lock()->items.push_back(txt);
 					txt->info = "abc";
 				};
 
