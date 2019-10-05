@@ -33,6 +33,8 @@ namespace citrus::graphics {
 		mat4 getProjectionMatrix() const;
 		mat4 getViewProjectionMatrix() const;
 
+		vec2 worldToScreen(vec3 const& ws) const;
+
 		frustrumCullInfo genFrustrumInfo() const;
 	};
 }

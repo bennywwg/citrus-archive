@@ -32,6 +32,9 @@ namespace citrus {
 
 			entityRef hovered;
 			entityRef selected;
+			 
+			ivec2 cursorPx;
+			vec2 cursor;
 			
 			bool dragged = false;
 			vec2 startDrag;
@@ -39,15 +42,16 @@ namespace citrus {
 			weak_ptr<floatingGui> draggedGui;
 			ivec2 draggedGuiStart;
 
+			// entity transformation stuff
+			vec2 transDir;
+			map<uint16_t, mat4> transMap;
+			vec3 localTransDir;
+			vec3 entityStartLocal;
+			bool draggingEntity = false;
+
 			bool playing = false;
 			bool doFrame = false;
 
-
-			bool translationMode;
-			bool localTranslation;
-			
-			bool rotationMode;
-			bool localRotation;
 
 			engine::engine* eng;
 			
@@ -55,10 +59,10 @@ namespace citrus {
 			weak_ptr<floatingGui> getHoveredFloating(ivec2 cursor);
 			void clearFloating(view* hovered);
 			void renderAllGui();
-			void mouseDown(ivec2 cursor);
-			void mouseUp(ivec2 cursor);
+			void mouseDown(uint16_t const& selectedIndex);
+			void mouseUp(uint16_t const& selectedIndex);
 
-			void update(graphics::immediatePass& ipass, ivec2 cursor, uint16_t const& selectedIndex);
+			void update(graphics::immediatePass& ipass, uint16_t const& selectedIndex);
 			void render(graphics::immediatePass & ipass);
 
 			vector<string> toExec;

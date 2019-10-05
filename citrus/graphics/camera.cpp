@@ -29,6 +29,11 @@ namespace citrus::graphics {
 		return getProjectionMatrix()* getViewMatrix();
 	}
 
+	vec2 camera::worldToScreen(vec3 const& ws) const {
+		vec4 tr = getViewProjectionMatrix() * vec4(ws.x, ws.y, ws.z, 1.0f);
+		return vec3(tr) / tr.w;
+	}
+
 	frustrumCullInfo camera::genFrustrumInfo() const {
 		frustrumCullInfo res;
 

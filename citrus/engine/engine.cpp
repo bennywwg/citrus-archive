@@ -61,7 +61,7 @@ namespace citrus::engine {
 
 				mp->addDependency(cf); mp->initialIndex = (1 << 14)             + 1;
 				bp->addDependency(cf); bp->initialIndex = (1 << 14) + (1 << 13) + 1;
-				ip->addDependency(cf);
+				ip->addDependency(cf); ip->indexBits =    (1 << 15);
 
 				fp->addDependency(mp);
 				fp->addDependency(bp);
@@ -111,25 +111,30 @@ namespace citrus::engine {
 				cf->cursorY = _win->framebufferSize().y - (int)_win->getCursorPos().y - 1;
 				if (cf->cursorY >= _win->framebufferSize().y) cf->cursorY = 0;
 
+				ed->cursorPx = _win->getCursorPos();
+				ed->cursor = vec2(_win->getCursorPos()) / vec2(_win->framebufferSize()) * 2.0f - 1.0f;
+				ed->cursor.y = -ed->cursor.y;
+
 				ed->render(*ip);
 				if (_win->getKey(graphics::windowInput::leftMouse)) {
 					if (!ed->dragged) {
-						ed->startDragPx = _win->getCursorPos();
-						ed->mouseDown(_win->getCursorPos());
+						ed->startDragPx = ed->cursorPx;
+						ed->startDrag = ed->cursor;
+						ed->mouseDown(lastSelectedIndex);
 					}
 					ed->dragged = true;
 				} else {
 					if (ed->dragged) {
-						ed->mouseUp(_win->getCursorPos());
+						ed->mouseUp(lastSelectedIndex);
 					}
 					ed->dragged = false;
 				}
 
 				sys->render();
 
-				uint16_t selectedIndex = cf->selectedIndex;
+				lastSelectedIndex = cf->selectedIndex;
 
-				ed->update(*ip, _win->getCursorPos(), selectedIndex);
+				ed->update(*ip, lastSelectedIndex);
 
 				/*for (int i = 0; i < sys->meshPasses.size(); i++) {
 					for (uint32_t j = 0; j < sys->meshPasses[i]->items.size(); j++) {

@@ -410,7 +410,7 @@ namespace citrus::graphics {
 				uniformBlock bk = { };
 				bk.color = vec4(groupings[i].color, 1.0f);
 				bk.mvp = (groupings[i].pixelspace ? pixelSpaceMat : sys.frameVP) * groupings[i].tr;
-				bk.index = (1 << 15) | i;
+				bk.index = indexBits | i;
 				memcpy(ubos[sys.frameIndex].mapped + currentUniformOffset, &bk, sizeof(uniformBlock));
 				uniformOffsets.push_back(currentUniformOffset);
 				currentUniformOffset = util::roundUpAlign(currentUniformOffset + sizeof(uniformBlock), ubos[sys.frameIndex].align);

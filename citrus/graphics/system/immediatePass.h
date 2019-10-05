@@ -39,6 +39,9 @@ namespace citrus::graphics {
 		virtual void			initializeFramebuffers();
 	public:
 
+		// these get bitwised OR'd with grouping index in groupings
+		uint16_t indexBits;
+
 		virtual void			preRender(uint32_t const& threadCount);
 		virtual void 			renderPartial(uint32_t const& threadIndex);
 		virtual void            postRender(uint32_t const& threadCount);

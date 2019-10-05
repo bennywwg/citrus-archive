@@ -80,6 +80,8 @@ namespace citrus {
 
 			public:
 
+			uint16_t lastSelectedIndex;
+
 			int fps();
 			renderState getRenderState();
 
@@ -100,11 +102,6 @@ namespace citrus {
 			void setOrder(std::vector<std::type_index> order);
 
 			void loadLevel(fpath levelPath);
-
-			//semaphore signals when swapchain image is ready to be drawn to
-			VkSemaphore getImageReadySemaphore();
-			//signal semaphore to indicate render to present swapchain image
-			VkSemaphore getPresentSemaphore();
 
 			fpath resDir;
 			graphics::system* sys;

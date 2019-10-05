@@ -52,35 +52,53 @@ namespace citrus::editor {
 			fl->render(fl->pos, currentViews, 10.0f);
 		}
 	}
-	void ctEditor::mouseDown(ivec2 cursor) {
-		view* topView = getHoveredView(cursor);
+	void ctEditor::mouseDown(uint16_t const& selectedIndex) {
+		view* topView = getHoveredView(cursorPx);
 		
-		draggedGui = getHoveredFloating(cursor);
+		draggedGui = getHoveredFloating(cursorPx);
 		if (!draggedGui.expired()) {
 			draggedGuiStart = draggedGui.lock()->pos;
 		}
 
 		if (topView) {
 			if (!topView->owner.expired()) {
-				topView->owner.lock()->mouseDown(cursor, topView->loc);
+				topView->owner.lock()->mouseDown(cursorPx, topView->loc);
 			}
 		}
 
 		clearFloating(topView);
 
 		renderAllGui();
+
+		// starting to drag entity
+		if (transMap.find(selectedIndex) != transMap.end()) {
+			draggingEntity = true;
+			entityStartLocal = selected.getLocalPosition();
+
+			vec3 firstWorld = transMap[selectedIndex] * vec4(0, 0, 0, 1);
+			vec3 secondWorld = transMap[selectedIndex] * vec4(1, 0, 0, 1);
+			localTransDir = secondWorld - firstWorld;
+			localTransDir = (selected.getParent() ? glm::inverse(selected.getParent().getGlobalTransform().getMat()) : glm::identity<glm::mat4>()) * vec4(localTransDir, 0.0f);
+			localTransDir = glm::normalize(localTransDir);
+
+			vec2 first = eng->sys->frameCam.worldToScreen(firstWorld);
+			vec2 second = eng->sys->frameCam.worldToScreen(secondWorld);
+			transDir = glm::normalize(second - first);
+		}
 	}
-	void ctEditor::mouseUp(ivec2 cursor) {
-		view* topView = getHoveredView(cursor);
+	void ctEditor::mouseUp(uint16_t const& selectedIndex) {
+		view* topView = getHoveredView(cursorPx);
 
 		draggedGui.reset();
 
-		if (cursor == startDragPx && !topView) {
+		if (cursorPx == startDragPx && !topView) {
 			selected = hovered;
 		}
+
+		draggingEntity = false;
 	}
 
-	void ctEditor::update(graphics::immediatePass& ipass, ivec2 cursor, uint16_t const& selectedIndex) {
+	void ctEditor::update(graphics::immediatePass& ipass, uint16_t const& selectedIndex) {
 		auto const& items = eng->man->ofType(typeid(engine::meshFilter));
 		hovered = engine::entityRef();
 		for (auto const& eler : items) {
@@ -91,7 +109,7 @@ namespace citrus::editor {
 		}
 
 		if (!draggedGui.expired()) {
-			draggedGui.lock()->pos = draggedGuiStart + (cursor - startDragPx);
+			draggedGui.lock()->pos = draggedGuiStart + (cursorPx - startDragPx);
 			renderAllGui();
 		}
 
@@ -112,6 +130,12 @@ namespace citrus::editor {
 			}
 		}
 		toExec.clear();
+
+		if (draggingEntity) {
+			float firstDot = glm::dot(transDir, startDrag);
+			float secondDot = glm::dot(transDir, cursor);
+			selected.setLocalPosition(entityStartLocal + (secondDot - firstDot) * localTransDir);
+		}
 	}
 
 	void ctEditor::render(graphics::immediatePass & ipass) {
@@ -133,6 +157,7 @@ namespace citrus::editor {
 				gp.addTorus(0.6f, 0.02f, 24, 6);
 				gp.tr = selected.getGlobalTransform().getMatNoScale() * glm::rotate(glm::pi<float>() * 0.5f, vec3(0.0f, 1.0f, 0.0f));
 				gp.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+				ipass.groupings.size();
 			}
 			{
 				ipass.groupings.push_back({});
@@ -155,6 +180,7 @@ namespace citrus::editor {
 				gp.addArrow(0.025f, 1.0f, 8);
 				gp.tr = selected.getGlobalTransform().getMatNoScale();// *glm::rotate(glm::pi<float>() * 0.5f, vec3(0.0f, 1.0f, 0.0f));
 				gp.color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+				transMap[ipass.indexBits | (ipass.groupings.size() - 1)] = gp.tr;
 			}
 			{
 				ipass.groupings.push_back({});
@@ -162,6 +188,7 @@ namespace citrus::editor {
 				gp.addArrow(0.025f, 1.0f, 8);
 				gp.tr = selected.getGlobalTransform().getMatNoScale() *glm::rotate(glm::pi<float>() * 0.5f, vec3(0.0f, 0.0f, 1.0f));
 				gp.color = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+				transMap[ipass.indexBits | (ipass.groupings.size() - 1)] = gp.tr;
 			}
 			{
 				ipass.groupings.push_back({});
@@ -169,7 +196,10 @@ namespace citrus::editor {
 				gp.addArrow(0.025f, 1.0f, 8);
 				gp.tr = selected.getGlobalTransform().getMatNoScale() *glm::rotate(glm::pi<float>() * 0.5f, vec3(0.0f, 1.0f, 0.0f));
 				gp.color = vec4(0.0f, 0.0f, 1.0f, 1.0f);
+				transMap[ipass.indexBits | (ipass.groupings.size() - 1)] = gp.tr;
 			}
+		} else {
+			transMap.clear();
 		}
 
 		for (auto const& view : currentViews) {
