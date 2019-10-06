@@ -42,6 +42,8 @@ namespace citrus::engine {
 		virtual void render();
 		virtual citrus::json save();
 
+		virtual string name() const = 0;
+
 	protected:
 		element(entityRef ent, std::type_index const& type);
 	};

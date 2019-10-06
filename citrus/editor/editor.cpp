@@ -309,6 +309,14 @@ namespace citrus::editor {
 		lua["step"] = [this]() {
 			doFrame = true;
 		};
+
+		lua["elements"] = [this](string id) {
+			auto ent = eng->man->findByID(id);
+			for (auto const& ele : ent.raw().lock()->getElements()) {
+				util::sout(ele->name() + "\n");
+			}
+			doFrame = true;
+		};
 	}
 
 	void ctEditor::shell(std::string const& ex) {

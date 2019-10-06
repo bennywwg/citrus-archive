@@ -5,6 +5,13 @@
 namespace citrus::engine {
 	using std::vector;
 
+	weak_ptr<entity> entityRef::raw() const {
+		return _ref;
+	}
+	weak_ptr<entity> entityRef::operator*() const {
+		return raw();
+	}
+
 	std::unique_ptr<editor::gui> entityRef::renderGUI() const {
 		editor::container* res = new editor::container();
 		res->title = "Entity: " + name() + " (" + std::to_string(id()) + ")";

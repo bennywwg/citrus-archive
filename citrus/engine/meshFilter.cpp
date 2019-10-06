@@ -104,6 +104,10 @@ namespace citrus::engine {
 		}
 	}
 
+	string meshFilter::name() const {
+		return "Mesh Filter";
+	}
+
 	meshFilter::meshFilter(entityRef ent) : element(ent, typeid(meshFilter)) {
 	}
 	meshFilter::~meshFilter() {

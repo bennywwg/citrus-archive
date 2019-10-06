@@ -95,6 +95,10 @@ namespace citrus::engine {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}*/
 	}
+
+	string worldManager::name() const {
+		return "World Manager";
+	}
 	
 	worldManager::worldManager(entityRef e) : element(e, typeid(worldManager)), w(new dynamics::world()) { }
 }

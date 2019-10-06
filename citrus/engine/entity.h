@@ -53,6 +53,7 @@ namespace citrus {
 				return (T*)getElement(typeid(T));
 			}
 			element* getElement(const std::type_index& type) const;
+			vector<element*> getElements() const;
 
 			public:
 			constexpr static uint64_t nullID = 0;// std::numeric_limits<uint64_t>::max();

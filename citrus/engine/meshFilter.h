@@ -34,6 +34,8 @@ namespace citrus::engine {
 		void load(const citrus::json&);
 		citrus::json save();
 
+		string name() const;
+
 		meshFilter(entityRef ent);
 		~meshFilter();
 	};

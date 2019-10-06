@@ -91,6 +91,12 @@ namespace citrus::engine {
 
 		return nullptr;
 	}
+	vector<element*> entity::getElements() const {
+		vector<element*> res;
+		for (auto e : _elements)
+			res.push_back(e.second);
+		return res;
+	}
 
 	entity::entity(const std::vector<std::pair<std::type_index, element*>>& toCreate, engine* eng, const std::string& name, const uint64_t id) : _elements(toCreate), name(name), id(id), eng(eng) {
 		this->_trans = transform();

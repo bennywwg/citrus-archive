@@ -20,9 +20,12 @@ namespace citrus::engine {
 		friend class engine;
 
 		engine* _eng;
-		std::weak_ptr<entity> _ref;
+		weak_ptr<entity> _ref;
 
 		public:
+		
+		weak_ptr<entity> raw() const;
+		weak_ptr<entity> operator*() const;
 
 		std::unique_ptr<editor::gui> renderGUI() const;
 

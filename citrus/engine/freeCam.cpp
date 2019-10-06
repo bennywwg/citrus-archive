@@ -40,5 +40,8 @@ namespace citrus::engine {
 		cam.ori = trans.getOrientation();
 		eng()->sys->frameCam = cam;
 	}
+	string freeCam::name() const {
+		return "Free Cam";
+	}
 	freeCam::freeCam(entityRef ent) : element(ent, typeid(freeCam)) { }
 }

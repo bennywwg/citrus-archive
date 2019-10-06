@@ -28,6 +28,8 @@ namespace citrus::engine {
 		void movementStuff();
 		void actionStuff();
 		void preRender();
+
+		string name() const;
 		
 		playerController(entityRef ent);
 	};

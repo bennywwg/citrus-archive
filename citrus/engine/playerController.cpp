@@ -18,7 +18,7 @@ namespace citrus::engine {
 		//dist += -eng()->dt() * distSpeed * (abs(distMag) > 0.8f ? distMag : 0.0f);
 		x -= distMag * 0.2f;
 		dist = glm::clamp(dist, minDist, maxDist);
-		dist = 8.0f;
+		dist = 16.0f;
 
 		if(y < 0) y += 360.0f;
 		if(y >= 360.0f) y -= 360.0f;
@@ -98,6 +98,9 @@ namespace citrus::engine {
 		cameraStuff();
 		movementStuff();
 		actionStuff();
+	}
+	string playerController::name() const {
+		return "Player Controller";
 	}
 	playerController::playerController(entityRef ent) : element(ent, typeid(playerController)) {
 		cam = eng()->getAllOfType<freeCam>()[0];

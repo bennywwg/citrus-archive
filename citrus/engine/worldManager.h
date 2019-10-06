@@ -19,6 +19,8 @@ namespace citrus {
 			void preRender();
 			void render();
 
+			string name() const;
+
 			worldManager(entityRef e);
 		};
 	}
