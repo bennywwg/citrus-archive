@@ -1,5 +1,5 @@
 # Ignore generated shader files
-res/shaders/build/*
+res/shaders/build/
 *.spv
 
 ## Ignore Visual Studio temporary files, build results, and

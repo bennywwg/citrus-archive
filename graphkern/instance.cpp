@@ -1,6 +1,7 @@
 #include "instance.h"
 #include <iostream>
 #include <cstring>
+#include "util.h"
 
 #ifdef __linux__
 #include <experimental/optional>
@@ -994,6 +995,9 @@ namespace citrus {
 	instance::instance(std::string name, GLFWwindow * win, int width, int height, std::string resFolder) :
 		width(width), height(height),
 		vertexMem(*this), indexMem(*this), uniformMem(*this), textureMem(*this), fboMem(*this), stagingMem(*this) {
+
+		compileAllShaders(fpath(resFolder) / "shaders");
+
 		loadExtensions();
 		checkExtensions();
 		loadValidationLayers();

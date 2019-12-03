@@ -7,6 +7,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include <filesystem>
+#include <string>
 
 namespace citrus {
 	typedef std::filesystem::path fpath;
@@ -21,6 +22,8 @@ namespace citrus {
 
 	using glm::ivec2;
 	using glm::uvec4;
+
+	using std::string;
 
 	using hpclock = std::chrono::high_resolution_clock;
 	using hptime = hpclock::time_point;
@@ -39,4 +42,8 @@ namespace citrus {
 	void copyMat4x3ToRowMajor(mat4x3 const& m, float f[4 * 3]);
 
 	bool loadPngImage(const char* name, int& outWidth, int& outHeight, bool& outHasAlpha, std::vector<unsigned char>& res);
+
+	void compileAllShaders(fpath shaderDir);
+
+	std::string execute(string const& command);
 }

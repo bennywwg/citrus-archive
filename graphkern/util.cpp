@@ -6,6 +6,8 @@
 #include "util.h"
 
 namespace citrus {
+	using std::string;
+
 	uint64_t roundUpAlign(uint64_t val, uint64_t align) {
 		if (align == 0) return val;
 
@@ -101,6 +103,58 @@ namespace citrus {
 		outHasAlpha = state.info_raw.colortype == LCT_RGBA;
 
 		return true;
+	}
+
+	void compileAllShaders(fpath shaderDir) {
+		std::vector<fpath> vertPaths = filesInDirectory(shaderDir, ".vert");
+		std::vector<fpath> fragPaths = filesInDirectory(shaderDir, ".frag");
+		std::vector<fpath> allPaths; allPaths.reserve(vertPaths.size() + fragPaths.size());
+		allPaths.insert(allPaths.end(), vertPaths.begin(), vertPaths.end());
+		allPaths.insert(allPaths.end(), fragPaths.begin(), fragPaths.end());
+
+		fpath compileDir = shaderDir / "build";
+
+		if (!std::filesystem::exists(compileDir) || !std::filesystem::is_directory(compileDir)) {
+			std::filesystem::create_directory(compileDir);
+		}
+
+		uint32_t numFailed = 0;
+		uint32_t numSucceeded = 0;
+		for (uint32_t i = 0; i < allPaths.size(); i++) {
+			fpath compiled = compileDir / allPaths[i].filename();
+			compiled += ".spv";
+
+			if (!std::filesystem::exists(compiled) ||
+				std::filesystem::last_write_time(compiled) < std::filesystem::last_write_time(allPaths[i])) {
+				string compString = "glslangValidator.exe -V \"" + allPaths[i].string() + "\" -o \"" + compiled.string() + "\"";
+				string res = execute(compString);
+				if (res.length() >= 2) res.erase(res.length() - 2); //remove trailing endline
+				if (res != allPaths[i].string()) {
+					std::cout << "Failed to compile shader:\n" << res << "\n";
+					numFailed++;
+				} else {
+					std::cout << "Compiled shader " << allPaths[i].filename().string() << "\n";
+					numSucceeded++;
+				}
+			}
+		}
+
+		std::cout << "Shader info: " << std::to_string(numSucceeded) << " compiled, " << std::to_string(numFailed) << " failed, " << std::to_string(allPaths.size() - numFailed) << " up to date\n\n";
+	}
+
+	std::string execute(string const& command) {
+		char tmpname[L_tmpnam_s];
+		tmpnam_s(tmpname, L_tmpnam_s);
+		std::string cmd = command + " >> " + tmpname;
+		std::system(cmd.c_str());
+		std::ifstream file(tmpname, std::ios::in | std::ios::binary);
+		std::string result;
+		if (file) {
+			while (!file.eof()) result.push_back(file.get());
+			file.close();
+		}
+		remove(tmpname);
+		return result.substr(0, result.length() - 1);
 	}
 
 }
