@@ -1,7 +1,10 @@
 # citrus
 An ECS game engine using a custom multithreaded vulkan render engine.
 
-12/03/2019
+# Status
+With great regret, I have removed official support for linux; Only Windows 10 is officially supported for the time being. The linux version was clunky and had many problems, and was harder to set up than the windows version. The good news is the linux build should be as simple as collecting the required libraries (listed at the bottom of this readme) and running `g++ *.cpp` in a few places.
+
+### 12/03/2019
 * Refactored citrus into multiple Visual Studio Projects
 * The projects, in order from least dependent to most dependent, are:
   * mankern - manager kernel, manages entities and element runtime
@@ -14,7 +17,6 @@ An ECS game engine using a custom multithreaded vulkan render engine.
 * Basical serialization / deserialization tested
 * Physics currently broken but should be easily fixed
 * Editor shows scene hierarchy with basic hierarchy modification functions
-
 
 For other goals see the roadmap:
 
