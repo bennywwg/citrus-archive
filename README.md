@@ -1,12 +1,20 @@
 # citrus
-A multithreaded ECS game engine using a custom vulkan render engine.
+An ECS game engine using a custom multithreaded vulkan render engine.
 
-Current status:
-The port to vulkan is nearly complete. The critical features I pan on working on next are:
-* Basic editor functionality such as scene graph and entity transformation
-* Finish the basic lighting model (including point lights)
-* Add shadows (point light shadows not planned)
-* Scene / prefab saving loading
+12/03/2019
+* Refactored citrus into multiple Visual Studio Projects
+* The projects, in order from least dependent to most dependent, are:
+  * mankern - manager kernel, manages entities and element runtime
+  * graphkern - graphics kernel, manages rendering runtime including all resources
+  * builtin - collection of default entity and element functionality such as rendering and physics
+  * editor - user interface runtime for modifying the game scene
+  * game - the actual engine linking all afformentioned projects together
+* Rewrote manager, entity, element, entRef, eleRef classes
+* Adding and removing elements from entities after entity creation is now supported
+* Basical serialization / deserialization tested
+* Physics currently broken but should be easily fixed
+* Editor shows scene hierarchy with basic hierarchy modification functions
+
 
 For other goals see the roadmap:
 
