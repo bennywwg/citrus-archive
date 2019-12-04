@@ -56,10 +56,11 @@ namespace citrus {
 		else if (bu == period) return shifted ? '>' : '.';
 		else if (bu == slash) return shifted ? '?' : '/';
 		else if (bu == enter) return '\n';
+		else if (bu == space) return ' ';
 		else return '\0';
 	}
 
-	std::map<GLFWwindow*, std::function<void(int, int, int, int)>> _buttonCallbackTable;
+	std::map<GLFWwindow*, std::function<void(windowInput::button, int, int)>> _buttonCallbackTable;
 	std::map<GLFWwindow*, std::function<void(double, double)>> _cursorCallbackTable;
 	std::map<GLFWwindow*, window*> _windowTable;
 	void dropFun(GLFWwindow* win, int argc, const char** argv) {
@@ -112,8 +113,10 @@ namespace citrus {
 			but = slash;
 		} else if(key == GLFW_KEY_GRAVE_ACCENT) {
 			but = tilde;
-		} else if(key == GLFW_KEY_BACKSPACE) {
+		} else if (key == GLFW_KEY_BACKSPACE) {
 			but = back;
+		} else if (key == GLFW_KEY_DELETE) {
+			but = del;
 		} else if(key == GLFW_KEY_SEMICOLON) {
 			but = semicolon;
 		} else if(key == GLFW_KEY_APOSTROPHE) {
@@ -133,7 +136,7 @@ namespace citrus {
 			_windowTable[win]->_buttonStates[but] = action != GLFW_RELEASE;
 		}
 		
-		_buttonCallbackTable[win](key, scancode, action, mods);
+		_buttonCallbackTable[win](but, action, mods);
 	}
 	void window::cursorCallback(GLFWwindow* win, double x, double y) {
 		_windowTable[win]->_cursorPos = glm::dvec2(x, y);
@@ -285,7 +288,7 @@ namespace citrus {
 	instance* window::inst() {
 		return _inst;
 	}
-	void window::setButtonCallback(std::function<void(int, int, int, int)> func) {
+	void window::setButtonCallback(std::function<void(windowInput::button, int, int)> func) {
 		_buttonCallbackTable[_win] = func;
 	}
 	void window::setCursorCallback(std::function<void(double, double)> func) {
@@ -335,7 +338,7 @@ namespace citrus {
 		_windowTable[_win] = this;
 		glfwSetKeyCallback(_win, buttonCallback);
 		glfwSetMouseButtonCallback(_win, mouseButtonCallback);
-		setButtonCallback([](int, int, int, int){ });
+		setButtonCallback([](windowInput::button, int, int){ });
 		glfwSetCursorPosCallback(_win, cursorCallback);
 		setCursorCallback([](double, double) { });
 

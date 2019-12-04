@@ -19,10 +19,6 @@ namespace citrus {
         
 		using std::string;
 
-		extern std::map<GLFWwindow*, std::function<void(int, int, int, int)>> _buttonCallbackTable;
-		//extern std::map<GLFWwindow*, std::function<void(int, int, int, int)>> _mouseButtonCallbackTable;
-		extern std::map<GLFWwindow*, std::function<void(double, double)>> _cursorCallbackTable;
-		extern std::map<GLFWwindow*, window*> _windowTable;
 
 		namespace windowInput {
 			enum button {
@@ -92,6 +88,7 @@ namespace citrus {
 				end = 62,
 				pgup = 63,
 				pgdn = 64,
+				del = 65,
 
 				ctr_lbump = 102,
 				ctr_rbump = 103,
@@ -120,6 +117,11 @@ namespace citrus {
 
 			char toChar(button bu, bool shifted);
 		}
+
+		extern std::map<GLFWwindow*, std::function<void(windowInput::button, int, int)>> _buttonCallbackTable;
+		//extern std::map<GLFWwindow*, std::function<void(int, int, int, int)>> _mouseButtonCallbackTable;
+		extern std::map<GLFWwindow*, std::function<void(double, double)>> _cursorCallbackTable;
+		extern std::map<GLFWwindow*, window*> _windowTable;
 
 		class window {
 			const static unsigned int _numButtonEnums = 300; // could be smaller but eh
@@ -158,7 +160,7 @@ namespace citrus {
 			void poll();
 			instance* inst();
 
-			void setButtonCallback(std::function<void(int, int, int, int)> func);
+			void setButtonCallback(std::function<void(windowInput::button, int, int)> func);
 			void setCursorCallback(std::function<void(double, double)> func);
 			void removeCallbacks();
 

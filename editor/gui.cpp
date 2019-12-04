@@ -138,16 +138,18 @@ namespace citrus {
 		}
 	}
 	ivec2 textField::dimensions() {
-		return ivec2(250, margin + textHeight * (1 + std::count(state.begin(), state.end(), '\n')) + margin);
+		string curState = state();
+		return ivec2(250, margin + textHeight * (1 + std::count(curState.begin(), curState.end(), '\n')) + margin);
 	}
 	void textField::render(ivec2 pos, vector<view>& views, float depth) {
+		string curState = state();
 		views.emplace_back();
 		view& v = views.back();
-		v.text = state;
+		v.text = curState;
 		v.color = color;
 		v.loc = pos;
 		v.border = true;
-		v.size = ivec2(250, margin + textHeight * (1 + std::count(state.begin(), state.end(), '\n')) + margin);
+		v.size = ivec2(250, margin + textHeight * (1 + std::count(curState.begin(), curState.end(), '\n')) + margin);
 		v.depth = depth;
 		v.owner = shared_from_this();
 	}

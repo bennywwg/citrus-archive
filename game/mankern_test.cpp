@@ -45,7 +45,13 @@ public:
 	ctEditor* ed;
 #endif
 
+	inline void buttonCB(windowInput::button b, int mode, int mods) {
+		if(mode == 1 || mode == 2) ed->keyDown(b);
+	}
+
 	inline void run() {
+		win.setButtonCallback([this](windowInput::button b, int v2, int v3) {buttonCB(b, v2, v3); });
+
 		man.registerType<rigidEle>("rigidEle", true, wd);
 
 		man.registerType<sensorEle>("sensorEle", true, wd);

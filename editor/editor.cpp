@@ -115,49 +115,63 @@ namespace citrus {
 		draggingEntity = false;
 	}
 
+	bool ctEditor::anyCapturing() {
+		if (topBar->captureInput()) return true;
+		for (int i = 0; i < floating.size(); i++)
+			if (floating[i]->captureInput()) return true;
+		return false;
+	}
+	void ctEditor::keyDown(windowInput::button b) {
+		for (int i = 0; i < floating.size(); i++) {
+			if(floating[i]->captureInput()) floating[i]->keyDown(b);
+		}
+	}
+
 	void ctEditor::updateCam() {
-		float navSpeed = 0.1f;
-		float rotSpeed = 0.01f;
-		vec3 dir = vec3();
+		if (!anyCapturing()) {
 
-		// translation
-		if (win->getKey(windowInput::w)) {
-			dir.z -= navSpeed;
-		}
-		if (win->getKey(windowInput::a)) {
-			dir.x -= navSpeed;
-		}
-		if (win->getKey(windowInput::s)) {
-			dir.z += navSpeed;
-		}
-		if (win->getKey(windowInput::d)) {
-			dir.x += navSpeed;
-		}
-		if (win->getKey(windowInput::q)) {
-			dir.y -= navSpeed;
-		}
-		if (win->getKey(windowInput::e)) {
-			dir.y += navSpeed;
-		}
+			float navSpeed = 0.1f;
+			float rotSpeed = 0.01f;
+			vec3 dir = vec3();
 
-		// rotation
-		if (win->getKey(windowInput::p)) {
-			rx += rotSpeed;
-		}
-		if (win->getKey(windowInput::l)) {
-			ry += rotSpeed;
-		}
-		if (win->getKey(windowInput::semicolon)) {
-			rx -= rotSpeed;
-		}
-		if (win->getKey(windowInput::apostrophe)) {
-			ry -= rotSpeed;
-		}
+			// translation
+			if (win->getKey(windowInput::w)) {
+				dir.z -= navSpeed;
+			}
+			if (win->getKey(windowInput::a)) {
+				dir.x -= navSpeed;
+			}
+			if (win->getKey(windowInput::s)) {
+				dir.z += navSpeed;
+			}
+			if (win->getKey(windowInput::d)) {
+				dir.x += navSpeed;
+			}
+			if (win->getKey(windowInput::q)) {
+				dir.y -= navSpeed;
+			}
+			if (win->getKey(windowInput::e)) {
+				dir.y += navSpeed;
+			}
 
-		cam.ori = glm::toQuat(glm::rotate(ry, vec3(0.f, 1.f, 0.f)) * glm::rotate(rx, vec3(1.f, 0.f, 0.f)));
-
-		vec3 camDir = vec3(glm::toMat4(cam.ori) * vec4(dir, 0.0f));
-		cam.pos += camDir;
+			// rotation
+			if (win->getKey(windowInput::p)) {
+				rx += rotSpeed;
+			}
+			if (win->getKey(windowInput::l)) {
+				ry += rotSpeed;
+			}
+			if (win->getKey(windowInput::semicolon)) {
+				rx -= rotSpeed;
+			}
+			if (win->getKey(windowInput::apostrophe)) {
+				ry -= rotSpeed;
+			}
+			cam.ori = glm::toQuat(glm::rotate(ry, vec3(0.f, 1.f, 0.f)) * glm::rotate(rx, vec3(1.f, 0.f, 0.f)));
+		
+			vec3 camDir = vec3(glm::toMat4(cam.ori) * vec4(dir, 0.0f));
+			cam.pos += camDir;
+		}
 	}
 	void ctEditor::update(immediatePass& ipass, uint16_t const& selectedIndex) {
 		auto const& items = man->ofType<modelEle>();
@@ -298,7 +312,7 @@ namespace citrus {
 
 		auto nameField = std::make_shared<textField>();
 		nameField->parent = bar;
-		nameField->state = ent.name();
+		nameField->setState(ent.name());
 		if (ent == selected) {
 			nameField->color = vec3(1.0f, 0.5f, 0.5f);
 		}
@@ -333,11 +347,17 @@ namespace citrus {
 	void ctEditor::renderEntityInspector(weak_ptr<floatingContainer> weakRef) {
 		auto inspectorCont = weakRef.lock();
 
-		inspectorCont->items.clear();
+		std::shared_ptr<gui> name;
+		if (inspectorCont->items.empty()) {
+			auto name2 = std::make_shared<textField>();
+			name2->parent = inspectorCont;
+			name2->setState(selected ? selected.name() : "(No Selection)");
+			name = name2;
+		} else {
+			name = inspectorCont->items[0];
+		}
 
-		auto name = std::make_shared<textField>();
-		name->parent = inspectorCont;
-		name->state = selected ? selected.name() : "(No Selection)";
+		inspectorCont->items.clear();
 
 		auto vec = std::make_shared<vecField>();
 		vec->parent = inspectorCont;
@@ -372,7 +392,6 @@ namespace citrus {
 		inspectorCont->items.emplace_back(ori);
 
 		if(selected) {
-			name->color = vec3(1.0f, 0.0f, 0.0f);
 			vec->vec = vec4(selected.getGlobalTrans().getPosition(), 0.f);
 			auto quat = selected.getGlobalTrans().getOrientation();
 			ori->vec = vec4(quat.x, quat.y, quat.z, quat.w);
@@ -386,12 +405,11 @@ namespace citrus {
 				auto* ei = selected._ptr->eles[i];
 				auto tf = std::make_shared<textField>();
 				tf->parent = inspectorCont;
-				tf->state = man->getInfo(ei->_type)->name + "\n";
 
 				if (ei->_man) {
-					tf->state += ei->serialize().dump(2);
+					tf->setState(man->getInfo(ei->_type)->name + "\n" + ei->serialize().dump(2));
 				} else {
-					tf->state += "(Not Initialized)";
+					tf->setState(man->getInfo(ei->_type)->name + "\n(Not Initialized)");
 				}
 
 				inspectorCont->items.emplace_back(tf);

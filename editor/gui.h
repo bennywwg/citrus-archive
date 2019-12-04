@@ -51,6 +51,8 @@ namespace citrus {
 		virtual void mouseDown(ivec2 cursor, ivec2 myPos) { }
 		virtual void mouseDragged(ivec2 cursor, ivec2 myPos) { }
 		virtual void mouseUp(ivec2 cursor, ivec2 myPos) { }
+		virtual void keyDown(windowInput::button b) { for (auto child : children()) child.lock()->keyDown(b); }
+		virtual bool captureInput() { for (auto child : children()) if (child.lock()->captureInput()) return true; return false; }
 		virtual vector<weak_ptr<gui>> children() { throw ::std::runtime_error("gui::children"); }
 		inline void update(ctEditor& ed) { if (updateFunc) updateFunc(ed); for (auto& child : children()) if (!child.expired()) child.lock()->update(ed); }
 		virtual ivec2 dimensions() { throw ::std::runtime_error("gui::dimensions"); }
@@ -139,13 +141,29 @@ namespace citrus {
 	};
 
 	struct textField : public guiLeaf {
+	private:
+		string _state;
+	public:
+
 		string info;
-		string state;
+		string state() {
+			if (stringIndex == -1) return _state;
+			string res = _state;
+			res += "_";
+			if (res[stringIndex] == '\n') {
+				res.insert(res.begin() + stringIndex, 'X');
+			} else {
+				res[stringIndex] = 'X';
+			}
+
+			return res;
+		}
 		vec3 color = vec3(1.0f, 1.0f, 1.0f);
 		function<void(textField&, string)> onChange;
 
 		int stringIndex = -1; // ∈ [0, state.size()]
 		bool focused = false;
+		bool editable = false;
 
 		// shifts cursor maximally to left and returns number of characters passed along the way
 		int home() {
@@ -154,12 +172,8 @@ namespace citrus {
 
 			if (stringIndex == -1) return -1;
 			int fromLeft = 0;
-			while (stringIndex != 0) {
+			while (stringIndex != 0 && _state[stringIndex - 1] != '\n') {
 				stringIndex--;
-				if (state[stringIndex] == '\n') {
-					stringIndex++;
-					break;
-				}
 				fromLeft++;
 			}
 			return fromLeft;
@@ -168,33 +182,42 @@ namespace citrus {
 		int end() {
 			if (stringIndex == -1) return -1;
 			int fromRight = 0;
-			while (stringIndex != state.size()) {
+			while (stringIndex != _state.size() && _state[stringIndex] != '\n') {
 				stringIndex++;
-				if (stringIndex == state.size() || state[stringIndex] == '\n') {
-					stringIndex--;
-					break;
-				}
 				fromRight++;
 			}
 			return fromRight;
 		}
 		void shiftLine(int lines) {
-			if (stringIndex == -1 || state.empty()) return;
+			if (stringIndex == -1 || _state.empty() || lines == 0) return;
 			int fromLeft = home();
-			end();
-			stringIndex++;
-			while (state[stringIndex] != '\n' && (stringIndex + 1) == state.size()) {
+			while (lines != 0) {
+				if (lines > 0) {
+					end();
+					if (stringIndex == _state.size()) break;
+					stringIndex++;
+					lines--;
+				} else {
+					home();
+					if (stringIndex == 0) break;
+					stringIndex--;
+					lines++;
+				}
+			}
+
+			while (stringIndex != _state.size() && _state[stringIndex] != '\n') {
 				stringIndex++;
 			}
-			stringIndex--;
 		}
 		void focus(ivec2 cursorPx) {
 			stringIndex = 0;
 			color = vec3(1, 1, 1);
+			focused = true;
 		}
 		void defocus() {
 			stringIndex = -1;
 			color = vec3(1, 0, 0);
+			focused = false;
 		}
 		void edit(windowInput::button b) {
 			if (stringIndex == -1) return;
@@ -202,11 +225,45 @@ namespace citrus {
 				shiftLine(-1);
 			} else if (b == windowInput::arrowDown) {
 				shiftLine(1);
+			} else if (b == windowInput::arrowLeft) {
+				if (stringIndex != 0) stringIndex--;
+			} else if (b == windowInput::arrowRight) {
+				if (stringIndex != _state.size()) stringIndex++;
 			} else if (b == windowInput::home) {
 				home();
+			} else if (b == windowInput::end) {
+				end();
 			} else if (windowInput::toChar(b, false)) {
-				state.insert(state.begin() + stringIndex, windowInput::toChar(b, false));
+				_state.insert(_state.begin() + stringIndex, windowInput::toChar(b, false));
+				stringIndex++;
+			} else if (b == windowInput::back) {
+				if (!_state.empty() && stringIndex != 0) {
+					_state.erase(_state.begin() + (stringIndex - 1));
+					stringIndex--;
+				}
+			} else if (b == windowInput::del) {
+				if (!_state.empty() && stringIndex != _state.size()) {
+					_state.erase(_state.begin() + stringIndex);
+				}
+			} else if (b == windowInput::escape) {
+				defocus();
 			}
+		}
+
+		void setState(string st) {
+			defocus();
+			_state = st;
+		}
+
+		void mouseDown(ivec2 cursor, ivec2 myPos) {
+			focus(cursor - myPos);
+		}
+		void keyDown(windowInput::button bu) {
+			if (focused) edit(bu);
+		}
+
+		bool captureInput() {
+			return focused;
 		}
 
 		ivec2 dimensions();

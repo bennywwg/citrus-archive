@@ -25,7 +25,6 @@
   <ItemGroup>
     <ClInclude Include="editor.h" />
     <ClInclude Include="gui.h" />
-    <ClInclude Include="multiFieldEditor.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

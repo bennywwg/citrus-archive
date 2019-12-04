@@ -56,6 +56,8 @@ namespace citrus {
 		void renderAllGui();
 		void mouseDown(uint16_t const& selectedIndex);
 		void mouseUp(uint16_t const& selectedIndex);
+		void keyDown(windowInput::button);
+		bool anyCapturing();
 
 		void updateCam();
 		void update(immediatePass& ipass, uint16_t const& selectedIndex);
