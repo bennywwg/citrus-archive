@@ -9,7 +9,7 @@ namespace citrus {
 	void manager::elementInfo::flushToDestroy() {
 		// remove element pointers from all used lists
 		for (int i = 0; i < toDestroySwap.size(); i++) {
-			auto& eleList = toDestroySwap[i]->_ent->eles;
+			auto& eleList = toDestroySwap[i]->_state._ent->eles;
 			for (int j = 0; j < eleList.size(); j++) {
 				if (eleList[j] == toDestroySwap[i]) {
 					eleList.erase(eleList.begin() + j);
@@ -28,34 +28,34 @@ namespace citrus {
 		for (int i = 0; i < toDestroySwap.size(); i++) {
 			// make sure to preserve next and prev through dtor call
 			// (standard probably not guaranteed to preserve these)
-			element* oldNext = toDestroySwap[i]->next, * oldPrev = toDestroySwap[i]->prev;
+			element* oldNext = toDestroySwap[i]->_state.next, * oldPrev = toDestroySwap[i]->_state.prev;
 			dtor(toDestroySwap[i]);
 			memset(toDestroySwap[i], '\0', size);
-			toDestroySwap[i]->_type = type;
-			toDestroySwap[i]->next = oldNext;
-			toDestroySwap[i]->prev = oldPrev;
+			toDestroySwap[i]->_state._type = type;
+			toDestroySwap[i]->_state.next = oldNext;
+			toDestroySwap[i]->_state.prev = oldPrev;
 		}
 	}
 
 	void manager::elementInfo::flushToCreate() {
 		for (int i = 0; i < toCreateSwap.size(); i++) {
 			// again, preserve next and prev through ctor
-			element* oldNext = toCreateSwap[i].which->next, * oldPrev = toCreateSwap[i].which->prev;
-			ctor(toCreateSwap[i].which, toCreateSwap[i].which->_ent);
+			element* oldNext = toCreateSwap[i].which->_state.next, * oldPrev = toCreateSwap[i].which->_state.prev;
+			ctor(toCreateSwap[i].which, toCreateSwap[i].which->_state._ent);
 			if (toCreateSwap[i].binData.has_value()) toCreateSwap[i].which->load(toCreateSwap[i].binData.value().data());
 			if (toCreateSwap[i].data.has_value()) toCreateSwap[i].which->deserialize(toCreateSwap[i].data.value());
-			toCreateSwap[i].which->next = oldNext;
-			toCreateSwap[i].which->prev = oldPrev;
+			toCreateSwap[i].which->_state.next = oldNext;
+			toCreateSwap[i].which->_state.prev = oldPrev;
 		}
 		for (int i = 0; i < toCreateSwap.size(); i++) {
-			toCreateSwap[i].which->_ent->eles.push_back(toCreateSwap[i].which);
+			toCreateSwap[i].which->_state._ent->eles.push_back(toCreateSwap[i].which);
 		}
 	}
 
 	void manager::elementInfo::action() {
 		if (active) {
-			for (element* el = allocBegin; el; el = el->next) {
-				if(el->_man) el->action();
+			for (element* el = allocBegin; el; el = el->_state.next) {
+				if(el->_state._man) el->action();
 			}
 		}
 	}
@@ -64,9 +64,9 @@ namespace citrus {
 	void manager::elementInfo::elinit() {
 		data = (element*)calloc(maxEnts, size);
 		freeBegin = data;
-		access(maxEnts - 1)->next = nullptr;
+		access(maxEnts - 1)->_state.next = nullptr;
 		for (int64_t i = maxEnts - 2; i >= 0; i--) {
-			access(i)->next = access(i + 1);
+			access(i)->_state.next = access(i + 1);
 		}
 	}
 
@@ -79,12 +79,12 @@ namespace citrus {
 	element* manager::elementInfo::elalloc() {
 		element* res = freeBegin;
 		if (res) {
-			freeBegin = freeBegin->next;
+			freeBegin = freeBegin->_state.next;
 
 			if (!allocBegin) allocBegin = res;
-			res->next = nullptr;
-			res->prev = allocEnd;
-			if (allocEnd) allocEnd->next = res;
+			res->_state.next = nullptr;
+			res->_state.prev = allocEnd;
+			if (allocEnd) allocEnd->_state.next = res;
 			allocEnd = res;
 		}
 		return res;
@@ -92,18 +92,18 @@ namespace citrus {
 
 	// free slot
 	void manager::elementInfo::elfree(element* ptr) {
-		if (ptr->prev)
-			ptr->prev->next = ptr->next;
+		if (ptr->_state.prev)
+			ptr->_state.prev->_state.next = ptr->_state.next;
 		else
-			allocBegin = ptr->next;
+			allocBegin = ptr->_state.next;
 
-		if (ptr->next)
-			ptr->next->prev = ptr->prev;
+		if (ptr->_state.next)
+			ptr->_state.next->_state.prev = ptr->_state.prev;
 		else
-			allocEnd = ptr->prev;
+			allocEnd = ptr->_state.prev;
 
-		ptr->next = freeBegin;
-		ptr->prev = nullptr; // shouldn't ever be used
+		ptr->_state.next = freeBegin;
+		ptr->_state.prev = nullptr; // shouldn't ever be used
 		freeBegin = ptr;
 	}
 
@@ -237,23 +237,23 @@ namespace citrus {
 
 	void manager::destroyElement(element* ele) {
 		if (!ele) throw nullEntityException("destroyElement() : invalid element");
-		elementInfo* inf = getInfo(ele->_type);
-		if (ele->destroyed) return;
-		ele->destroyed = true;
+		elementInfo* inf = getInfo(ele->_state._type);
+		if (ele->_state.destroyed) return;
+		ele->_state.destroyed = true;
 		inf->toDestroy.push_back(ele);
 	}
 
 	element* manager::addElement(entRef ent, manager::elementInfo *inf) {
 		if (!ent) throw nullEntityException("addElement() : invalid entity");
 		auto const& t = inf->type;
-		for (auto const& e : ent._ptr->eles) if (e->_type == t)
+		for (auto const& e : ent._ptr->eles) if (e->_state._type == t)
 #ifndef IGNORE_DUPLICATE_OP
 			throw std::runtime_error("duplicate entity error");
 #else
 			return;
 #endif
 		element* res = inf->elalloc();
-		res->_ent = ent._ptr;
+		res->_state._ent = ent._ptr;
 		inf->toCreate.emplace_back(res);
 		return res;
 	}
@@ -261,14 +261,14 @@ namespace citrus {
 	element* manager::addElement(entRef ent, manager::elementInfo* inf, vector<uint8_t> const& binData) {
 		if (!ent) throw nullEntityException("addElement() : invalid entity");
 		auto const& t = inf->type;
-		for (auto const& e : ent._ptr->eles) if (e->_type == t)
+		for (auto const& e : ent._ptr->eles) if (e->_state._type == t)
 #ifndef IGNORE_DUPLICATE_OP
 			throw std::runtime_error("duplicate entity error");
 #else
 			return;
 #endif
 		element* res = inf->elalloc();
-		res->_ent = ent._ptr;
+		res->_state._ent = ent._ptr;
 		inf->toCreate.emplace_back(res, binData);
 		return res;
 	}
@@ -276,14 +276,14 @@ namespace citrus {
 	element* manager::addElement(entRef ent, manager::elementInfo* inf, json const& j) {
 		if (!ent) throw nullEntityException("addElement() : invalid entity");
 		auto const& t = inf->type;
-		for (auto const& e : ent._ptr->eles) if (e->_type == t)
+		for (auto const& e : ent._ptr->eles) if (e->_state._type == t)
 #ifndef IGNORE_DUPLICATE_OP
 			throw std::runtime_error("duplicate entity error");
 #else
 			return;
 #endif
 		element* res = inf->elalloc();
-		res->_ent = ent._ptr;
+		res->_state._ent = ent._ptr;
 		inf->toCreate.emplace_back(res, j);
 		return res;
 	}
@@ -358,7 +358,7 @@ namespace citrus {
 		// destroy all elements of the entities to destroy
 		for (auto e : _toDestroy) {
 			for (auto el : e->eles) {
-				if (!el->destroyed) {
+				if (!el->_state.destroyed) {
 					destroyElement(el);
 				}
 			}
@@ -401,7 +401,7 @@ namespace citrus {
 			json::array_t entElements = json::array();
 			for (element* ele : ent._ptr->eles) {
 				entElements.push_back({
-					{ "Name", getInfo(ele->_type)->name },
+					{ "Name", getInfo(ele->_state._type)->name },
 					{ "Init", ele->serialize() }
 					});
 			}

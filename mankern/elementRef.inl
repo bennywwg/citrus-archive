@@ -6,12 +6,12 @@
 namespace citrus {
 	template<class T>
 	bool eleRef<T>::null() const {
-		return !(_id && _id == _ptr->_ent->id);
+		return !(_id && _id == _ptr->_state._ent->id);
 	}
 
 	template<class T>
 	int64_t eleRef<T>::id() const {
-		if (_id && (_id == abs(_ptr->_ent->id)))
+		if (_id && (_id == abs(_ptr->_state._ent->id)))
 			return _id;
 		else
 			return 0;
@@ -54,5 +54,5 @@ namespace citrus {
 	template<class T>
 	eleRef<T>::eleRef() : _ptr(nullptr), _id(0) { }
 	template<class T>
-	eleRef<T>::eleRef(T* ele) : _ptr(ele), _id(ele ? ele->_ent->id : 0) { }
+	eleRef<T>::eleRef(T* ele) : _ptr(ele), _id(ele ? ele->_state._ent->id : 0) { }
 }

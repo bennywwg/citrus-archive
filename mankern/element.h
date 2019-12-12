@@ -16,6 +16,17 @@ namespace citrus {
 
 	using nlohmann::json;
 
+	class element;
+
+	struct elementInternalState {
+		entity*					_ent;
+		manager*				_man;
+		void*					_usr;
+		std::type_index			_type;
+		element *prev, *next;
+		bool destroyed;	
+	};
+
 	class element {
 		friend class manager;
 		friend class entity;
@@ -23,13 +34,10 @@ namespace citrus {
 		friend class ctEditor;
 		template<class T> friend class eleRef;
 	private:
-		entity*					_ent;
-		manager*				_man;
-		void*					_usr;
-		std::type_index			_type;
-		element *prev, *next;
-		bool destroyed;
+		elementInternalState _state;
 	public:
+
+		elementInternalState _raw() const;
 
 		manager& man() const;
 

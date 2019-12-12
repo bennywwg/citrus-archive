@@ -59,9 +59,9 @@ namespace citrus {
 	std::vector<fpath> filesInDirectory(fpath path, std::string suffix) {
 		std::vector<fpath> res;
 		if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
-			for (std::filesystem::directory_iterator it(path); !it._At_end(); ++it) {
-				if (!it->is_directory() && it->path().extension().string() == suffix) {
-					res.push_back(it->path());
+			for (auto it : std::filesystem::directory_iterator(path)) {
+				if (!it.is_directory() && it.path().extension().string() == suffix) {
+					res.push_back(it.path());
 				}
 			}
 		}

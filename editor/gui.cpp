@@ -137,6 +137,108 @@ namespace citrus {
 			v.owner = shared_from_this();
 		}
 	}
+
+	// shifts cursor maximally to left and returns number of characters passed along the way
+
+	int textField::home() {
+		// A  B  C  \n D  B  \n \0
+		// 0  1  2  3  4  5  6  7
+
+		if (stringIndex == -1) return -1;
+		int fromLeft = 0;
+		while (stringIndex != 0 && _state[stringIndex - 1] != '\n') {
+			stringIndex--;
+			fromLeft++;
+		}
+		return fromLeft;
+	}
+
+	// shifts cursor maximally to right and returns number of characters passed along the way
+
+	int textField::end() {
+		if (stringIndex == -1) return -1;
+		int fromRight = 0;
+		while (stringIndex != _state.size() && _state[stringIndex] != '\n') {
+			stringIndex++;
+			fromRight++;
+		}
+		return fromRight;
+	}
+	void textField::shiftLine(int lines) {
+		if (stringIndex == -1 || _state.empty() || lines == 0) return;
+		int fromLeft = home();
+		while (lines != 0) {
+			if (lines > 0) {
+				end();
+				if (stringIndex == _state.size()) break;
+				stringIndex++;
+				lines--;
+			} else {
+				home();
+				if (stringIndex == 0) break;
+				stringIndex--;
+				lines++;
+			}
+		}
+
+		while (stringIndex != _state.size() && _state[stringIndex] != '\n') {
+			stringIndex++;
+		}
+	}
+	void textField::focus(ivec2 cursorPx) {
+		stringIndex = 0;
+		color = vec3(1, 1, 1);
+		focused = true;
+	}
+	void textField::defocus() {
+		stringIndex = -1;
+		color = vec3(1, 0, 0);
+		focused = false;
+		if (updateFunc) updateFunc(_state);
+	}
+	void textField::edit(windowInput::button b) {
+		if (stringIndex == -1) return;
+		if (b == windowInput::arrowUp) {
+			shiftLine(-1);
+		} else if (b == windowInput::arrowDown) {
+			shiftLine(1);
+		} else if (b == windowInput::arrowLeft) {
+			if (stringIndex != 0) stringIndex--;
+		} else if (b == windowInput::arrowRight) {
+			if (stringIndex != _state.size()) stringIndex++;
+		} else if (b == windowInput::home) {
+			home();
+		} else if (b == windowInput::end) {
+			end();
+		} else if (windowInput::toChar(b, false)) {
+			_state.insert(_state.begin() + stringIndex, windowInput::toChar(b, false));
+			stringIndex++;
+		} else if (b == windowInput::back) {
+			if (!_state.empty() && stringIndex != 0) {
+				_state.erase(_state.begin() + (stringIndex - 1));
+				stringIndex--;
+			}
+		} else if (b == windowInput::del) {
+			if (!_state.empty() && stringIndex != _state.size()) {
+				_state.erase(_state.begin() + stringIndex);
+			}
+		} else if (b == windowInput::escape) {
+			defocus();
+		}
+	}
+	void textField::setState(string st) {
+		defocus();
+		_state = st;
+	}
+	void textField::mouseDown(ivec2 cursor, ivec2 myPos) {
+		focus(cursor - myPos);
+	}
+	void textField::keyDown(windowInput::button bu) {
+		if (focused) edit(bu);
+	}
+	bool textField::captureInput() {
+		return focused;
+	}
 	ivec2 textField::dimensions() {
 		string curState = state();
 		return ivec2(250, margin + textHeight * (1 + std::count(curState.begin(), curState.end(), '\n')) + margin);
@@ -223,14 +325,12 @@ namespace citrus {
 	}
 	void floatingGui::addButtons() {
 		pinButton = std::make_shared<button>();
-		pinButton->parent = shared_from_this();
 		pinButton->info = ".";
 		pinButton->onClick = [this](button& b) {
 			this->shouldPin = !this->shouldPin;
 			this->pinButton->info = this->shouldPin ? "!" : ".";
 		};
 		exitButton = std::make_shared<button>();
-		exitButton->parent = shared_from_this();
 		exitButton->info = "x";
 		exitButton->onClick = [this](button& b) {
 			this->shouldClose = true;
@@ -240,18 +340,8 @@ namespace citrus {
 		auto res = ::std::make_shared<dropDown>();
 		res->addButtons();
 		res->buttons = buts;
-		for (auto& but : buts) {
-			but->parent = res;
-		}
 		res->title = title;
 		return res;
-	}
-	weak_ptr<gui> gui::topLevelParent() {
-		weak_ptr<gui> cur = shared_from_this();
-		while (!cur.lock()->parent.expired()) {
-			cur = cur.lock()->parent;
-		}
-		return cur;
 	}
 	ivec2 vecField::dimensions() {
 		return ivec2(textWidth * charsPerFloat * 4 + margin * 5, margin * 2 + textHeight);

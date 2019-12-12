@@ -24,6 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="editor.h" />
+    <ClInclude Include="entityInspectorGUI.h" />
     <ClInclude Include="gui.h" />
   </ItemGroup>
   <ItemGroup>

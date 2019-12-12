@@ -131,6 +131,7 @@ namespace citrus {
 		vector<typeElePair> _data;
 		vector<entity*> _toDestroy, _entities;
 
+	public:
 		elementInfo* getInfo(type_index const& index);
 		elementInfo* getInfoByName(string const& name);
 

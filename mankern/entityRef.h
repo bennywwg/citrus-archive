@@ -22,7 +22,9 @@ namespace citrus {
 		int64_t _id;
 		entity* _ptr;
 
-		public:
+	public:
+		// peer into the manager's soul
+		entity* _raw() const;
 
 		// returns false if the pointed entity is valid
 		// returns true otherwise
@@ -32,6 +34,7 @@ namespace citrus {
 		// otherwise returns nullID
 		int64_t id() const;
 
+		void setName(std::string const& st) const;
 		std::string name() const;
 
 		entRef getParent() const;
@@ -51,7 +54,7 @@ namespace citrus {
 		inline eleRef<T> getEle() const {
 			std::type_index const& ti = typeid(T);
 			for (int i = 0; i < _ptr->eles.size(); i++) {
-				if (_ptr->eles[i]->_type == ti) {
+				if (_ptr->eles[i]->_state._type == ti) {
 					return eleRef<T>((T*)_ptr->eles[i]);
 				}
 			}

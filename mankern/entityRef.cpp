@@ -18,11 +18,20 @@ namespace citrus {
 	}
 #endif // CITRUS_EDITOR
 
+	entity* entRef::_raw() const {
+		return _ptr;
+	}
+
 	bool entRef::null() const {
 		return !(_id && _id == _ptr->id);
 	}
 	int64_t entRef::id() const {
 		return null() ? 0 : _id;
+	}
+
+	void entRef::setName(std::string const& st) const {
+		if (null()) throw nullEntityException("setName: null entity");
+		_ptr->name = st;
 	}
 
 	std::string entRef::name() const {

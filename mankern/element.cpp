@@ -10,14 +10,18 @@ namespace citrus {
 	}
 #endif
 
+	elementInternalState element::_raw() const {
+		return _state;
+	}
+
 	manager& element::man() const {
-		return *_man;
+		return *_state._man;
 	}
 	void *element::usr() const {
-		return _usr;
+		return _state._usr;
 	}
 	entRef element::ent() const {
-		return entRef(_ent);
+		return entRef(_state._ent);
 	}
 
 	void element::deserialize(citrus::json const& parsed) { }
@@ -28,9 +32,5 @@ namespace citrus {
 	void element::action() { }
 
 	element::element(entRef const& ent, manager &man, void *usr, std::type_index const & type) :
-		_ent(ent._ptr),
-		_man(&man),
-		_usr(usr),
-		_type(type),
-		destroyed(false) { }
+		_state{ent._ptr, &man, usr, type, nullptr, nullptr, false} { }
 }

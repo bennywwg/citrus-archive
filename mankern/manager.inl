@@ -24,7 +24,7 @@ namespace citrus {
 	std::vector<eleRef<T>> manager::ofType() {
 		std::vector<eleRef<T>> res;
 		auto inf = getInfo(typeid(T));
-		for (T* cur = (T*)inf->allocBegin; cur; cur = (T*)cur->next) {
+		for (T* cur = (T*)inf->allocBegin; cur; cur = (T*)cur->_state.next) {
 			res.push_back(eleRef<T>(cur));
 		}
 		return res;
@@ -34,7 +34,7 @@ namespace citrus {
 	inline eleRef<T> citrus::manager::addElement(entRef ent) {
 		if (!ent) throw nullEntityException("addElement() : invalid entity");
 		auto const& t = type_index(typeid(T));
-		for (auto const& e : ent._ptr->eles) if (e->_type == t)
+		for (auto const& e : ent._ptr->eles) if (e->_state._type == t)
 #ifndef IGNORE_DUPLICATE_OP
 			throw std::runtime_error("duplicate entity error");
 #else
@@ -42,7 +42,7 @@ namespace citrus {
 #endif
 		elementInfo* inf = getInfo(t);
 		T* res = (T*)inf->elalloc();
-		((element*)res)->_ent = ent._ptr;
+		((element*)res)->_state._ent = ent._ptr;
 		inf->toCreate.emplace_back(res);
 		return eleRef<T>(res);
 	}

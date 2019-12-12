@@ -10,18 +10,11 @@ namespace citrus {
 	class ctEditor;
 
 	class entity {
-		friend class manager;
-		friend class entRef;
-		friend class element;
-		friend class ctEditor;
-		template<class T> friend class eleRef;
-
 	public:
 		transform trans;
 
 
 		transform globalTrans();
-	private:
 		
 		// =  0 -> unallocated
 		// >  0 -> valid

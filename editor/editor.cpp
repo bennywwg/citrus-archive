@@ -9,9 +9,23 @@
 #include "../builtin/modelEle.h"
 
 namespace citrus {
-	std::string selectFile(std::string ext) {
+	std::string dialogOpenFile(std::string ext) {
 		nfdchar_t* outPath = nullptr;
 		nfdresult_t result = NFD_OpenDialog(ext.empty() ? nullptr : ext.c_str(), nullptr, &outPath);
+
+		if (result == NFD_OKAY) {
+			string res = outPath;
+			free(outPath);
+			return res;
+		} else if (result == NFD_CANCEL) {
+			return "";
+		} else {
+			return "";
+		}
+	}
+	std::string dialogSaveFile(std::string ext) {
+		nfdchar_t* outPath = nullptr;
+		nfdresult_t result = NFD_SaveDialog(ext.empty() ? nullptr : ext.c_str(), nullptr, &outPath);
 
 		if (result == NFD_OKAY) {
 			string res = outPath;
@@ -49,7 +63,7 @@ namespace citrus {
 		return weak_ptr<floatingGui>();
 	}
 	void ctEditor::clearFloating(view* hovered) {
-		weak_ptr<gui> owner = hovered ? hovered->owner : weak_ptr<gui>();
+		/*weak_ptr<gui> owner = hovered ? hovered->owner : weak_ptr<gui>();
 		shared_ptr<floatingGui> hoveredFloating = owner.expired() ? shared_ptr<floatingGui>() : std::dynamic_pointer_cast<floatingGui>(owner.lock()->topLevelParent().lock());
 		for (int i = 0; i < floating.size(); i++) {
 			if (floating[i]->justCreated) {
@@ -60,7 +74,7 @@ namespace citrus {
 				floating.erase(floating.begin() + i);
 				i--;
 			}
-		}
+		}*/
 	}
 	void ctEditor::renderAllGui() {
 		currentViews.clear();
@@ -130,7 +144,7 @@ namespace citrus {
 	void ctEditor::updateCam() {
 		if (!anyCapturing()) {
 
-			float navSpeed = 0.1f;
+			float navSpeed = 0.05f;
 			float rotSpeed = 0.01f;
 			vec3 dir = vec3();
 
@@ -297,21 +311,18 @@ namespace citrus {
 		bar->direction = linearLayout::right;
 
 		auto delButton = std::make_shared<button>();
-		delButton->parent = bar;
 		delButton->info = "del";
 		delButton->onClick = [this, ent](button& b) {
 			man->destroy(ent);
 		};
 
 		auto selectButton = std::make_shared<button>();
-		selectButton->parent = bar;
 		selectButton->info = "sel" + std::string(level * 2, '-');
 		selectButton->onClick = [this, ent](button& b) {
 			selected = ent;
 		};
 
 		auto nameField = std::make_shared<textField>();
-		nameField->parent = bar;
 		nameField->setState(ent.name());
 		if (ent == selected) {
 			nameField->color = vec3(1.0f, 0.5f, 0.5f);
@@ -329,7 +340,6 @@ namespace citrus {
 		weakRef.lock()->items.clear();
 
 		auto createButton = std::make_shared<button>();
-		createButton->parent = weakRef;
 		createButton->info = "Create Entity";
 		createButton->onClick = [this](button& b) {
 			selected = man->create("Unnamed");
@@ -350,8 +360,10 @@ namespace citrus {
 		std::shared_ptr<gui> name;
 		if (inspectorCont->items.empty()) {
 			auto name2 = std::make_shared<textField>();
-			name2->parent = inspectorCont;
 			name2->setState(selected ? selected.name() : "(No Selection)");
+			name2->updateFunc = [this](string st) {
+				if(selected) selected.setName(st);
+			};
 			name = name2;
 		} else {
 			name = inspectorCont->items[0];
@@ -360,14 +372,11 @@ namespace citrus {
 		inspectorCont->items.clear();
 
 		auto vec = std::make_shared<vecField>();
-		vec->parent = inspectorCont;
 
 		auto ori = std::make_shared<vecField>();
-		ori->parent = inspectorCont;
 		ori->numComponents = 4;
 
 		auto eleCreate = std::make_shared<button>();
-		eleCreate->parent = inspectorCont;
 		eleCreate->info = selected ? "Add Element" : "(No Selection)";
 		eleCreate->onClick = [this](button& b) {
 			if (selected) {
@@ -398,22 +407,6 @@ namespace citrus {
 		} else {
 			vec->vec = vec4(0, 0, 0, 0);
 			ori->vec = vec4(0, 0, 0, 0);
-		}
-
-		if (selected) {	
-			for (int i = 0; i < selected._ptr->eles.size(); i++) {
-				auto* ei = selected._ptr->eles[i];
-				auto tf = std::make_shared<textField>();
-				tf->parent = inspectorCont;
-
-				if (ei->_man) {
-					tf->setState(man->getInfo(ei->_type)->name + "\n" + ei->serialize().dump(2));
-				} else {
-					tf->setState(man->getInfo(ei->_type)->name + "\n(Not Initialized)");
-				}
-
-				inspectorCont->items.emplace_back(tf);
-			}
 		}
 
 	}
@@ -536,10 +529,9 @@ namespace citrus {
 
 		shared_ptr<button> fileButton = std::make_shared<button>();
 		fileButton->info = "File";
-		fileButton->parent = topBar;
 		fileButton->onClick = [this](button& b) {
-			auto saveButton = button::create("Save Scene", [](button& but) { std::cout << "Save Scene = " << selectFile("cts") << "\n"; } );
-			auto loadButton = button::create("Load Scene", [](button& but) { std::cout << "Load Scene = " << selectFile("cts") << "\n"; } );
+			auto saveButton = button::create("Save Scene", [](button& but) { std::cout << "Save Scene = " << dialogSaveFile("cts") << "\n"; } );
+			auto loadButton = button::create("Load Scene", [](button& but) { std::cout << "Load Scene = " << dialogOpenFile("cts") << "\n"; } );
 			auto exitButton = button::create("Exit", [this](button& but) { this->man->stop(); } );
 			auto fileDropDown = dropDown::create("File->", { saveButton, loadButton, exitButton });
 			floating.emplace_back(fileDropDown);
@@ -548,7 +540,6 @@ namespace citrus {
 
 		shared_ptr<button> editButton = std::make_shared<button>();
 		editButton->info = "Edit";
-		editButton->parent = topBar;
 		editButton->onClick = [this](button& b) {
 			auto playButton = button::create("Play", [this](button& but) { playing = true; });
 			auto pauseButton = button::create("Pause", [this](button& but) { playing = false; });
@@ -559,7 +550,6 @@ namespace citrus {
 		
 		shared_ptr<button> toolsButton = std::make_shared<button>();
 		toolsButton->info = "Tools";
-		toolsButton->parent = topBar;
 		toolsButton->onClick = [this](button& b) {
 			auto inspectorButton = button::create("Inspector", [this](button& but) {
 				auto inspectorCont = std::make_shared<floatingContainer>();

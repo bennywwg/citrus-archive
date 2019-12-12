@@ -44,10 +44,8 @@ namespace citrus {
 	};
 
 	struct gui : ::std::enable_shared_from_this<gui> {
-		weak_ptr<gui> parent;
 		::std::function<void(ctEditor&)> updateFunc;
 
-		weak_ptr<gui> topLevelParent();
 		virtual void mouseDown(ivec2 cursor, ivec2 myPos) { }
 		virtual void mouseDragged(ivec2 cursor, ivec2 myPos) { }
 		virtual void mouseUp(ivec2 cursor, ivec2 myPos) { }
@@ -145,6 +143,8 @@ namespace citrus {
 		string _state;
 	public:
 
+		std::function<void(string)> updateFunc;
+
 		string info;
 		string state() {
 			if (stringIndex == -1) return _state;
@@ -166,105 +166,20 @@ namespace citrus {
 		bool editable = false;
 
 		// shifts cursor maximally to left and returns number of characters passed along the way
-		int home() {
-			// A  B  C  \n D  B  \n \0
-			// 0  1  2  3  4  5  6  7
-
-			if (stringIndex == -1) return -1;
-			int fromLeft = 0;
-			while (stringIndex != 0 && _state[stringIndex - 1] != '\n') {
-				stringIndex--;
-				fromLeft++;
-			}
-			return fromLeft;
-		}
+		int home();
 		// shifts cursor maximally to right and returns number of characters passed along the way
-		int end() {
-			if (stringIndex == -1) return -1;
-			int fromRight = 0;
-			while (stringIndex != _state.size() && _state[stringIndex] != '\n') {
-				stringIndex++;
-				fromRight++;
-			}
-			return fromRight;
-		}
-		void shiftLine(int lines) {
-			if (stringIndex == -1 || _state.empty() || lines == 0) return;
-			int fromLeft = home();
-			while (lines != 0) {
-				if (lines > 0) {
-					end();
-					if (stringIndex == _state.size()) break;
-					stringIndex++;
-					lines--;
-				} else {
-					home();
-					if (stringIndex == 0) break;
-					stringIndex--;
-					lines++;
-				}
-			}
+		int end();
+		void shiftLine(int lines);
+		void focus(ivec2 cursorPx);
+		void defocus();
+		void edit(windowInput::button b);
 
-			while (stringIndex != _state.size() && _state[stringIndex] != '\n') {
-				stringIndex++;
-			}
-		}
-		void focus(ivec2 cursorPx) {
-			stringIndex = 0;
-			color = vec3(1, 1, 1);
-			focused = true;
-		}
-		void defocus() {
-			stringIndex = -1;
-			color = vec3(1, 0, 0);
-			focused = false;
-		}
-		void edit(windowInput::button b) {
-			if (stringIndex == -1) return;
-			if (b == windowInput::arrowUp) {
-				shiftLine(-1);
-			} else if (b == windowInput::arrowDown) {
-				shiftLine(1);
-			} else if (b == windowInput::arrowLeft) {
-				if (stringIndex != 0) stringIndex--;
-			} else if (b == windowInput::arrowRight) {
-				if (stringIndex != _state.size()) stringIndex++;
-			} else if (b == windowInput::home) {
-				home();
-			} else if (b == windowInput::end) {
-				end();
-			} else if (windowInput::toChar(b, false)) {
-				_state.insert(_state.begin() + stringIndex, windowInput::toChar(b, false));
-				stringIndex++;
-			} else if (b == windowInput::back) {
-				if (!_state.empty() && stringIndex != 0) {
-					_state.erase(_state.begin() + (stringIndex - 1));
-					stringIndex--;
-				}
-			} else if (b == windowInput::del) {
-				if (!_state.empty() && stringIndex != _state.size()) {
-					_state.erase(_state.begin() + stringIndex);
-				}
-			} else if (b == windowInput::escape) {
-				defocus();
-			}
-		}
+		void setState(string st);
 
-		void setState(string st) {
-			defocus();
-			_state = st;
-		}
+		void mouseDown(ivec2 cursor, ivec2 myPos);
+		void keyDown(windowInput::button bu);
 
-		void mouseDown(ivec2 cursor, ivec2 myPos) {
-			focus(cursor - myPos);
-		}
-		void keyDown(windowInput::button bu) {
-			if (focused) edit(bu);
-		}
-
-		bool captureInput() {
-			return focused;
-		}
+		bool captureInput();
 
 		ivec2 dimensions();
 		void render(ivec2 pos, vector<view>& views, float depth);
