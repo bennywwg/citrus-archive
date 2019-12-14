@@ -74,4 +74,6 @@ namespace citrus {
 
 		ctEditor(manager *man, renderSystem *sys, window *win);
 	};
+
+	ctEditor* _globalEd; //bleh
 }

@@ -21,6 +21,7 @@ namespace citrus {
 	const int textWidth = 8;
 	const int textHeight = 16;
 
+
 	enum struct viewType {
 		noType,
 		handleType,
@@ -37,14 +38,54 @@ namespace citrus {
 		ivec2 size;
 		string text;
 		vec3 color;
-		bool border;
-		float depth;
 		weak_ptr<gui> owner;
 		viewType type;
+		void sizeFromText(bool useMargin = false) {
+			size = ivec2((useMargin ? margin * 2 : 0) + text.length() * textWidth, (useMargin ? margin * 2 : 0) + textHeight);
+			for (char c : text) if (c == '\n') size.y += textHeight;
+		}
 	};
 
-	struct gui : ::std::enable_shared_from_this<gui> {
-		::std::function<void(ctEditor&)> updateFunc;
+	struct partial {
+		vector<view> views;
+		ivec2 dimensions() {
+			ivec2 res(0, 0);
+			for (view const& v : views) {
+				if (v.loc.x + v.size.x > res.x) res.x = v.loc.x + v.size.x;
+				if (v.loc.y + v.size.y > res.y) res.y = v.loc.y + v.size.y;
+			}
+			return res;
+		}
+		view* getSelected(ivec2 cursor) {
+			for (int i = views.size() - 1; i >= 0; i--) {
+				view& v = views[i];
+				if (cursor.x >= v.loc.x && cursor.x < (v.loc.x + v.size.x) && cursor.y >= v.loc.y && cursor.y < (v.loc.y + v.size.y)) {
+					return &v;
+				}
+			}
+			return nullptr;
+		}
+		void append(partial const& other, ivec2 pos) {
+			for (view v : other.views) {
+				v.loc += pos;
+				views.push_back(v);
+			}
+		}
+		void appendRight(partial const& other) {
+			append(other, ivec2(dimensions().x, 0));
+		}
+		void appendDown(partial const& other) {
+			append(other, ivec2(0, dimensions().y));
+		}
+		void translate(ivec2 trans) {
+			for (view& v : views) {
+				v.loc += trans;
+			}
+		}
+	};
+
+	struct gui : std::enable_shared_from_this<gui> {
+		std::function<void(ctEditor&)> updateFunc;
 
 		virtual void mouseDown(ivec2 cursor, ivec2 myPos) { }
 		virtual void mouseDragged(ivec2 cursor, ivec2 myPos) { }
@@ -53,27 +94,13 @@ namespace citrus {
 		virtual bool captureInput() { for (auto child : children()) if (child.lock()->captureInput()) return true; return false; }
 		virtual vector<weak_ptr<gui>> children() { throw ::std::runtime_error("gui::children"); }
 		inline void update(ctEditor& ed) { if (updateFunc) updateFunc(ed); for (auto& child : children()) if (!child.expired()) child.lock()->update(ed); }
-		virtual ivec2 dimensions() { throw ::std::runtime_error("gui::dimensions"); }
-		virtual void render(ivec2 pos, vector<view>& views, float depth) { throw ::std::runtime_error("gui::render"); }
+		virtual partial render() { throw ::std::runtime_error("gui::render"); }
 		virtual ~gui() = default;
 	};
 
 	// just a gui with no children
 	struct guiLeaf : public gui {
 		vector<weak_ptr<gui>> children();
-	};
-
-	struct container : public gui {
-		vec3 color;
-		string title;
-
-		vector<shared_ptr<gui>> items;
-
-		void click(vec2 point, vector<view>& view);
-
-		vector<weak_ptr<gui>> children();
-		ivec2 dimensions();
-		void render(ivec2 pos, vector<view>& views, float depth);
 	};
 
 	struct linearLayout : public gui {
@@ -85,16 +112,14 @@ namespace citrus {
 		vector<shared_ptr<gui>> items;
 
 		vector<weak_ptr<gui>> children();
-		ivec2 dimensions();
-		void render(ivec2 pos, vector<view>& views, float depth);
+		partial render();
 	};
 
 	struct button : public guiLeaf {
 		string info;
 		function<void(button&)> onClick;
 
-		ivec2 dimensions();
-		void render(ivec2 pos, vector<view>& views, float depth);
+		partial render();
 		void mouseDown(ivec2 cursor, ivec2 myPos);
 
 		static shared_ptr<button> create(string const& info, function<void(button&)> click);
@@ -115,17 +140,15 @@ namespace citrus {
 		vector<shared_ptr<gui>> items;
 
 		vector<weak_ptr<gui>> children();
-		ivec2 dimensions();
-		void render(ivec2 pos, vector<view>& views, float depth);
+		partial render();
 	};
 
-	struct toggle : public guiLeaf {
+	/*struct toggle : public guiLeaf {
 		string info;
 		bool state;
 		function<void(toggle&, bool)> onChange;
 
-		ivec2 dimensions();
-		void render(ivec2 pos, vector<view>& views, float depth);
+		partial render();
 	};
 
 	struct slider : public guiLeaf {
@@ -134,9 +157,8 @@ namespace citrus {
 		double state = 4.5;
 		function<void(slider&, double)> onChange;
 
-		ivec2 dimensions();
-		void render(ivec2 pos, vector<view>& views, float depth);
-	};
+		partial render();
+	};*/
 
 	struct textField : public guiLeaf {
 	private:
@@ -181,8 +203,7 @@ namespace citrus {
 
 		bool captureInput();
 
-		ivec2 dimensions();
-		void render(ivec2 pos, vector<view>& views, float depth);
+		partial render();
 	};
 
 	struct vecField : public guiLeaf {
@@ -190,16 +211,14 @@ namespace citrus {
 		int numComponents = 3;
 		vec4 vec;
 
-		ivec2 dimensions();
-		void render(ivec2 pos, vector<view>& views, float depth);
+		partial render();
 	};
 
 	struct horiBar : public gui {
 		vector<shared_ptr<button>> buttons;
 
 		vector<weak_ptr<gui>> children();
-		ivec2 dimensions();
-		void render(ivec2 pos, vector<view>& views, float depth);
+		partial render();
 	};
 
 
@@ -208,8 +227,7 @@ namespace citrus {
 		vector<shared_ptr<button>> buttons;
 
 		vector<weak_ptr<gui>> children();
-		ivec2 dimensions();
-		void render(ivec2 pos, vector<view>& views, float depth);
+		partial render();
 
 		static shared_ptr<dropDown> create(string const& title, vector<shared_ptr<button>> const& buts);
 	};
