@@ -4,15 +4,13 @@
 
 namespace citrus {
 	partial button::render() {
-		views.emplace_back();
-		view& v = views.back();
+		partial res;
+		view& v = res.views.emplace_back();
 		v.text = info;
 		v.color = vec3(0.8f, 1.0f, 0.8f);
-		v.size = ivec2(margin + textWidth * info.length() + margin, margin + textHeight + margin);
-		v.loc = pos;
-		v.border = true;
-		v.depth = depth;
+		v.sizeFromText();
 		v.owner = shared_from_this();
+		return res;
 	}
 	void button::mouseDown(ivec2 cursor, ivec2 myPos) {
 		if(onClick) onClick(*this);
@@ -224,7 +222,8 @@ namespace citrus {
 		partial res;
 		for(auto b : buttons) res.appendRight(b->render());
 		view & v = *res.views.emplace(res.views.begin());
-		v.size = ivec2(_globalEd->win->framebufferSize().x, res.dimensions().y);
+		//v.size = ivec2(_globalEd->win->framebufferSize().x, res.dimensions().y);
+		return res;
 	}
 
 	vector<weak_ptr<gui>> guiLeaf::children() {
@@ -279,6 +278,13 @@ namespace citrus {
 		return res;
 	}
 
+	vector<weak_ptr<gui>> floatingGui::children() {
+		vector<weak_ptr<gui>> res;
+		if (pinButton) res.push_back(pinButton);
+		if (exitButton) res.push_back(exitButton);
+		return res;
+	}
+
 	void floatingGui::addButtons() {
 		pinButton = std::make_shared<button>();
 		pinButton->info = ".";
@@ -291,6 +297,22 @@ namespace citrus {
 		exitButton->onClick = [this](button& b) {
 			this->shouldClose = true;
 		};
+	}
+
+	partial floatingGui::render() {
+		partial res;
+		if (pinButton) res.appendRight(pinButton->render());
+		if (exitButton) res.appendRight(exitButton->render());
+		if (!title.empty()) {
+			res.views.emplace_back();
+			view& v = res.views.back();
+			v.text = "Entity Inspector";
+			v.sizeFromText();
+			v.loc = ivec2(res.dimensions().x, 0);
+			v.color = vec3(0.8f);
+			v.owner = shared_from_this();
+		}
+		return res;
 	}
 
 	vector<weak_ptr<gui>> floatingContainer::children() {

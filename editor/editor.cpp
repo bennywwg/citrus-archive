@@ -39,18 +39,7 @@ namespace citrus {
 	}
 
 	view* ctEditor::getHoveredView(ivec2 cursor) {
-		view* topView = nullptr;
-		float topViewDepth = -999.0f;
-		for (auto& view : currentViews) {
-			if (cursor.x >= view.loc.x && cursor.y >= view.loc.y && cursor.x <= (view.loc.x + view.size.x) && cursor.y <= (view.loc.y + view.size.y)) {
-				if (topView == nullptr || view.depth > topViewDepth) {
-					topView = &view;
-					topViewDepth = view.depth;
-				}
-			}
-		}
-
-		return topView;
+		return allViews.getSelected(cursor);
 	}
 	weak_ptr<floatingGui> ctEditor::getHoveredFloating(ivec2 cursor) {
 		view* v = getHoveredView(cursor);
@@ -77,11 +66,12 @@ namespace citrus {
 		}*/
 	}
 	void ctEditor::renderAllGui() {
-		currentViews.clear();
-		topBar->render(ivec2(0, 0), currentViews, 0);
+		allViews.views.clear();
 		for (auto& fl : floating) {
-			fl->render(fl->pos, currentViews, 10.0f);
+			allViews.append(fl->render(), ivec2(0, 0));
 		}
+		allViews.append(insp->render(), ivec2(0, 0));
+		allViews.append(topBar->render(), ivec2(0, 0));
 	}
 	void ctEditor::mouseDown(uint16_t const& selectedIndex) {
 		view* topView = getHoveredView(cursorPx);
@@ -294,7 +284,7 @@ namespace citrus {
 			transMap.clear();
 		}
 
-		for (auto const& view : currentViews) {
+		for (auto const& view : allViews.views) {
 			immediatePass::grouping gp = { };
 			gp.color = view.color;
 			gp.pixelspace = true;
@@ -352,63 +342,6 @@ namespace citrus {
 				addToScenceHierarchy(weakRef, ent, 0);
 			}
 		}
-	}
-
-	void ctEditor::renderEntityInspector(weak_ptr<floatingContainer> weakRef) {
-		auto inspectorCont = weakRef.lock();
-
-		std::shared_ptr<gui> name;
-		if (inspectorCont->items.empty()) {
-			auto name2 = std::make_shared<textField>();
-			name2->setState(selected ? selected.name() : "(No Selection)");
-			name2->updateFunc = [this](string st) {
-				if(selected) selected.setName(st);
-			};
-			name = name2;
-		} else {
-			name = inspectorCont->items[0];
-		}
-
-		inspectorCont->items.clear();
-
-		auto vec = std::make_shared<vecField>();
-
-		auto ori = std::make_shared<vecField>();
-		ori->numComponents = 4;
-
-		auto eleCreate = std::make_shared<button>();
-		eleCreate->info = selected ? "Add Element" : "(No Selection)";
-		eleCreate->onClick = [this](button& b) {
-			if (selected) {
-				vector<shared_ptr<button>> eles;
-				for (int i = 0; i < man->_data.size(); i++) {
-					auto *ei = man->_data[i].info;
-					string str = ei->name;
-					eles.push_back(button::create(str, [this, ei](button& b) {
-						man->addElement(selected, ei);
-					}));
-				}
-
-				auto eleDD = dropDown::create("Choose Element ... ", eles);
-
-				floating.push_back(eleDD);
-			}
-		};
-
-		inspectorCont->items.emplace_back(name);
-		inspectorCont->items.emplace_back(eleCreate);
-		inspectorCont->items.emplace_back(vec);
-		inspectorCont->items.emplace_back(ori);
-
-		if(selected) {
-			vec->vec = vec4(selected.getGlobalTrans().getPosition(), 0.f);
-			auto quat = selected.getGlobalTrans().getOrientation();
-			ori->vec = vec4(quat.x, quat.y, quat.z, quat.w);
-		} else {
-			vec->vec = vec4(0, 0, 0, 0);
-			ori->vec = vec4(0, 0, 0, 0);
-		}
-
 	}
 
 	/*S
@@ -526,6 +459,8 @@ namespace citrus {
 		//setupShell();
 
 		topBar = std::make_shared<horiBar>();
+		insp = std::make_shared<entityInspector>();
+		insp->man = man;
 
 		shared_ptr<button> fileButton = std::make_shared<button>();
 		fileButton->info = "File";
@@ -551,18 +486,6 @@ namespace citrus {
 		shared_ptr<button> toolsButton = std::make_shared<button>();
 		toolsButton->info = "Tools";
 		toolsButton->onClick = [this](button& b) {
-			auto inspectorButton = button::create("Inspector", [this](button& but) {
-				auto inspectorCont = std::make_shared<floatingContainer>();
-				inspectorCont->addButtons();
-				inspectorCont->title = "Entity Inspector";
-				inspectorCont->pos = this->cursorPx;
-
-				inspectorCont->updateFunc = [this, inspectorCont](ctEditor& ed) {
-					renderEntityInspector(inspectorCont);
-				};
-
-				floating.emplace_back(inspectorCont);
-			});
 			auto hierarchyButton = button::create("Scene Hierarchy", [this](button& but) {
 				auto hierarchyCont = std::make_shared<floatingContainer>();
 				weak_ptr<floatingContainer> weakRef = hierarchyCont;
@@ -576,12 +499,10 @@ namespace citrus {
 
 				floating.emplace_back(hierarchyCont);
 			});
-			auto editDropDown = dropDown::create("Tools->", { inspectorButton, hierarchyButton });
+			auto editDropDown = dropDown::create("Tools->", { hierarchyButton });
 			floating.emplace_back(editDropDown);
 		};
 		topBar->buttons.emplace_back(toolsButton);
-
-		topBar->render(ivec2(0, 0), currentViews, 0);
 
 		playing = true;
 	}

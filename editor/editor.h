@@ -6,6 +6,7 @@
 #include "gui.h"
 #include "../graphkern/camera.h"
 #include "../graphkern/immediatePass.h"
+#include "entityInspectorGUI.h"
 #include <memory>
 
 //#include <sol/sol.hpp>
@@ -15,9 +16,10 @@ namespace citrus {
 		public:
 		//sol::state lua;
 
-		vector<view> currentViews;
+		partial allViews;
 		shared_ptr<horiBar> topBar;
 		vector<shared_ptr<floatingGui>> floating;
+		shared_ptr<entityInspector> insp;
 
 		entRef hovered;
 		entRef selected;
@@ -75,5 +77,5 @@ namespace citrus {
 		ctEditor(manager *man, renderSystem *sys, window *win);
 	};
 
-	ctEditor* _globalEd; //bleh
+	static ctEditor* _globalEd; //bleh
 }

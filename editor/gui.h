@@ -129,14 +129,16 @@ namespace citrus {
 		ivec2 pos;
 		shared_ptr<button> pinButton;
 		shared_ptr<button> exitButton;
+		string title;
 		bool shouldClose = false;
 		bool shouldPin = false;
 		bool justCreated = true;
+		vector<weak_ptr<gui>> children();
 		void addButtons();
+		partial render();
 	};
 
 	struct floatingContainer : public floatingGui {
-		string title;
 		vector<shared_ptr<gui>> items;
 
 		vector<weak_ptr<gui>> children();
@@ -223,7 +225,6 @@ namespace citrus {
 
 
 	struct dropDown : public floatingGui {
-		string title;
 		vector<shared_ptr<button>> buttons;
 
 		vector<weak_ptr<gui>> children();

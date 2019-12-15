@@ -157,6 +157,7 @@ public:
 #ifdef CT_USE_EDITOR
 		lastSelectedIndex = 0;
 		ed = new ctEditor(&man, sys, &win);
+		_globalEd = ed;
 #endif
 	}
 	~engineProper() {

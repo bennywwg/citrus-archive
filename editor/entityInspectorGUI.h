@@ -7,7 +7,6 @@
 namespace citrus {
 	struct entityInspector : public floatingGui {
 	private:
-		manager* man;
 
 		struct eleNameBar {
 			shared_ptr<linearLayout> layout;
@@ -50,59 +49,37 @@ namespace citrus {
 			}
 		}
 	public:
+		manager* man;
 		
 		shared_ptr<vecField> vec, ori;
 
-
-
 		vector<weak_ptr<gui>> children() {
-			vector<weak_ptr<gui>> res;
-			if (pinButton) res.emplace_back(pinButton);
-			if (exitButton) res.emplace_back(exitButton);
-			for (int i = 0; i < items.size(); i++) {
-				res.emplace_back(items[i]);
+			vector<weak_ptr<gui>> res = floatingGui::children();
+
+			for (int i = 0; i < eleNames.size(); i++) {
+				res.emplace_back(eleNames[i].layout);
+				res.emplace_back(eles[i]);
 			}
+
 			return res;
 		}
-		ivec2 dimensions() {
-			int h = textHeight + margin;
-			int w = 
+		partial render() {
+			partial res;
+
+			res.appendDown(floatingGui::render());
 
 			for (int i = 0; i < eles.size(); i++) {
-				h += eleNames[i].layout->dimensions().y;
-				h += eles[i]->dimensions().y;
+				res.appendDown(eleNames[i].layout->render());
+				res.appendDown(eles[i]->render());
 			}
 
-
-		}
-		void render(ivec2 pos, vector<view>& views, float depth) {
-			int h = 0;
-			//render title
-			floatingGui::render(pos, views, depth);
-			{
-				views.emplace_back();
-				view& v = views.back();
-				v.text = "Entity Inspector";
-				v.loc = pos + ivec2(pinButton ? (margin + textWidth + margin) * 2 : 0, margin);
-				v.size = dimensions();
-				v.color = vec3(0.8f);
-				v.depth = depth;
-				v.owner = shared_from_this();
-				h = textHeight + margin;
-			}
-
-			for (int i = 0; i < eles.size(); i++) {
-				eleNames[i].layout->render(pos + ivec2(0, h), views, depth + 1.0f);
-				h += eleNames[i].layout->dimensions().y;
-				eles[i]->render(pos + ivec2(0, h), views, depth + 1.0f);
-				h += eles[i]->dimensions().y;
-			}
+			return res;
 		}
 
 		void setEnt(entRef ent) {
 			bool needToUpdate = (this->ent == ent);
 			this->ent = ent;
-			
+			if(needToUpdate) regenElements();
 		}
 
 		entityInspector() {
