@@ -60,6 +60,15 @@ namespace citrus {
 		}
 	}
 
+	void manager::elementInfo::renderGUI(vector<grouping> &groups) {
+		for (element* el = allocBegin; el; el = el->_state.next) {
+			if (el->_state._man) {
+				auto gp = el->renderGUI();
+				if (!gp.data.empty()) groups.push_back(gp);
+			}
+		}
+	}
+
 	// initialize this element data
 	void manager::elementInfo::elinit() {
 		data = (element*)calloc(maxEnts, size);
@@ -389,6 +398,12 @@ namespace citrus {
 	void manager::action() {
 		for (auto& kvp : _data) {
 			kvp.info->action();
+		}
+	}
+
+	void manager::renderGUI(vector<grouping> &groups) {
+		for (auto& kvp : _data) {
+			kvp.info->renderGUI(groups);
 		}
 	}
 

@@ -232,15 +232,18 @@ namespace citrus {
 
 		VkPipelineShaderStageCreateInfo stages[] = { vertInfo, fragInfo };
 
-		VkVertexInputBindingDescription bindingDescs[2] = { };
+		VkVertexInputBindingDescription bindingDescs[3] = { };
 		bindingDescs[0].binding = 0;
 		bindingDescs[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 		bindingDescs[0].stride = sizeof(vec3);
 		bindingDescs[1].binding = 1;
 		bindingDescs[1].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 		bindingDescs[1].stride = sizeof(vec2);
+		bindingDescs[2].binding = 2;
+		bindingDescs[2].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		bindingDescs[2].stride = sizeof(vec3);
 
-		VkVertexInputAttributeDescription attribDescs[2] = { };
+		VkVertexInputAttributeDescription attribDescs[3] = { };
 		attribDescs[0].binding = 0;
 		attribDescs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attribDescs[0].offset = 0;
@@ -249,17 +252,21 @@ namespace citrus {
 		attribDescs[1].format = VK_FORMAT_R32G32_SFLOAT;
 		attribDescs[1].offset = 0;
 		attribDescs[1].location = 1;
+		attribDescs[2].binding = 2;
+		attribDescs[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attribDescs[2].offset = 0;
+		attribDescs[2].location = 2;
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 2;
-		vertexInputInfo.vertexAttributeDescriptionCount = 2;
+		vertexInputInfo.vertexBindingDescriptionCount = 3;
+		vertexInputInfo.vertexAttributeDescriptionCount = 3;
 		vertexInputInfo.pVertexBindingDescriptions = bindingDescs;
 		vertexInputInfo.pVertexAttributeDescriptions = attribDescs;
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		inputAssembly.topology = wireframe ? VK_PRIMITIVE_TOPOLOGY_LINE_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
 		VkViewport viewport = {};
@@ -285,7 +292,7 @@ namespace citrus {
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rasterizer.depthClampEnable = VK_FALSE;
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizer.polygonMode = wireframe ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_NONE;
 		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
@@ -363,7 +370,7 @@ namespace citrus {
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
 
-		if (vkCreateGraphicsPipelines(sys.inst._device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) throw std::runtime_error("failed to create graphics pipeline!");
+		if (vkCreateGraphicsPipelines(sys.inst._device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) throw std::runtime_error("failed to create immediate pipeline!");
 
 		vkDestroyShaderModule(sys.inst._device, vertInfo._module, nullptr);
 		vkDestroyShaderModule(sys.inst._device, fragInfo._module, nullptr);
@@ -394,18 +401,24 @@ namespace citrus {
 
 		mat4 pixelSpaceMat = glm::translate(vec3(-1.0f, 1.0f, 0.0f)) * glm::scale(vec3(2.0f / (float)sys.inst.width, -2.0f / (float)sys.inst.height, 0.0f));
 
-		std::vector<uint64_t> vertOffsets, uvOffsets;
+		std::vector<uint64_t> vertOffsets, uvOffsets, barycentricOffsets;
 		std::vector<uint32_t> uniformOffsets;
 		if (active) {
 			uint64_t currentOffset = 0;
 			uint64_t currentUniformOffset = 0;
 			for (int i = 0; i < groupings.size(); i++) {
+				if (groupings[i].altData.size() < groupings[i].data.size()) groupings[i].altData.resize(groupings[i].data.size(), vec3(0.0f, 0.0f, 0.0f));
 				memcpy(verts[sys.frameIndex].mapped + currentOffset, groupings[i].data.data(), groupings[i].data.size() * sizeof(vec3));
 				vertOffsets.push_back(currentOffset);
 				currentOffset = roundUpAlign(currentOffset + groupings[i].data.size() * sizeof(vec3), verts[sys.frameIndex].align);
+
 				memcpy(verts[sys.frameIndex].mapped + currentOffset, groupings[i].uvdata.data(), groupings[i].uvdata.size() * sizeof(vec2));
 				uvOffsets.push_back(currentOffset);
 				currentOffset = roundUpAlign(currentOffset + groupings[i].uvdata.size() * sizeof(vec2), verts[sys.frameIndex].align);
+
+				memcpy(verts[sys.frameIndex].mapped + currentOffset, groupings[i].altData.data(), groupings[i].altData.size() * sizeof(vec3));
+				barycentricOffsets.push_back(currentOffset);
+				currentOffset = roundUpAlign(currentOffset + groupings[i].altData.size() * sizeof(vec3), verts[sys.frameIndex].align);
 
 				uniformBlock bk = { };
 				bk.color = vec4(groupings[i].color, 1.0f);
@@ -432,6 +445,7 @@ namespace citrus {
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = sys.inst._extent;
 
+		// regular rendering sections
 		vkCmdBeginRenderPass(buf, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		vkCmdBindPipeline(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
@@ -442,6 +456,7 @@ namespace citrus {
 
 				vkCmdBindVertexBuffers(buf, 0, 1, &verts[sys.frameIndex].buf, &vertOffsets[i]);
 				vkCmdBindVertexBuffers(buf, 1, 1, &verts[sys.frameIndex].buf, &uvOffsets[i]);
+				vkCmdBindVertexBuffers(buf, 2, 1, &verts[sys.frameIndex].buf, &barycentricOffsets[i]);
 
 				vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboSets[sys.frameIndex], 1, &uniformOffsets[i]);
 				vkCmdBindDescriptorSets(buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &texSet, 0, nullptr);
@@ -473,7 +488,8 @@ namespace citrus {
 	}
 	void immediatePass::postRender(uint32_t const& threadCount) {
 	}
-	immediatePass::immediatePass(renderSystem& sys, frameStore* fstore, fpath const& vert, fpath const& frag, bool transitionToRead) : sysNode(sys), frame(fstore) {
+	immediatePass::immediatePass(renderSystem& sys, frameStore* fstore, fpath const& vert, fpath const& frag, bool wireframe, bool transitionToRead) :
+		sysNode(sys), frame(fstore), wireframe(wireframe) {
 		this->transitionToRead = transitionToRead;
 
 		this->vert = vert;
@@ -494,16 +510,6 @@ namespace citrus {
 		initializePipelineLayout();
 		initializePipeline();
 		initializeFramebuffers();
-
-		{
-			groupings.push_back({});
-			grouping& gp = groupings.back();
-			gp.color = vec3(1.0f, 1.0f, 1.0f);
-			gp.tr = glm::identity<mat4>();
-			gp.pixelspace = true;
-			gp.addText("test!\nline2", 16, ivec2(0, 0));
-		}
-		
 	}
 	immediatePass::~immediatePass() {
 		vkDestroyDescriptorPool(sys.inst._device, uboPool, nullptr);
@@ -518,7 +524,9 @@ namespace citrus {
 			vkDestroyFramebuffer(sys.inst._device, fbos[i], nullptr);
 		}
 	}
-	void immediatePass::grouping::addText(string text, int px, ivec2 pos) {
+
+#ifdef CT_USE_EDITOR
+	void grouping::addText(string text, int px, ivec2 pos) {
 		if (uvdata.size() < data.size()) {
 			uvdata.resize(data.size(), vec2(0.0f, 0.0f));
 		}
@@ -556,7 +564,7 @@ namespace citrus {
 			xpos++;
 		}
 	}
-	void immediatePass::grouping::addCube(vec3 halfDims) {
+	void grouping::addCube(vec3 halfDims) {
 		data.emplace_back(-halfDims.x, -halfDims.y, halfDims.z);
 		data.emplace_back(halfDims.x, -halfDims.y, halfDims.z);
 		data.emplace_back(halfDims.x, halfDims.y, halfDims.z);
@@ -602,7 +610,43 @@ namespace citrus {
 			uvdata.resize(data.size(), vec2(0.0f, 0.0f));
 		}
 	}
-	void immediatePass::grouping::addTorus(float radMajor, float radMinor, uint32_t majorCount, uint32_t minorCount) {
+	void grouping::addSphere(float rad, int thetaCount, int phiCount) {
+		for (int i = 0; i < thetaCount; i++) {
+			float th0 = float(i) / float(thetaCount) * glm::pi<float>();
+			float th1 = float(i + 1) / float(thetaCount) * glm::pi<float>();
+			vec2 s0(rad * glm::sin(th0), rad * glm::cos(th0));
+			vec2 s1(rad * glm::sin(th1), rad * glm::cos(th1));
+			for (int j = 0; j < phiCount; j++) {
+				float ph0 = float(j) / float(phiCount) * glm::pi<float>() * 2.0f;
+				float ph1 = float(j + 1) / float(phiCount) * glm::pi<float>() * 2.0f;
+				vec2 ps0(glm::cos(ph0), glm::sin(ph0));
+				vec2 ps1(glm::cos(ph1), glm::sin(ph1));
+
+				if (j != phiCount - 1) {
+					data.emplace_back(s0.x * ps0.x, s0.y, s0.x * ps0.y);
+					data.emplace_back(s1.x * ps0.x, s1.y, s1.x * ps0.y);
+					data.emplace_back(s1.x * ps1.x, s1.y, s1.x * ps1.y);
+					altData.emplace_back(1.0f, 0.0f, 0.0f);
+					altData.emplace_back(0.0f, 1.0f, 0.0f);
+					altData.emplace_back(0.0f, 0.0f, 1.0f);
+				}
+
+				if (j != 0) {
+					data.emplace_back(s0.x * ps0.x, s0.y, s0.x * ps0.y);
+					data.emplace_back(s1.x * ps1.x, s1.y, s1.x * ps1.y);
+					data.emplace_back(s0.x * ps1.x, s0.y, s0.x * ps1.y);
+					altData.emplace_back(1.0f, 0.0f, 0.0f);
+					altData.emplace_back(0.0f, 1.0f, 0.0f);
+					altData.emplace_back(0.0f, 0.0f, 1.0f);
+				}
+			}
+		}
+
+		if (uvdata.size() < data.size()) {
+			uvdata.resize(data.size(), vec2(0.0f, 0.0f));
+		}
+	}
+	void grouping::addTorus(float radMajor, float radMinor, uint32_t majorCount, uint32_t minorCount) {
 		for (int i = 0; i < majorCount; i++) {
 			float ama0 = float(i) / float(majorCount) * glm::pi<float>() * 2.0f;
 			float ama1 = float(i + 1) / float(majorCount) * glm::pi<float>() * 2.0f;
@@ -631,7 +675,7 @@ namespace citrus {
 			uvdata.resize(data.size(), vec2(0.0f, 0.0f));
 		}
 	}
-	void immediatePass::grouping::addArrow(float rad, float len, uint32_t majorCount) {
+	void grouping::addArrow(float rad, float len, uint32_t majorCount) {
 		for (int i = 0; i < majorCount; i++) {
 			float ama0 = float(i) / float(majorCount) * glm::pi<float>() * 2.0f;
 			float ama1 = float(i + 1) / float(majorCount) * glm::pi<float>() * 2.0f;
@@ -656,4 +700,5 @@ namespace citrus {
 			uvdata.resize(data.size(), vec2(0.0f, 0.0f));
 		}
 	}
+#endif
 }

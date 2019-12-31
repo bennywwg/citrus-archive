@@ -23,6 +23,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "builtin", "builtin\defaulte
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "game", "game\mankern_test.vcxproj", "{BD705547-9348-4363-9D01-10BAD5125A7F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{DFD866B4-84B6-3A3D-A13B-EF74C2039C1E} = {DFD866B4-84B6-3A3D-A13B-EF74C2039C1E}
+		{0106C0DA-DC16-3BF4-A66E-0E4149ACB594} = {0106C0DA-DC16-3BF4-A66E-0E4149ACB594}
+		{FF24A6F1-A1CF-3C3D-99D6-04F2A828AA22} = {FF24A6F1-A1CF-3C3D-99D6-04F2A828AA22}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "editor", "editor\editor.vcxproj", "{6C587046-A9F0-4828-93CE-384190741B6C}"
 	ProjectSection(ProjectDependencies) = postProject

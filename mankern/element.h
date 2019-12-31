@@ -6,6 +6,7 @@
 #include "util.h"
 
 #include <nlohmann/json.hpp>
+#include "editorGrouping.h"
 
 namespace citrus {
 	class engine;
@@ -46,8 +47,8 @@ namespace citrus {
 		// general utilty
 		entRef		ent() const;
 
-#ifdef CITRUS_EDITOR
-		virtual std::unique_ptr<editor::gui> renderGUI();
+#ifdef CT_USE_EDITOR
+		virtual grouping renderGUI();
 #endif
 
 		// load from json

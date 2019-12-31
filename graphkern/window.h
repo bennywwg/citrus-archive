@@ -114,6 +114,11 @@ namespace citrus {
 				ctr_rstick_x = 5,
 				ctr_rstick_y = 6
 			};
+			enum cursor {
+				normalCursor = 0,
+				textCursor = 1,
+				clickCurso = 2
+			};
 
 			char toChar(button bu, bool shifted);
 		}
@@ -141,13 +146,19 @@ namespace citrus {
             
             instance *_inst;
 
+			GLFWcursor* _textCursor;
+			GLFWcursor* _normalCursor;
+			GLFWcursor* _clickCursor;
+
 			public:
 			bool shouldClose();
 
 			bool getKey(windowInput::button but);
 			glm::dvec2 getCursorPos();
 
-			float controlleValue(windowInput::analog a);
+			void setCursorType(windowInput::cursor c);
+
+			float controllerValue(windowInput::analog a);
 			bool  controllerButton(windowInput::button b);
 			std::vector<std::string> controllers();
 

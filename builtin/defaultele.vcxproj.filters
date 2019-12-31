@@ -39,12 +39,30 @@
     <ClInclude Include="common_ele.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="freeCam.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="collisionEle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="modelEle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="world.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rigidEle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="freeCam.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="collisionEle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

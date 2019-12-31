@@ -107,6 +107,8 @@ namespace citrus {
 
 			void action();
 
+			void renderGUI(vector<grouping> &groups);
+
 			// initialize this element data
 			void elinit();
 
@@ -160,6 +162,7 @@ public:
 		void						  flushToCreate();
 		void						 flushToDestroy();
 		void								 action();
+		void							  renderGUI(vector<grouping> &groups);
 
 		template<class T>
 		std::vector<eleRef<T>>				 ofType();

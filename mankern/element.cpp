@@ -2,11 +2,9 @@
 #include "entityRef.h"
 
 namespace citrus {
-#ifdef CITRUS_EDITOR
-	std::unique_ptr<editor::gui> element::renderGUI() {
-		editor::container* res = new editor::container();
-		res->title = "Implement the renderGUI() function for editing";
-		return std::unique_ptr<editor::gui>(res);
+#ifdef CT_USE_EDITOR
+	grouping element::renderGUI() {
+		return { };
 	}
 #endif
 

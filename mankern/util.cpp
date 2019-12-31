@@ -88,6 +88,40 @@ namespace citrus {
 	quat loadQuat(json q) {
 		return quat(q["w"].get<float>(), q["x"].get<float>(), q["y"].get<float>(), q["z"].get<float>());
 	}
+	std::vector<vec3> loadVec3Array(json v) {
+		if (!v.is_array()) return { };
+		json::array_t ar = v;
+		std::vector<vec3> res;
+		res.reserve(ar.size());
+		for (int i = 0; i < ar.size(); i++) {
+			res.push_back(loadVec3(v[i]));
+		}
+		return res;
+	}
+	std::vector<int> loadIntArray(json v) {
+		if (!v.is_array()) return { };
+		json::array_t ar = v;
+		std::vector<int> res;
+		res.reserve(ar.size());
+		for (int i = 0; i < ar.size(); i++) {
+			res.push_back(v[i].get<int>());
+		}
+		return res;
+	}
+	json save(std::vector<vec3> v) {
+		json::array_t ar;
+		for (int i = 0; i < v.size(); i++) {
+			ar.push_back(save(v[i]));
+		}
+		return ar;
+	}
+	json save(std::vector<int> v) {
+		json::array_t ar;
+		for (int i = 0; i < v.size(); i++) {
+			ar.push_back(v[i]);
+		}
+		return ar;
+	}
 	json save(transform trans) {
 		return json({
 			{"Position", save(trans.getPosition())},

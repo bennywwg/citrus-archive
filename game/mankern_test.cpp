@@ -11,6 +11,8 @@
 
 #include "../builtin/common_ele.h"
 
+#include "playerController.h"
+
 #define CT_USE_EDITOR
 
 #ifdef CT_USE_EDITOR
@@ -24,6 +26,8 @@ class engineProper {
 public:
 	fpath resDir;
 
+	bool edEnabled = true;
+
 	manager man;
 	window win;
 
@@ -35,6 +39,7 @@ public:
 	finalPass* fp = nullptr;
 	clearFrame* cf = nullptr;
 	immediatePass* ip = nullptr;
+	immediatePass* wip = nullptr;
 
 	world* wd = nullptr;
 
@@ -46,33 +51,40 @@ public:
 #endif
 
 	inline void buttonCB(windowInput::button b, int mode, int mods) {
-		if(mode == 1 || mode == 2) ed->keyDown(b);
+		if (mode == 1 || mode == 2) ed->keyDown(b);
+		if (mode == 1 && b == windowInput::escape) edEnabled = !edEnabled;
+		else ed->keyUp(b);
 	}
 
 	inline void run() {
 		win.setButtonCallback([this](windowInput::button b, int v2, int v3) {buttonCB(b, v2, v3); });
 
+		man.registerType<shapeEle>("shapeEle", true, wd);
+
+		man.registerType<collisionEle>("collisionEle", true, wd);
+
 		man.registerType<rigidEle>("rigidEle", true, wd);
 
 		man.registerType<sensorEle>("sensorEle", true, wd);
+
+		man.registerType<freeCam>("freeCam", true, sys);
+
+		man.registerType<playerController>("playerController", true, &win);
 
 		modelEleStruct st;
 		st.sys = sys;
 		st.time = &t;
 		man.registerType<modelEle>("modelEle", true, &st);
 
-		auto ent = man.create("test");
-		auto ent2 = man.create("test2");
-		ent2.setLocalPos(vec3(2.0f, 0.0f, 0.0f));
-		man.setRelation(ent, ent2);
-
-		auto ele = man.addElement<modelEle>(ent);
-		man.flushToCreate();
-		ele->setState(0, 0, 2);
-		ele->setNormalMap(3);
+		man.addElement<freeCam>(man.create("cam"));
 
 		while (!closed && !man.stopped()) {
-			if (ed->playing) {
+			bool stepFrame = true;
+#ifdef CT_USE_EDITOR
+			stepFrame = ed->playing;
+#endif // CT_USE_EDITOR
+
+			if (stepFrame) {
 				man.flushToDestroy();
 				man.flushToCreate();
 				man.action();
@@ -95,36 +107,46 @@ public:
 		win.poll();
 
 #ifdef CT_USE_EDITOR
-		cf->cursorX = (int)win.getCursorPos().x;
-		if (cf->cursorX >= win.framebufferSize().x) cf->cursorX = 0;
-		cf->cursorY = win.framebufferSize().y - (int)win.getCursorPos().y - 1;
-		if (cf->cursorY >= win.framebufferSize().y) cf->cursorY = 0;
+		if (edEnabled) {
+			cf->cursorX = (int)win.getCursorPos().x;
+			if (cf->cursorX >= win.framebufferSize().x) cf->cursorX = 0;
+			cf->cursorY = win.framebufferSize().y - (int)win.getCursorPos().y - 1;
+			if (cf->cursorY >= win.framebufferSize().y) cf->cursorY = 0;
 
-		ed->cursorPx = win.getCursorPos();
-		ed->cursor = vec2(win.getCursorPos()) / vec2(win.framebufferSize()) * 2.0f - 1.0f;
-		ed->cursor.y = -ed->cursor.y;
+			ed->cursorPx = win.getCursorPos();
+			ed->cursor = vec2(win.getCursorPos()) / vec2(win.framebufferSize()) * 2.0f - 1.0f;
+			ed->cursor.y = -ed->cursor.y;
 
-		ed->render(*ip);
-		if (win.getKey(windowInput::leftMouse)) {
-			if (!ed->dragged) {
-				ed->startDragPx = ed->cursorPx;
-				ed->startDrag = ed->cursor;
-				ed->mouseDown(lastSelectedIndex);
+			ed->render(*ip);
+			man.renderGUI(ip->groupings);
+			if (win.getKey(windowInput::leftMouse)) {
+				if (!ed->dragged) {
+					ed->startDragPx = ed->cursorPx;
+					ed->startDrag = ed->cursor;
+					ed->mouseDown(lastSelectedIndex);
+				}
+				ed->dragged = true;
+			} else {
+				if (ed->dragged) {
+					ed->mouseUp(lastSelectedIndex);
+				}
+				ed->dragged = false;
 			}
-			ed->dragged = true;
-		} else {
-			if (ed->dragged) {
-				ed->mouseUp(lastSelectedIndex);
-			}
-			ed->dragged = false;
+
+			wd->debugDraw();
 		}
 #endif // CT_USE_EDITOR
 
 		sys->render();
 
 #ifdef CT_USE_EDITOR
-		lastSelectedIndex = cf->selectedIndex;
-		ed->update(*ip, lastSelectedIndex);
+		if (edEnabled) {
+			lastSelectedIndex = cf->selectedIndex;
+			ed->update(*ip, lastSelectedIndex);
+		} else {
+			ip->groupings.clear();
+			wip->groupings.clear();
+		}
 #endif
 	}
 
@@ -135,21 +157,24 @@ public:
 			fs = new frameStore(*win.inst());
 			mp = new meshPass(*sys, fs, true, true, false, shaderPath / "standard.vert.spv", shaderPath / "standard.frag.spv", false);
 			bp = new meshPass(*sys, fs, true, true, true, shaderPath / "bones.vert.spv", shaderPath / "bones.frag.spv", false);
-			ip = new immediatePass(*sys, fs, shaderPath / "immediate.vert.spv", shaderPath / "immediate.frag.spv", true);
+			ip = new immediatePass(*sys, fs, shaderPath / "immediate.vert.spv", shaderPath / "immediate.frag.spv", false, false);
+			wip = new immediatePass(*sys, fs, shaderPath / "immediateWire.vert.spv", shaderPath / "immediateWire.frag.spv", true, true);
 			fp = new finalPass(*sys, win, *fs, shaderPath / "finalPass.vert.spv", shaderPath / "finalPass.frag.spv");
 			cf = new clearFrame(*sys, fs);
 
 			mp->addDependency(cf); mp->initialIndex = (1 << 14) + 1;
 			bp->addDependency(cf); bp->initialIndex = (1 << 14) + (1 << 13) + 1;
 			ip->addDependency(cf); ip->indexBits = (1 << 15);
+			wip->addDependency(cf); wip->addDependency(ip); wip->indexBits = (1 << 13);
 
 			fp->addDependency(mp);
 			fp->addDependency(bp);
 			fp->addDependency(ip);
+			fp->addDependency(wip);
 
-			sys->passes = { cf, mp, bp, ip, fp };
+			sys->passes = { cf, mp, bp, ip, wip, fp };
 
-			wd = new world();
+			wd = new world(*wip);
 		} catch (std::runtime_error const& re) {
 			std::cout << string(re.what()) << "\n";
 			throw re;
@@ -167,6 +192,7 @@ public:
 		delete cf;
 		delete fp;
 		delete ip;
+		delete wip;
 		delete bp;
 		delete mp;
 		delete fs;

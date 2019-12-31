@@ -7,6 +7,8 @@
 #include "../graphkern/immediatePass.h"
 #include "../mankern/manager.inl"
 #include "../builtin/modelEle.h"
+#include "entityInspectorGUI.h"
+#include "sceneHierarchyGUI.h"
 
 namespace citrus {
 	std::string dialogOpenFile(std::string ext) {
@@ -41,51 +43,33 @@ namespace citrus {
 	view* ctEditor::getHoveredView(ivec2 cursor) {
 		return allViews.getSelected(cursor);
 	}
-	weak_ptr<floatingGui> ctEditor::getHoveredFloating(ivec2 cursor) {
-		view* v = getHoveredView(cursor);
-		if (!v) return weak_ptr<floatingGui>();
-		for (int i = 0; i < floating.size(); i++) {
-			if (floating[i] == v->owner.lock()) {
-				return weak_ptr<floatingGui>(floating[i]);
-			}
-		}
-		return weak_ptr<floatingGui>();
-	}
 	void ctEditor::clearFloating(view* hovered) {
-		/*weak_ptr<gui> owner = hovered ? hovered->owner : weak_ptr<gui>();
-		shared_ptr<floatingGui> hoveredFloating = owner.expired() ? shared_ptr<floatingGui>() : std::dynamic_pointer_cast<floatingGui>(owner.lock()->topLevelParent().lock());
 		for (int i = 0; i < floating.size(); i++) {
 			if (floating[i]->justCreated) {
 				floating[i]->justCreated = false;
 				continue;
 			}
-			if (floating[i]->shouldClose || (!floating[i]->shouldPin && floating[i] != hoveredFloating)) {
+			if (floating[i]->shouldClose) {
 				floating.erase(floating.begin() + i);
 				i--;
 			}
-		}*/
+		}
 	}
 	void ctEditor::renderAllGui() {
 		allViews.views.clear();
 		for (auto& fl : floating) {
-			allViews.append(fl->render(), ivec2(0, 0));
+			allViews.append(fl->render(), fl->pos);
 		}
-		allViews.append(insp->render(), ivec2(0, 0));
 		allViews.append(topBar->render(), ivec2(0, 0));
 	}
+
 	void ctEditor::mouseDown(uint16_t const& selectedIndex) {
 		view* topView = getHoveredView(cursorPx);
 
-		draggedGui = getHoveredFloating(cursorPx);
-		if (!draggedGui.expired()) {
-			draggedGuiStart = draggedGui.lock()->pos;
+		for (auto& fl : floating) {
+			fl->propMouseDown(*this, cursorPx, topView);
 		}
-
-		if (topView) {
-			if (!topView->owner.expired()) {
-				topView->owner.lock()->mouseDown(cursorPx, topView->loc);
-			}
-		}
+		topBar->propMouseDown(*this, cursorPx, topView);
 
 		clearFloating(topView);
 
@@ -110,7 +94,10 @@ namespace citrus {
 	void ctEditor::mouseUp(uint16_t const& selectedIndex) {
 		view* topView = getHoveredView(cursorPx);
 
-		draggedGui.reset();
+		for (auto& fl : floating) {
+			fl->propMouseUp(*this, cursorPx, topView);
+		}
+		topBar->propMouseUp(*this, cursorPx, topView);
 
 		if (cursorPx == startDragPx && !topView) {
 			selected = hovered;
@@ -118,22 +105,58 @@ namespace citrus {
 
 		draggingEntity = false;
 	}
-
-	bool ctEditor::anyCapturing() {
-		if (topBar->captureInput()) return true;
-		for (int i = 0; i < floating.size(); i++)
-			if (floating[i]->captureInput()) return true;
-		return false;
-	}
 	void ctEditor::keyDown(windowInput::button b) {
 		for (int i = 0; i < floating.size(); i++) {
-			if(floating[i]->captureInput()) floating[i]->keyDown(b);
+			floating[i]->propKeyDown(*this, b);
 		}
+	}
+	void ctEditor::keyUp(windowInput::button b) {
+		for (int i = 0; i < floating.size(); i++) {
+			floating[i]->propKeyUp(*this, b);
+		}
+	}
+	void ctEditor::update(immediatePass& ipass, uint16_t const& selectedIndex) {
+		auto const& items = man->ofType<modelEle>();
+		hovered = entRef();
+		for (auto const& ele : items) {
+			if (sys->meshPasses[ele->materialIndex]->initialIndex + ele->itemIndex == selectedIndex) {
+				hovered = ele->ent();
+			}
+		}
+
+		insp->setEnt(selected);
+
+		topBar->propUpdate(*this);
+		for (auto& dd : floating) {
+			dd->propUpdate(*this);
+		}
+
+		renderAllGui();
+
+		view* cv = getHoveredView(cursorPx);
+		if (cv) {
+			if (cv->type == viewType::fieldType) {
+				win->setCursorType(windowInput::textCursor);
+			} else if (cv->type == viewType::buttonType) {
+				win->setCursorType(windowInput::clickCurso);
+			}
+		} else {
+			win->setCursorType(windowInput::normalCursor);
+		}
+
+		if (draggingEntity) {
+			float firstDot = glm::dot(transDir, startDrag);
+			float secondDot = glm::dot(transDir, cursor);
+			selected.setLocalPos(entityStartLocal + (secondDot - firstDot) * localTransDir);
+		}
+
+		updateCam();
+
+		sys->frameCam = cam;
 	}
 
 	void ctEditor::updateCam() {
-		if (!anyCapturing()) {
-
+		if (numFocused == 0) {
 			float navSpeed = 0.05f;
 			float rotSpeed = 0.01f;
 			vec3 dir = vec3();
@@ -176,48 +199,6 @@ namespace citrus {
 			vec3 camDir = vec3(glm::toMat4(cam.ori) * vec4(dir, 0.0f));
 			cam.pos += camDir;
 		}
-	}
-	void ctEditor::update(immediatePass& ipass, uint16_t const& selectedIndex) {
-		auto const& items = man->ofType<modelEle>();
-		hovered = entRef();
-		for (auto const& ele : items) {
-			if (sys->meshPasses[ele->materialIndex]->initialIndex + ele->itemIndex == selectedIndex) {
-				hovered = ele->ent();
-			}
-		}
-
-		if (!draggedGui.expired()) {
-			draggedGui.lock()->pos = draggedGuiStart + (cursorPx - startDragPx);
-			renderAllGui();
-		}
-
-		topBar->update(*this);
-		for (auto& dd : floating) {
-			dd->update(*this);
-		}
-
-		renderAllGui();
-
-		/*std::lock_guard<std::mutex> lock(toExecMut);
-		for (int i = 0; i < toExec.size(); i++) {
-			try {
-				auto res = lua.script(toExec[i]);
-			}
-			catch (std::runtime_error const& ex) {
-				std::cout << ex.what() << "\n";
-			}
-		}
-		toExec.clear();*/
-
-		if (draggingEntity) {
-			float firstDot = glm::dot(transDir, startDrag);
-			float secondDot = glm::dot(transDir, cursor);
-			selected.setLocalPos(entityStartLocal + (secondDot - firstDot) * localTransDir);
-		}
-
-		updateCam();
-
-		sys->frameCam = cam;
 	}
 
 	void ctEditor::render(immediatePass& ipass) {
@@ -285,10 +266,19 @@ namespace citrus {
 		}
 
 		for (auto const& view : allViews.views) {
-			immediatePass::grouping gp = { };
+			grouping gp = { };
 			gp.color = view.color;
 			gp.pixelspace = true;
 			gp.tr = glm::identity<mat4>();
+			gp.data = {
+				vec3(view.loc.x, view.loc.y, 0),
+				vec3(view.loc.x, view.loc.y + view.size.y, 0),
+				vec3(view.loc.x + view.size.x, view.loc.y + view.size.y, 0),
+
+				vec3(view.loc.x, view.loc.y, 0),
+				vec3(view.loc.x + view.size.x, view.loc.y + view.size.y, 0),
+				vec3(view.loc.x + view.size.x, view.loc.y, 0),
+			};
 
 			gp.addText(view.text, 16, view.loc);
 
@@ -296,55 +286,7 @@ namespace citrus {
 		}
 	}
 
-	void ctEditor::addToScenceHierarchy(weak_ptr<floatingContainer> weakRef, entRef ent, int level) {
-		auto bar = std::make_shared<linearLayout>();
-		bar->direction = linearLayout::right;
-
-		auto delButton = std::make_shared<button>();
-		delButton->info = "del";
-		delButton->onClick = [this, ent](button& b) {
-			man->destroy(ent);
-		};
-
-		auto selectButton = std::make_shared<button>();
-		selectButton->info = "sel" + std::string(level * 2, '-');
-		selectButton->onClick = [this, ent](button& b) {
-			selected = ent;
-		};
-
-		auto nameField = std::make_shared<textField>();
-		nameField->setState(ent.name());
-		if (ent == selected) {
-			nameField->color = vec3(1.0f, 0.5f, 0.5f);
-		}
-
-		bar->items = { delButton, selectButton, nameField };
-
-		weakRef.lock()->items.push_back(bar);
-
-		for (auto const& child : ent.getChildren()) {
-			addToScenceHierarchy(weakRef, child, level + 1);
-		}
-	}
-	void ctEditor::renderSceneHierarchy(weak_ptr<floatingContainer> weakRef) {
-		weakRef.lock()->items.clear();
-
-		auto createButton = std::make_shared<button>();
-		createButton->info = "Create Entity";
-		createButton->onClick = [this](button& b) {
-			selected = man->create("Unnamed");
-		};
-		weakRef.lock()->items.push_back(createButton);
-
-		auto ents = man->allEnts();
-		for (entRef const& ent : ents) {
-			if (!ent.getParent()) {
-				addToScenceHierarchy(weakRef, ent, 0);
-			}
-		}
-	}
-
-	/*S
+	/*
 	void ctEditor::setupShell() {
 		lua.open_libraries(sol::lib::base, sol::lib::package);
 
@@ -458,51 +400,40 @@ namespace citrus {
 	ctEditor::ctEditor(manager *man, renderSystem *sys, window *win) : man(man), sys(sys), win(win) {
 		//setupShell();
 
-		topBar = std::make_shared<horiBar>();
-		insp = std::make_shared<entityInspector>();
-		insp->man = man;
+		topBar = std::make_shared<horiBar>(*this);
 
-		shared_ptr<button> fileButton = std::make_shared<button>();
+		insp = std::make_shared<entityInspector>(*this);
+		insp->addButtons();
+		insp->man = man;
+		insp->pos = ivec2(100, 100);
+		floating.push_back(insp);
+
+		hier = std::make_shared<sceneHierarchy>(*this);
+		hier->addButtons();
+		hier->man = man;
+		hier->pos = ivec2(500, 100);
+		floating.push_back(hier);
+
+		shared_ptr<button> fileButton = std::make_shared<button>(*this);
 		fileButton->info = "File";
 		fileButton->onClick = [this](button& b) {
-			auto saveButton = button::create("Save Scene", [](button& but) { std::cout << "Save Scene = " << dialogSaveFile("cts") << "\n"; } );
-			auto loadButton = button::create("Load Scene", [](button& but) { std::cout << "Load Scene = " << dialogOpenFile("cts") << "\n"; } );
-			auto exitButton = button::create("Exit", [this](button& but) { this->man->stop(); } );
-			auto fileDropDown = dropDown::create("File->", { saveButton, loadButton, exitButton });
+			auto saveButton = button::create(*this, "Save Scene", [](button& but) { std::cout << "Save Scene = " << dialogSaveFile("cts") << "\n"; } );
+			auto loadButton = button::create(*this, "Load Scene", [](button& but) { std::cout << "Load Scene = " << dialogOpenFile("cts") << "\n"; } );
+			auto exitButton = button::create(*this, "Exit", [this](button& but) { this->man->stop(); } );
+			auto fileDropDown = dropDown::create(*this, "File->", { saveButton, loadButton, exitButton });
 			floating.emplace_back(fileDropDown);
 		};
 		topBar->buttons.emplace_back(fileButton);
 
-		shared_ptr<button> editButton = std::make_shared<button>();
+		shared_ptr<button> editButton = std::make_shared<button>(*this);
 		editButton->info = "Edit";
 		editButton->onClick = [this](button& b) {
-			auto playButton = button::create("Play", [this](button& but) { playing = true; });
-			auto pauseButton = button::create("Pause", [this](button& but) { playing = false; });
-			auto editDropDown = dropDown::create("Edit->", { playButton, pauseButton });
+			auto playButton = button::create(*this, "Play", [this](button& but) { playing = true; });
+			auto pauseButton = button::create(*this, "Pause", [this](button& but) { playing = false; });
+			auto editDropDown = dropDown::create(*this, "Edit->", { playButton, pauseButton });
 			floating.emplace_back(editDropDown);
 		};
 		topBar->buttons.emplace_back(editButton);
-		
-		shared_ptr<button> toolsButton = std::make_shared<button>();
-		toolsButton->info = "Tools";
-		toolsButton->onClick = [this](button& b) {
-			auto hierarchyButton = button::create("Scene Hierarchy", [this](button& but) {
-				auto hierarchyCont = std::make_shared<floatingContainer>();
-				weak_ptr<floatingContainer> weakRef = hierarchyCont;
-				hierarchyCont->addButtons();
-				hierarchyCont->title = "Scene Hierarchy";
-				hierarchyCont->pos = this->cursorPx;
-
-				hierarchyCont->updateFunc = [this, weakRef](ctEditor& ed) {
-					renderSceneHierarchy(weakRef);
-				};
-
-				floating.emplace_back(hierarchyCont);
-			});
-			auto editDropDown = dropDown::create("Tools->", { hierarchyButton });
-			floating.emplace_back(editDropDown);
-		};
-		topBar->buttons.emplace_back(toolsButton);
 
 		playing = true;
 	}

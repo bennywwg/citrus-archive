@@ -214,7 +214,7 @@ namespace citrus {
 			return {};
 		}
 	}
-	float window::controlleValue(windowInput::analog a) {
+	float window::controllerValue(windowInput::analog a) {
 		if(!glfwJoystickPresent(GLFW_JOYSTICK_1)) {
 			return 0.0f;
 		}
@@ -247,6 +247,10 @@ namespace citrus {
 	}
 	glm::dvec2 window::getCursorPos() {
 		return _cursorPos;
+	}
+	void window::setCursorType(windowInput::cursor c) {
+		GLFWcursor* cursors[3] = { _normalCursor, _textCursor, _clickCursor };
+		glfwSetCursor(_win, cursors[(int)c]);
 	}
 	glm::ivec2 window::framebufferSize() {
 		int width, height;
@@ -311,6 +315,10 @@ namespace citrus {
 		glfwWindowHint(GLFW_RESIZABLE, false);
 		//glfwWindowHint(GLFW_DECORATED, false);
 		_win = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
+
+		_normalCursor = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+		_textCursor = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+		_clickCursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
 
 		glfwSetDropCallback(_win, dropFun);
 

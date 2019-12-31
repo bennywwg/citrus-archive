@@ -6,24 +6,29 @@
 #include "gui.h"
 #include "../graphkern/camera.h"
 #include "../graphkern/immediatePass.h"
-#include "entityInspectorGUI.h"
 #include <memory>
 
 //#include <sol/sol.hpp>
 
 namespace citrus {
+	class entityInspector;
+	class sceneHierarchy;
+
 	class ctEditor {
-		public:
+	public:
 		//sol::state lua;
 
 		partial allViews;
 		shared_ptr<horiBar> topBar;
 		vector<shared_ptr<floatingGui>> floating;
 		shared_ptr<entityInspector> insp;
-
+		shared_ptr<sceneHierarchy> hier;
+		
 		entRef hovered;
 		entRef selected;
 		std::map<int64_t, bool> expanded;
+
+		int numFocused = 0;
 
 		float rx = 0.0f;
 		float ry = 0.0f;
@@ -35,8 +40,6 @@ namespace citrus {
 		bool dragged = false;
 		vec2 startDrag;
 		ivec2 startDragPx;
-		weak_ptr<floatingGui> draggedGui;
-		ivec2 draggedGuiStart;
 
 		// entity transformation stuff
 		vec2 transDir;
@@ -53,21 +56,17 @@ namespace citrus {
 		window *win;
 
 		view* getHoveredView(ivec2 cursor);
-		weak_ptr<floatingGui> getHoveredFloating(ivec2 cursor);
 		void clearFloating(view* hovered);
 		void renderAllGui();
+
 		void mouseDown(uint16_t const& selectedIndex);
 		void mouseUp(uint16_t const& selectedIndex);
 		void keyDown(windowInput::button);
-		bool anyCapturing();
+		void keyUp(windowInput::button);
+		void update(immediatePass& ipass, uint16_t const& selectedIndex);
 
 		void updateCam();
-		void update(immediatePass& ipass, uint16_t const& selectedIndex);
 		void render(immediatePass & ipass);
-
-		void addToScenceHierarchy(weak_ptr<floatingContainer> weakRef, entRef ent, int level);
-		void renderSceneHierarchy(weak_ptr<floatingContainer> weakRef);
-		void renderEntityInspector( weak_ptr<floatingContainer> weakRef);
 
 		vector<string> toExec;
 		std::mutex toExecMut;

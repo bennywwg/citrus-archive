@@ -1,14 +1,11 @@
 #pragma once
 
-#include "citrus/engine/element.h"
-#include "citrus/engine/engine.h"
-#include "citrus/engine/freeCam.h"
-#include "citrus/engine/rigidBodyComponent.h"
-#include "citrus/engine/meshFilter.h"
+#include "../mankern/element.h"
+#include "../mankern/elementRef.h"
+#include "../builtin/freeCam.h"
+#include "../builtin/rigidEle.h"
 
-namespace citrus::engine {
-	using namespace graphics::windowInput;
-
+namespace citrus {
 	class playerController : public element {
 	public:
 		float minDist = 2.0f, maxDist = 160.0f;
@@ -19,18 +16,19 @@ namespace citrus::engine {
 		bool fired = false;
 		bool walking = false;
 
+		window* const win;
+
 		eleRef<freeCam> cam;
-		eleRef<meshFilter> m;
+
+		eleRef<rigidEle> body;
 
 		float navSpeed = 2.0f;
 
 		void cameraStuff();
 		void movementStuff();
 		void actionStuff();
-		void preRender();
-
-		string name() const;
+		void action();
 		
-		playerController(entityRef ent);
+		playerController(entRef const& ent, manager& man, void* usr);
 	};
 }

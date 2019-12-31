@@ -124,7 +124,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;BT_USE_DOUBLE_PRECISION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -197,6 +197,7 @@
     <Import Project="..\packages\LodePNG.1.1.0\build\native\lodepng.targets" Condition="Exists('..\packages\LodePNG.1.1.0\build\native\lodepng.targets')" />
     <Import Project="..\packages\glfw.3.3.0.1\build\native\glfw.targets" Condition="Exists('..\packages\glfw.3.3.0.1\build\native\glfw.targets')" />
     <Import Project="..\packages\glm.0.9.9.600\build\native\glm.targets" Condition="Exists('..\packages\glm.0.9.9.600\build\native\glm.targets')" />
+    <Import Project="..\packages\nlohmann.json.3.7.3\build\native\nlohmann.json.targets" Condition="Exists('..\packages\nlohmann.json.3.7.3\build\native\nlohmann.json.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -207,5 +208,6 @@
     <Error Condition="!Exists('..\packages\LodePNG.1.1.0\build\native\lodepng.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\LodePNG.1.1.0\build\native\lodepng.targets'))" />
     <Error Condition="!Exists('..\packages\glfw.3.3.0.1\build\native\glfw.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glfw.3.3.0.1\build\native\glfw.targets'))" />
     <Error Condition="!Exists('..\packages\glm.0.9.9.600\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glm.0.9.9.600\build\native\glm.targets'))" />
+    <Error Condition="!Exists('..\packages\nlohmann.json.3.7.3\build\native\nlohmann.json.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\nlohmann.json.3.7.3\build\native\nlohmann.json.targets'))" />
   </Target>
 </Project>

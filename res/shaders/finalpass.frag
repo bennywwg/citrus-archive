@@ -63,6 +63,6 @@ void main() {
 	if(texture(indexTex, fragUVCoord).r == 0) {
 		color = texture(cubeMap, dir);
 	} else {
-		color = texture(colorTex, fragUVCoord) * idif(fragUVCoord);
+		color = texture(colorTex, fragUVCoord);// * idif(fragUVCoord);
 	}
 }

@@ -53,6 +53,9 @@
     <ClInclude Include="exceptions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="editorGrouping.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

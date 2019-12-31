@@ -9,30 +9,19 @@
 #include "shape.h"
 #include "util.h"
 
+#include "../graphkern/immediatePass.h"
+
 namespace citrus {
+	class ctBulletDebugDraw;
+
 	class worldShape {
 	public:
 		btCollisionShape *wdshape; // don't mess with
+		btScalar *verts;
+		int *indices;
 
-		inline worldShape(shape const& s) {
-			if (s.type == shapeType::sphere) {
-				wdshape = new btSphereShape(s.state.r);
-			} else if (s.type == shapeType::box) {
-				wdshape = new btBoxShape(glmToBt(s.state));
-			} else if (s.type == shapeType::hull) {
-				std::vector<btVector3> btVerts;
-				btVerts.resize(s.points.size());
-				for (size_t i = 0; i < s.points.size(); i++) {
-					btVerts[i] = btVector3(s.points[i].x, s.points[i].y, s.points[i].z);
-				}
-				wdshape = new btConvexHullShape((btScalar*)btVerts.data(), btVerts.size(), sizeof(btVector3));
-			} else {
-				wdshape = nullptr;
-			}
-		}
-		inline ~worldShape() {
-			if(wdshape) delete wdshape;
-		}
+		worldShape(shape const& s);
+		~worldShape();
 	};
 
 	class /*za*/ world /*o*/ {
@@ -40,6 +29,7 @@ namespace citrus {
 		friend class sensor;
 
 	public:
+		ctBulletDebugDraw* dbdraw;
 
 		std::unique_ptr<btCollisionConfiguration> _collisionConfiguration;
 		std::unique_ptr<btDispatcher> _dispatcher;
@@ -48,42 +38,19 @@ namespace citrus {
 		std::unique_ptr<btDynamicsWorld> _world;
 
 		std::set<btRigidBody*> bodies;
-		std::set< btGhostObject*> ghosts;
+		std::set<btCollisionObject*> objects;
+		std::set<btGhostObject*> ghosts;
 
-		void addBody(btRigidBody* body) {
-			_world->addRigidBody(body);
-			_world->computeOverlappingPairs();
-			bodies.insert(body);
-		}
-		void removeBody(btRigidBody* body) {
-			_world->removeRigidBody(body);
-			_world->computeOverlappingPairs();
-			bodies.erase(body);
-		}
-		void addSensor(btGhostObject* se) {
-			_world->addCollisionObject(se);
-			_world->computeOverlappingPairs();
-			ghosts.insert(se);
-		}
-		void removeSensor(btGhostObject* se) {
-			_world->removeCollisionObject(se);
-			_world->computeOverlappingPairs();
-			ghosts.erase(se);
-		}
+		void addBody(btRigidBody* body);
+		void removeBody(btRigidBody* body);
+		void addSensor(btGhostObject* se);
+		void removeSensor(btGhostObject* se);
+		void addObject(btCollisionObject* object);
+		void removeObject(btCollisionObject* object);
+		void debugDraw();
 
-		inline void step() {
-			_world->stepSimulation(0.01f, 1, 0.01f);
-		}
+		void step();
 
-		inline world() :
-			_collisionConfiguration(new btDefaultCollisionConfiguration()),
-			_dispatcher(new btCollisionDispatcher(_collisionConfiguration.get())),
-			_broadphaseInterface(new btDbvtBroadphase()),
-			_constraintSolver(new btSequentialImpulseConstraintSolver()),
-			_world(new btDiscreteDynamicsWorld(_dispatcher.get(), _broadphaseInterface.get(), _constraintSolver.get(), _collisionConfiguration.get()))
-		{
-				_world->setGravity(btVector3(0.0, -9.81, 0.0));
-				_world->getPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
-		}
+		world(immediatePass& pass);
 	};
 }

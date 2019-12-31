@@ -179,7 +179,6 @@ namespace citrus {
 	public:
 		std::string					name;
 
-	private:
 		std::vector<uint16_t>		index;
 		std::vector<vec3>			pos;
 		std::vector<vec3>			norm;
@@ -192,6 +191,7 @@ namespace citrus {
 		std::vector<float>			weight0;
 		std::vector<float>			weight1;
 
+	private:
 		nodeContainer			nodes;
 		boneContainer			bones;
 		std::vector<aniBinding>	animations;

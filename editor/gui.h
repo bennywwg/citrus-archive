@@ -26,7 +26,8 @@ namespace citrus {
 		noType,
 		handleType,
 		buttonType,
-		fieldType
+		fieldType,
+		dropTarget
 	};
 
 	struct gui;
@@ -39,7 +40,7 @@ namespace citrus {
 		string text;
 		vec3 color;
 		weak_ptr<gui> owner;
-		viewType type;
+		viewType type = viewType::noType;
 		void sizeFromText(bool useMargin = false) {
 			size = ivec2((useMargin ? margin * 2 : 0) + text.length() * textWidth, (useMargin ? margin * 2 : 0) + textHeight);
 			for (char c : text) if (c == '\n') size.y += textHeight;
@@ -77,30 +78,44 @@ namespace citrus {
 		void appendDown(partial const& other) {
 			append(other, ivec2(0, dimensions().y));
 		}
-		void translate(ivec2 trans) {
+		partial& translate(ivec2 trans) {
 			for (view& v : views) {
 				v.loc += trans;
 			}
+			return *this;
 		}
+		partial() = default;
+		partial(view const& v) : views({ v }) { }
 	};
 
 	struct gui : std::enable_shared_from_this<gui> {
-		std::function<void(ctEditor&)> updateFunc;
+		void propMouseDown(ctEditor& ed, ivec2 cursor, view* selectedView);
+		void propMouseUp(ctEditor& ed, ivec2 cursor, view* selectedView);
+		void propKeyDown(ctEditor& ed, windowInput::button b);
+		void propKeyUp(ctEditor& ed, windowInput::button b);
+		void propUpdate(ctEditor& ed);
+		vector<weak_ptr<gui>> allSubChildren();
 
-		virtual void mouseDown(ivec2 cursor, ivec2 myPos) { }
-		virtual void mouseDragged(ivec2 cursor, ivec2 myPos) { }
-		virtual void mouseUp(ivec2 cursor, ivec2 myPos) { }
-		virtual void keyDown(windowInput::button b) { for (auto child : children()) child.lock()->keyDown(b); }
-		virtual bool captureInput() { for (auto child : children()) if (child.lock()->captureInput()) return true; return false; }
-		virtual vector<weak_ptr<gui>> children() { throw ::std::runtime_error("gui::children"); }
-		inline void update(ctEditor& ed) { if (updateFunc) updateFunc(ed); for (auto& child : children()) if (!child.expired()) child.lock()->update(ed); }
-		virtual partial render() { throw ::std::runtime_error("gui::render"); }
+		virtual void mouseDown(ctEditor& ed, ivec2 cursor, view* selectedView);
+		virtual void mouseUp(ctEditor& ed, ivec2 cursor, view* selectedView);
+		virtual void keyDown(ctEditor& ed, windowInput::button b);
+		virtual void keyUp(ctEditor& ed, windowInput::button b);
+		virtual void update(ctEditor& ed);
+
+		virtual vector<weak_ptr<gui>> children();
+
+		virtual partial render();
+
+		ctEditor &_ed;
+
+		gui(ctEditor& ed);
 		virtual ~gui() = default;
 	};
 
 	// just a gui with no children
 	struct guiLeaf : public gui {
 		vector<weak_ptr<gui>> children();
+		guiLeaf(ctEditor& ed);
 	};
 
 	struct linearLayout : public gui {
@@ -113,6 +128,8 @@ namespace citrus {
 
 		vector<weak_ptr<gui>> children();
 		partial render();
+
+		linearLayout(ctEditor& ed);
 	};
 
 	struct button : public guiLeaf {
@@ -120,22 +137,29 @@ namespace citrus {
 		function<void(button&)> onClick;
 
 		partial render();
-		void mouseDown(ivec2 cursor, ivec2 myPos);
+		void mouseDown(ctEditor& ed, ivec2 cursor, view *selectedView);
 
-		static shared_ptr<button> create(string const& info, function<void(button&)> click);
+		button(ctEditor& ed);
+
+		static shared_ptr<button> create(ctEditor &ed, string const& info, function<void(button&)> click);
 	};
 
 	struct floatingGui : public gui {
-		ivec2 pos;
+		ivec2 pos = ivec2(0, 0);
+		ivec2 dragStart = ivec2(0, 0);
+		bool beingDragged = false;
 		shared_ptr<button> pinButton;
 		shared_ptr<button> exitButton;
 		string title;
 		bool shouldClose = false;
 		bool shouldPin = false;
 		bool justCreated = true;
+		void mouseDown(ctEditor& ed, ivec2 cursor, view* selectedView);
+		void mouseUp(ctEditor& ed, ivec2 cursor, view* selectedView);
 		vector<weak_ptr<gui>> children();
-		void addButtons();
+		virtual void addButtons();
 		partial render();
+		floatingGui(ctEditor& ed);
 	};
 
 	struct floatingContainer : public floatingGui {
@@ -143,6 +167,8 @@ namespace citrus {
 
 		vector<weak_ptr<gui>> children();
 		partial render();
+
+		floatingContainer(ctEditor& ed);
 	};
 
 	/*struct toggle : public guiLeaf {
@@ -170,24 +196,14 @@ namespace citrus {
 		std::function<void(string)> updateFunc;
 
 		string info;
-		string state() {
-			if (stringIndex == -1) return _state;
-			string res = _state;
-			res += "_";
-			if (res[stringIndex] == '\n') {
-				res.insert(res.begin() + stringIndex, 'X');
-			} else {
-				res[stringIndex] = 'X';
-			}
-
-			return res;
-		}
+		string state();
 		vec3 color = vec3(1.0f, 1.0f, 1.0f);
 		function<void(textField&, string)> onChange;
 
 		int stringIndex = -1; // ∈ [0, state.size()]
 		bool focused = false;
 		bool editable = false;
+		bool modified = false;
 
 		// shifts cursor maximally to left and returns number of characters passed along the way
 		int home();
@@ -200,20 +216,32 @@ namespace citrus {
 
 		void setState(string st);
 
-		void mouseDown(ivec2 cursor, ivec2 myPos);
-		void keyDown(windowInput::button bu);
-
-		bool captureInput();
+		void mouseDown(ctEditor& ed, ivec2 cursor, view *selectedView);
+		void keyDown(ctEditor& ed, windowInput::button bu);
+		void keyUp(ctEditor& ed, windowInput::button bu);
 
 		partial render();
+
+		textField(ctEditor& ed);
+		~textField();
 	};
 
-	struct vecField : public guiLeaf {
+	struct vecField : public gui {
+	private:
 		int charsPerFloat = 10;
 		int numComponents = 3;
-		vec4 vec;
+		vec4 _vec;
+		vector<shared_ptr<textField>> items;
+		shared_ptr<linearLayout> fields;
+	public:
 
+		vector<weak_ptr<gui>> children();
 		partial render();
+
+		void setState(vec4 vec);
+		vec4 getState();
+
+		vecField(ctEditor& ed, int numComponents);
 	};
 
 	struct horiBar : public gui {
@@ -221,6 +249,8 @@ namespace citrus {
 
 		vector<weak_ptr<gui>> children();
 		partial render();
+
+		horiBar(ctEditor& ed);
 	};
 
 
@@ -230,6 +260,8 @@ namespace citrus {
 		vector<weak_ptr<gui>> children();
 		partial render();
 
-		static shared_ptr<dropDown> create(string const& title, vector<shared_ptr<button>> const& buts);
+		dropDown(ctEditor& ed);
+
+		static shared_ptr<dropDown> create(ctEditor& ed, string const& title, vector<shared_ptr<button>> const& buts);
 	};
 }

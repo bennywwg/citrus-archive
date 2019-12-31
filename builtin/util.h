@@ -12,4 +12,6 @@ namespace citrus {
 	quat btToGlm(btQuaternion ori);
 	btQuaternion glmToBt(quat quat);
 	btTransform glmToBt(transform tr);
+
+	void cappedCylinder_py(int segments, float rad, float len, mat4 tr, std::vector<vec3>& v);
 }

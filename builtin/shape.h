@@ -7,7 +7,9 @@ namespace citrus {
 		none = 0,
 		sphere = 1,
 		box = 2,
-		hull = 3
+		hull = 3,
+		triangleMesh = 4, // static only
+		capsule = 5,
 	};
 
 	class shape {
@@ -16,9 +18,9 @@ namespace citrus {
 
 		vec3 state;
 
-		std::vector<vec3> points;
+		std::vector<vec3> verts;
+		std::vector<int> indices;
 
-		inline shape() : type(shapeType::none), state(1.f, 1.f, 1.f) {
-		}
+		inline shape() : type(shapeType::none), state(1.f, 1.f, 1.f) { }
 	};
 }

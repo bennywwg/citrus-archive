@@ -72,6 +72,10 @@ namespace citrus {
 	vec3 loadVec3(json vec);
 	vec4 loadVec4(json vec);
 	quat loadQuat(json q);
+	std::vector<vec3> loadVec3Array(json v);
+	std::vector<int> loadIntArray(json v);
+	json save(std::vector<vec3> v);
+	json save(std::vector<int> v);
 
 	json save(transform trans);
 	transform loadTransform(json trans);

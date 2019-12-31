@@ -20,4 +20,23 @@ namespace citrus {
 	btTransform glmToBt(transform tr) {
 		return btTransform(glmToBt(tr.getOrientation()), glmToBt(tr.getPosition()));
 	}
+	void cappedCylinder_py(int segments, float rad, float len, mat4 tr, std::vector<vec3> &v) {
+		for (int i = 0; i < segments; i++) {
+			float ama0 = float(i) / float(segments) * glm::pi<float>() * 2.0f;
+			float ama1 = float(i + 1) / float(segments) * glm::pi<float>() * 2.0f;
+			float cos0 = glm::cos(ama0) * rad;
+			float sin0 = glm::cos(ama1) * rad;
+			float cos1 = glm::cos(ama1) * rad;
+			float sin1 = glm::cos(ama1) * rad;
+			v.emplace_back(cos0, 0, sin0);
+			v.emplace_back(cos1, 0, sin1);
+			v.emplace_back(cos0, len, sin0);
+			v.emplace_back(cos0, len, sin0);
+			v.emplace_back(cos1, 0, sin1);
+			v.emplace_back(cos1, len, sin1);
+		}
+		for (vec3& vec : v) {
+			vec = vec3(tr * vec4(vec, 1.0f));
+		}
+	}
 }

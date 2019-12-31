@@ -1,75 +1,73 @@
-#include "citrus/engine/playerController.h"
+#include "playerController.h"
+#include "../builtin/rigidEle.h"
+#include "../mankern/manager.inl"
 
-#include "citrus/engine/projectile.h"
-#include "citrus/engine/meshFilter.h"
-#include "citrus/engine/sensorEle.h"
-
-#include "citrus/engine/manager.inl"
-#include "citrus/engine/elementRef.inl"
-#include "citrus/engine/entityRef.inl"
-
-#include "citrus/graphics/mesh/mesh.h"
-
-namespace citrus::engine {
+namespace citrus {
 	void playerController::cameraStuff() {
 		//do camera stuff
-		y += -eng()->dt() * ySpeed * ((eng()->getKey(button::arrowLeft) ? 1 : 0 + eng()->getKey(button::arrowRight) ? -1 : 0) + eng()->controllerValue(analog::ctr_rstick_x));
-		float distMag = ((eng()->getKey(button::arrowUp) ? 1 : 0 + eng()->getKey(button::arrowDown) ? -1 : 0) - eng()->controllerValue(analog::ctr_rstick_y));
+		float dt = 0.01;
+		y += -dt * ySpeed * ((win->getKey(windowInput::arrowLeft) ? 1 : 0 + win->getKey(windowInput::arrowRight) ? -1 : 0) + win->controllerValue(windowInput::ctr_rstick_x));
+		float distMag = ((win->getKey(windowInput::arrowUp) ? 1 : 0 + win->getKey(windowInput::arrowDown) ? -1 : 0) - win->controllerValue(windowInput::ctr_rstick_y));
 		//dist += -eng()->dt() * distSpeed * (abs(distMag) > 0.8f ? distMag : 0.0f);
 		x -= distMag * 0.2f;
 		dist = glm::clamp(dist, minDist, maxDist);
-		dist = 16.0f;
+		dist = 4.0f;
 
-		if(y < 0) y += 360.0f;
 		if(y >= 360.0f) y -= 360.0f;
-
-		if(eng()->controllerButton(button::ctr_south)) {
-			eng()->getAllOfType<rigidBodyComponent>()[0]->body->ptr()->setLinearVelocity(btVector3(0.0, 5.0, 0.0));
-		}
+		if(y < 0) y += 360.0f;
 
 		transform t =
-			glm::translate(glm::vec3(ent().getLocalPosition())) *
+			glm::translate(glm::vec3(ent().getLocalPos())) *
 			glm::rotate(y / 180.0f * glm::pi<float>(), glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::rotate(-x / 180.0f * glm::pi<float>(), glm::vec3(1.0f, 0.0f, 0.0f)) *
 			glm::translate(glm::vec3(0.0f, 0.0f, dist));
 
-		cam->ent().setLocalTransform(t);
+		cam->ent().setLocalTrans(t);
+
+		
 	}
 	void playerController::movementStuff() {
 		//do movement
-		glm::vec2 movement = glm::vec2(eng()->controllerValue(analog::ctr_lstick_x), -eng()->controllerValue(analog::ctr_lstick_y));
-		movement += glm::vec2((eng()->getKey(button::d) ? 1.0f : 0.0f) + (eng()->getKey(button::a) ? -1.0f : 0.0f), (eng()->getKey(button::w) ? 1.0f : 0.0f) + (eng()->getKey(button::s) ? -1.0f : 0.0f));
+		glm::vec2 movement = glm::vec2(win->controllerValue(windowInput::ctr_lstick_x), -win->controllerValue(windowInput::ctr_lstick_y));
+		movement += glm::vec2((win->getKey(windowInput::d) ? 1.0f : 0.0f) + (win->getKey(windowInput::a) ? -1.0f : 0.0f), (win->getKey(windowInput::w) ? 1.0f : 0.0f) + (win->getKey(windowInput::s) ? -1.0f : 0.0f));
 		if(glm::length(movement) > 0.25f) {
 			movement = glm::vec2(glm::rotate(y / 180.0f * glm::pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::vec4(movement, 0.0f, 0.0f));
-			movement *= eng()->dt() * navSpeed;
-			ent().setLocalPosition(ent().getLocalPosition() + glm::vec3(movement.x, 0.0f, -movement.y));
+			movement *= 0.01 * navSpeed;
+			body->applyImpulse(glm::vec3(movement.x, 0.0f, -movement.y));
 
 			float movementAngle = glm::atan(movement.y, movement.x) + glm::pi<float>() * 0.5f;
-			ent().setLocalOrientation(glm::rotate(movementAngle, glm::vec3(0.0f, 1.0f, 0.0f)));
+			body->setOri(glm::rotate(movementAngle, glm::vec3(0.0f, 1.0f, 0.0f)));
 
 			if(!walking) {
 				walking = true;
-				m->startAnimation(1, graphics::behavior::repeat);
+				//m->startAnimation(1, graphics::behavior::repeat);
 			}
 		} else {
 			if(walking) {
 				walking = false;
-				m->startAnimation(0, graphics::behavior::repeat);
+				//m->startAnimation(0, graphics::behavior::repeat);
 			}
+		}
+
+
+		if (win->controllerButton(windowInput::ctr_south) || win->getKey(windowInput::space)) {
+			body->setVelocity(vec3(0.0f, 5.0f, 0.0f));
 		}
 	}
 	void playerController::actionStuff() {
 		//glm::vec3 playerPos = ent().getGlobalTransform().getPosition();
-		glm::vec3 playerDir = glm::toMat4(ent().getLocalOrientation()) * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
-		glm::quat playerOri = glm::toQuat(glm::toMat4(ent().getGlobalTransform().getOrientation()) * glm::rotate(3.141596f * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		glm::vec3 playerDir = glm::toMat4(ent().getLocalOri()) * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+		glm::quat playerOri = glm::toQuat(glm::toMat4(ent().getGlobalTrans().getOrientation()) * glm::rotate(3.141596f * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 
-		if(eng()->controllerButton(ctr_rtrigger)) {
+		/*if(win->controllerButton(windowInput::ctr_rtrigger)) {
 			if(!fired) {
-				glm::vec3 projStart = ent().getGlobalTransform().getMat() * glm::translate(glm::vec3(0.0f, 0.0f, 1.5f)) * glm::vec4(0, 0, 0, 1);
+				glm::vec3 projStart = ent().getGlobalTrans().getMat() * glm::translate(glm::vec3(0.0f, 0.0f, 1.5f)) * glm::vec4(0, 0, 0, 1);
 				fired = true;
-				engine* e = this->eng();
-				e->man->create("shot", {
+				auto er = man().create("shot");
+				
+				
+				, {
 					eleInit<projectile>::run([e, playerDir, playerOri, projStart](projectile& p) {
 						p.startTime = (float)e->time();
 						p.maxTime = (float) 1.0f;
@@ -89,21 +87,16 @@ namespace citrus::engine {
 			}
 		} else {
 			fired = false;
-		}
+		}*/
 	}
-	void playerController::preRender() {
+	void playerController::action() {
 		//close if needed
-		if(eng()->getKey(button::escape)) eng()->stop();
-
 		cameraStuff();
 		movementStuff();
 		actionStuff();
 	}
-	string playerController::name() const {
-		return "Player Controller";
-	}
-	playerController::playerController(entityRef ent) : element(ent, typeid(playerController)) {
-		cam = eng()->getAllOfType<freeCam>()[0];
-		m = ent.getChildren()[0].getElement<meshFilter>();
+	playerController::playerController(entRef const& ent, manager& man, void* usr) : element(ent, man, usr, typeid(playerController)), win((window*)usr) {
+		cam = man.ofType<freeCam>()[0];
+		body = ent.getEle<rigidEle>();
 	}
 }
