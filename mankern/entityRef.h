@@ -39,6 +39,9 @@ namespace citrus {
 
 		entRef getParent() const;
 		std::vector<entRef> getChildren() const;
+		entRef getChild(std::string const& name) const;
+
+		entRef operator[](std::string const& name) const;
 
 		// local spatial function
 		void setLocalPos(vec3 const& pos) const;

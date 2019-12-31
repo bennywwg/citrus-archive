@@ -19,7 +19,7 @@ namespace citrus {
 		// make body
 		_object = new btCollisionObject();
 		_object->setCollisionShape(_shape->wdshape);
-		_object->setUserPointer(this);
+		_object->setUserPointer((void*)"collisionEle");
 		_object->setFriction(_friction);
 		_object->setRestitution(_restitution);
 

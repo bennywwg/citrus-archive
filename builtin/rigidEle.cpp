@@ -72,7 +72,7 @@ namespace citrus {
 
 		// make body
 		_body = new btRigidBody(ci);
-		_body->setUserPointer(this);
+		_body->setUserPointer((void*)"rigidEle");
 		_body->setActivationState(DISABLE_DEACTIVATION);
 
 		_world->addBody(_body);

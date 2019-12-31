@@ -65,6 +65,9 @@
     <ClCompile Include="collisionEle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="sensorEle.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

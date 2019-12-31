@@ -10,8 +10,6 @@ namespace citrus {
 		float distMag = ((win->getKey(windowInput::arrowUp) ? 1 : 0 + win->getKey(windowInput::arrowDown) ? -1 : 0) - win->controllerValue(windowInput::ctr_rstick_y));
 		//dist += -eng()->dt() * distSpeed * (abs(distMag) > 0.8f ? distMag : 0.0f);
 		x -= distMag * 0.2f;
-		dist = glm::clamp(dist, minDist, maxDist);
-		dist = 4.0f;
 
 		if(y >= 360.0f) y -= 360.0f;
 		if(y < 0) y += 360.0f;
@@ -23,35 +21,28 @@ namespace citrus {
 			glm::translate(glm::vec3(0.0f, 0.0f, dist));
 
 		cam->ent().setLocalTrans(t);
-
-		
 	}
 	void playerController::movementStuff() {
 		//do movement
 		glm::vec2 movement = glm::vec2(win->controllerValue(windowInput::ctr_lstick_x), -win->controllerValue(windowInput::ctr_lstick_y));
 		movement += glm::vec2((win->getKey(windowInput::d) ? 1.0f : 0.0f) + (win->getKey(windowInput::a) ? -1.0f : 0.0f), (win->getKey(windowInput::w) ? 1.0f : 0.0f) + (win->getKey(windowInput::s) ? -1.0f : 0.0f));
-		if(glm::length(movement) > 0.25f) {
+		if(glm::length(movement) > 0.125f) {
 			movement = glm::vec2(glm::rotate(y / 180.0f * glm::pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::vec4(movement, 0.0f, 0.0f));
-			movement *= 0.01 * navSpeed;
-			body->applyImpulse(glm::vec3(movement.x, 0.0f, -movement.y));
 
 			float movementAngle = glm::atan(movement.y, movement.x) + glm::pi<float>() * 0.5f;
 			body->setOri(glm::rotate(movementAngle, glm::vec3(0.0f, 1.0f, 0.0f)));
-
-			if(!walking) {
-				walking = true;
-				//m->startAnimation(1, graphics::behavior::repeat);
-			}
-		} else {
-			if(walking) {
-				walking = false;
-				//m->startAnimation(0, graphics::behavior::repeat);
-			}
 		}
+		if (glm::length(movement) > 1.0f) movement = glm::normalize(movement);
 
-
-		if (win->controllerButton(windowInput::ctr_south) || win->getKey(windowInput::space)) {
-			body->setVelocity(vec3(0.0f, 5.0f, 0.0f));
+		if (legSensor->numTouching() >= 2) {
+			if (win->controllerButton(windowInput::ctr_south) || win->getKey(windowInput::space)) {
+				body->applyImpulse(vec3(0.0f, jumpStrength, 0.0f));
+			}
+			vec3 target = vec3(movement.x, 0.0f, -movement.y) * targetSpeed;
+			vec3 vel = body->getVelocity();
+			vel.y = 0;
+			vec3 diff = target - vel;
+			body->applyImpulse(diff * accelFactor);
 		}
 	}
 	void playerController::actionStuff() {
@@ -95,8 +86,15 @@ namespace citrus {
 		movementStuff();
 		actionStuff();
 	}
+	void playerController::deserialize(json const& j) {
+		dist = j["dist"];
+		jumpStrength = j["jumpStrength"];
+		targetSpeed = j["targetSpeed"];
+		accelFactor = j["accelFactor"];
+	}
 	playerController::playerController(entRef const& ent, manager& man, void* usr) : element(ent, man, usr, typeid(playerController)), win((window*)usr) {
 		cam = man.ofType<freeCam>()[0];
 		body = ent.getEle<rigidEle>();
+		legSensor = ent.getChild("legSensor").getEle<sensorEle>();
 	}
 }

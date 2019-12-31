@@ -4,7 +4,7 @@
   	  "ID": 1,
   	  "Name": "character",
   	  "Transform": {
-	    "Position": {"x": 0, "y": 1, "z": 0},
+	    "Position": {"x": 0, "y": 4, "z": 0},
 		"Orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
 	  },
       "Parent": 0,
@@ -33,9 +33,38 @@
 		},
 		{
 		  "Name": "playerController",
-		  "Init": ""
+		  "Init": {
+			"dist": 2.0,
+			"jumpStrength": 2.0,
+			"targetSpeed": 5.0,
+			"accelFactor": 0.1
+		  }
 		}
 	  ]
-    }
+    },
+	{
+		"ID": 2,
+		"Name": "legSensor",
+		"Transform": {
+			"Position": {"x": 0, "y": -0.75, "z": 0},
+			"Orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
+		},
+		"Parent": 1,
+		"Elements": [
+			{
+				"Name": "shapeEle",
+				"Init": {
+					"type": 1,
+					"state": {"x": 0.125, "y": 0, "z": 0},
+					"verts": [],
+					"indices": []
+				}
+			},
+			{
+				"Name": "sensorEle",
+				"Init": { }
+			}
+		]
+	}
   ]
 }

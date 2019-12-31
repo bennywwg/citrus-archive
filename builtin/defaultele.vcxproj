@@ -35,6 +35,7 @@
     <ClCompile Include="freeCam.cpp" />
     <ClCompile Include="modelEle.cpp" />
     <ClCompile Include="rigidEle.cpp" />
+    <ClCompile Include="sensorEle.cpp" />
     <ClCompile Include="util.cpp" />
     <ClCompile Include="world.cpp" />
   </ItemGroup>

@@ -52,6 +52,15 @@ namespace citrus {
 		}
 		return res;
 	}
+	entRef entRef::getChild(std::string const& name) const {
+		for (auto child : getChildren()) {
+			if (child.name() == name) return child;
+		}
+		return entRef();
+	}
+	entRef entRef::operator[](std::string const& name) const {
+		return getChild(name);
+	}
 
 	// local spatial function
 

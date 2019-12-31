@@ -8,47 +8,21 @@
 
 namespace citrus {
 	class sensorEle : public element {
-		btMotionState* _state;
-
 		worldShape* _shape;
 
 		btGhostObject* _body;
 
 		world* _world;
 	public:
-		inline void action() {
-			_body->setWorldTransform(glmToBt(ent().getLocalTrans()));
-		}
+		void action();
 
-		inline bool touchingAny() const {
-			return false;
-		}
+		bool touchingAny() const;
 
-		inline std::vector<eleRef<shapeEle>> touching() const {
-			return { };
-		}
+		int numTouching() const;
 
-		inline sensorEle(entRef const&ent, manager& man, void* usr) :
-			element(ent, man, usr, typeid(sensorEle)),
-			_world((world*)usr)
-		{
-			eleRef<shapeEle> const& myShape = ent.getEle<shapeEle>();
-			if (!myShape.id()) throw std::runtime_error("sensorEle needs shapeEle");
+		std::vector<eleRef<shapeEle>> touching() const;
 
-			// make shape in world
-			_shape = new worldShape(myShape->getShape());
-
-			// make body
-			_body = new btGhostObject();
-			_body->setUserPointer(this);
-
-			_world->addSensor(_body);
-		}
-		inline ~sensorEle() {
-			_world->removeSensor(_body);
-			delete _body;
-			delete _shape;
-			delete _state;
-		}
+		sensorEle(entRef const& ent, manager& man, void* usr);
+		~sensorEle();
 	};
 }
