@@ -41,8 +41,6 @@ namespace citrus {
 		std::vector<entRef> getChildren() const;
 		entRef getChild(std::string const& name) const;
 
-		entRef operator[](std::string const& name) const;
-
 		// local spatial function
 		void setLocalPos(vec3 const& pos) const;
 		void setLocalOri(quat const& ori) const;
@@ -71,8 +69,6 @@ namespace citrus {
 		entRef& operator=(const entRef& other);
 
 		entRef();
-
-	private:
 
 		entRef(entity* e);
 	};

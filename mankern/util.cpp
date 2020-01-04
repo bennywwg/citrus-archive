@@ -34,9 +34,6 @@ namespace citrus {
 	mat4 transform::getMatNoScale() const {
 		return translate(_position) * toMat4(_orientation);
 	}
-	transform transform::operator*(const transform& rhs) const {
-		return getMat() * rhs.getMat();
-	}
 	bool transform::operator==(const transform& other) const {
 		return _position == other._position && _orientation == other._orientation;
 	}

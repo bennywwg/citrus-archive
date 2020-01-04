@@ -17,7 +17,7 @@ namespace citrus {
 		info->active = active;
 		info->usrPtr = usrPtr;
 		info->elinit();
-		_data.emplace_back(type_index(typeid(T)), info);
+		_userData.emplace_back(type_index(typeid(T)), info);
 	}
 
 	template<class T>

@@ -3,13 +3,15 @@
 #include <btBulletCollisionCommon.h>
 #include <btBulletDynamicsCommon.h>
 
+#include "bulletObject.h"
+
 #include "world.h"
 #include "../mankern/element.h"
 #include "shapeEle.h"
 #include "util.h"
 
 namespace citrus {
-	class rigidEle : public element {
+	class rigidEle : public bulletObject, public element{
 		float _mass;
 		vec3 _inertiaMoment;
 		bool _kinematic;
@@ -25,6 +27,7 @@ namespace citrus {
 		world *_world;
 
 		transform _lastTr;
+
 	public:
 		// whether or not to allow overriding of body transform
 		bool checkUpdates = true;

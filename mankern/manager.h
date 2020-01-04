@@ -130,7 +130,7 @@ namespace citrus {
 			elementInfo* info;
 			typeElePair(type_index const& ty, elementInfo* inf) : type(ty), info(inf) { }
 		};
-		vector<typeElePair> _data;
+		vector<typeElePair> _userData;
 		vector<entity*> _toDestroy, _entities;
 
 	public:

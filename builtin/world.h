@@ -41,11 +41,11 @@ namespace citrus {
 		std::set<btCollisionObject*> objects;
 		std::set<btGhostObject*> ghosts;
 
-		void addBody(btRigidBody* body);
+		void addBody(btRigidBody* body, int mask = ~int(0));
 		void removeBody(btRigidBody* body);
-		void addSensor(btGhostObject* se);
+		void addSensor(btGhostObject* se, int mask = ~int(0));
 		void removeSensor(btGhostObject* se);
-		void addObject(btCollisionObject* object);
+		void addObject(btCollisionObject* object, int mask = ~int(0));
 		void removeObject(btCollisionObject* object);
 		void debugDraw();
 

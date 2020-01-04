@@ -20,11 +20,12 @@ namespace citrus {
 
 		window* const win;
 
+		entRef playerModel;
+
 		eleRef<freeCam> cam;
 
 		eleRef<rigidEle> body;
-
-		eleRef<sensorEle> legSensor;
+		eleRef<sensorEle> legSensor, wallSensor;
 
 		void cameraStuff();
 		void movementStuff();

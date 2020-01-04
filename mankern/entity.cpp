@@ -2,12 +2,13 @@
 
 namespace citrus {
 	transform entity::globalTrans() {
-		entity* par = parent;
-		transform res = trans;
-		while (par) {
-			res = par->trans * trans;
-			par = par->parent;
-		}
+		if (!parent) return trans;
+		mat4 res = trans.getMat();
+		entity* cur = parent;
+		while (cur) {
+			res = cur->trans.getMat() * res;
+			cur = cur->parent;
+		}	
 		return res;
 	}
 	entity::entity(std::string const& name, int64_t id) : name(name), id(id) { }

@@ -7,9 +7,10 @@
 #include "../mankern/element.h"
 #include "shapeEle.h"
 #include "util.h"
+#include "bulletObject.h"
 
 namespace citrus {
-	class collisionEle : public element {
+	class collisionEle : public bulletObject, public element {
 		float _friction;
 		float _restitution;
 
@@ -19,7 +20,13 @@ namespace citrus {
 
 		world* _world;
 	public:
+		userData data;
+
 		void action();
+
+		bool active();
+		void activate();
+		void deactivate();
 
 		collisionEle(entRef const& ent, manager& man, void* usr);
 		~collisionEle();

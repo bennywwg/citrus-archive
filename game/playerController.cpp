@@ -23,26 +23,49 @@ namespace citrus {
 		cam->ent().setLocalTrans(t);
 	}
 	void playerController::movementStuff() {
-		//do movement
-		glm::vec2 movement = glm::vec2(win->controllerValue(windowInput::ctr_lstick_x), -win->controllerValue(windowInput::ctr_lstick_y));
-		movement += glm::vec2((win->getKey(windowInput::d) ? 1.0f : 0.0f) + (win->getKey(windowInput::a) ? -1.0f : 0.0f), (win->getKey(windowInput::w) ? 1.0f : 0.0f) + (win->getKey(windowInput::s) ? -1.0f : 0.0f));
-		if(glm::length(movement) > 0.125f) {
-			movement = glm::vec2(glm::rotate(y / 180.0f * glm::pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::vec4(movement, 0.0f, 0.0f));
+		bool jumpPressed = win->controllerButton(windowInput::ctr_south) || win->getKey(windowInput::space);
 
-			float movementAngle = glm::atan(movement.y, movement.x) + glm::pi<float>() * 0.5f;
-			body->setOri(glm::rotate(movementAngle, glm::vec3(0.0f, 1.0f, 0.0f)));
+
+
+
+		vec2 inputDir = glm::vec2(win->controllerValue(windowInput::ctr_lstick_x), -win->controllerValue(windowInput::ctr_lstick_y));
+		inputDir += glm::vec2((win->getKey(windowInput::d) ? 1.0f : 0.0f) + (win->getKey(windowInput::a) ? -1.0f : 0.0f), (win->getKey(windowInput::w) ? 1.0f : 0.0f) + (win->getKey(windowInput::s) ? -1.0f : 0.0f));
+
+		// check if direction was provided
+		bool inputSpecified = glm::length(inputDir) > 0.125f;
+
+		vec2 camAlignedMovement = glm::vec2(glm::rotate(y / 180.0f * glm::pi<float>(), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::vec4(inputDir, 0.0f, 0.0f));
+		if (glm::length(camAlignedMovement) > 1.0f) camAlignedMovement = glm::normalize(camAlignedMovement);
+		vec2 camAlignedDir = inputSpecified ? glm::normalize(camAlignedMovement) : vec2(0.0f, 0.0f);
+
+		// orient player in directino of movement
+		vec3 vel = body->getVelocity();
+		if(glm::length(vec2(vel.x, vel.z)) >= 0.125) {
+			float movementAngle = glm::atan(-vel.z, vel.x) + glm::pi<float>() * 0.5f;
+			playerModel.setLocalOri(glm::rotate(movementAngle, glm::vec3(0.0f, 1.0f, 0.0f)));
 		}
-		if (glm::length(movement) > 1.0f) movement = glm::normalize(movement);
 
+		// place wall jump sensor
+		if (inputSpecified) {
+			wallSensor->ent().setLocalPos(vec3(-camAlignedDir.x * 0.25f, 0, camAlignedDir.y * 0.25f));
+		} else {
+			wallSensor->ent().setLocalPos(vec3(0, 0, 0));
+		}
+
+		// if leg sensor is touching we can jump
 		if (legSensor->numTouching() >= 2) {
-			if (win->controllerButton(windowInput::ctr_south) || win->getKey(windowInput::space)) {
+			if (jumpPressed) {
 				body->applyImpulse(vec3(0.0f, jumpStrength, 0.0f));
 			}
-			vec3 target = vec3(movement.x, 0.0f, -movement.y) * targetSpeed;
-			vec3 vel = body->getVelocity();
+			vec3 target = vec3(camAlignedMovement.x, 0.0f, -camAlignedMovement.y) * targetSpeed;
 			vel.y = 0;
 			vec3 diff = target - vel;
 			body->applyImpulse(diff * accelFactor);
+		} else if (wallSensor->numTouching() >= 2) {
+			if (jumpPressed && inputSpecified) {
+				if(vel.y < 0) body->setVelocity(vec3(vel.x, 0, vel.y));
+				body->applyImpulse(vec3(camAlignedDir.x, 0.75f, -camAlignedDir.y) * jumpStrength);
+			}
 		}
 	}
 	void playerController::actionStuff() {
@@ -93,8 +116,10 @@ namespace citrus {
 		accelFactor = j["accelFactor"];
 	}
 	playerController::playerController(entRef const& ent, manager& man, void* usr) : element(ent, man, usr, typeid(playerController)), win((window*)usr) {
+		playerModel = ent.getChild("playerModel");
 		cam = man.ofType<freeCam>()[0];
 		body = ent.getEle<rigidEle>();
 		legSensor = ent.getChild("legSensor").getEle<sensorEle>();
+		wallSensor = ent.getChild("wallSensor").getEle<sensorEle>();
 	}
 }

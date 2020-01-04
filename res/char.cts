@@ -28,10 +28,6 @@
 		  }
 		},
 		{
-		  "Name": "modelEle",
-		  "Init": [0, 3, 2, 4]
-		},
-		{
 		  "Name": "playerController",
 		  "Init": {
 			"dist": 2.0,
@@ -43,10 +39,49 @@
 	  ]
     },
 	{
+  	  "ID": 6,
+  	  "Name": "playerModel",
+  	  "Transform": {
+	    "Position": {"x": 0, "y": 0, "z": 0},
+		"Orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
+	  },
+      "Parent": 1,
+	  "Elements": [
+		{
+		  "Name": "modelEle",
+		  "Init": [0, 3, 2, 4]
+		}
+	  ]
+    },
+	{
 		"ID": 2,
 		"Name": "legSensor",
 		"Transform": {
 			"Position": {"x": 0, "y": -0.75, "z": 0},
+			"Orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
+		},
+		"Parent": 1,
+		"Elements": [
+			{
+				"Name": "shapeEle",
+				"Init": {
+					"type": 1,
+					"state": {"x": 0.125, "y": 0, "z": 0},
+					"verts": [],
+					"indices": []
+				}
+			},
+			{
+				"Name": "sensorEle",
+				"Init": { }
+			}
+		]
+	},
+	{
+		"ID": 3,
+		"Name": "wallSensor",
+		"Transform": {
+			"Position": {"x": 0, "y": 0, "z": 0},
 			"Orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
 		},
 		"Parent": 1,

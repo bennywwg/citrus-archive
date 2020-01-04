@@ -45,6 +45,9 @@
     <ClInclude Include="collisionEle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="bulletObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="modelEle.cpp">
@@ -66,7 +69,10 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sensorEle.cpp">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bulletObject.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

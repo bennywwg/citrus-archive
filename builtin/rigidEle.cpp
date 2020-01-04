@@ -54,6 +54,7 @@ namespace citrus {
 		};
 	}
 	rigidEle::rigidEle(entRef const& ent, manager& man, void* usr) :
+		bulletObject(ent._raw(), userData::rigidBody),
 		element(ent, man, usr, typeid(rigidEle)),
 		_mass(1.0f), _friction(1.0f), _restitution(0.1f),
 		_motionState(new btDefaultMotionState()),
@@ -74,6 +75,7 @@ namespace citrus {
 		_body = new btRigidBody(ci);
 		_body->setUserPointer((void*)"rigidEle");
 		_body->setActivationState(DISABLE_DEACTIVATION);
+		_body->setUserPointer(&_userData);
 
 		_world->addBody(_body);
 

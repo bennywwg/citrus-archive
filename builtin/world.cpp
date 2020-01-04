@@ -96,8 +96,8 @@ namespace citrus {
 		if (wdshape) delete wdshape;
 	}
 
-	void world::addBody(btRigidBody* body) {
-		_world->addRigidBody(body);
+	void world::addBody(btRigidBody* body, int mask) {
+		_world->addRigidBody(body, 1, mask);
 		_world->computeOverlappingPairs();
 		bodies.insert(body);
 	}
@@ -106,8 +106,8 @@ namespace citrus {
 		_world->computeOverlappingPairs();
 		bodies.erase(body);
 	}
-	void world::addSensor(btGhostObject* se) {
-		_world->addCollisionObject(se);
+	void world::addSensor(btGhostObject* se, int mask) {
+		_world->addCollisionObject(se, 1, mask);
 		_world->computeOverlappingPairs();
 		ghosts.insert(se);
 	}
@@ -117,8 +117,8 @@ namespace citrus {
 		ghosts.erase(se);
 	}
 
-	void world::addObject(btCollisionObject* object) {
-		_world->addCollisionObject(object);
+	void world::addObject(btCollisionObject* object, int mask) {
+		_world->addCollisionObject(object, 1, mask);
 		_world->computeOverlappingPairs();
 		objects.insert(object);
 	}

@@ -73,8 +73,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\VulkanSDK\1.1.108.0\Include;C:\Users\benny\Build\bullet3\src;C:\Users\benny\Build\sol2\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\VulkanSDK\1.1.108.0\Lib;C:\Users\benny\Build\bullet3build\lib\Debug;C:\Users\benny\Build\nativefiledialog\build\lib\Debug\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\VulkanSDK\1.1.108.0\Include;C:\Users\benny\Build\bullet3\src;C:\Users\benny\Build\sol2\include;C:\Users\benny\Build\irrKlang-64bit-1.6.0\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\VulkanSDK\1.1.108.0\Lib;C:\Users\benny\Build\bullet3build\lib\Debug;C:\Users\benny\Build\nativefiledialog\build\lib\Debug\x64;C:\Users\benny\Build\irrKlang-64bit-1.6.0\lib\Winx64-visualStudio;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -101,7 +101,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>nfd_d.lib;BulletDynamics_Debug.lib;BulletCollision_Debug.lib;LinearMath_Debug.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nfd_d.lib;BulletDynamics_Debug.lib;BulletCollision_Debug.lib;LinearMath_Debug.lib;vulkan-1.lib;irrKlang.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
@@ -161,6 +161,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="doorController.cpp" />
     <ClCompile Include="mankern_test.cpp" />
     <ClCompile Include="playerController.cpp" />
   </ItemGroup>
@@ -182,6 +183,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="doorController.h" />
     <ClInclude Include="playerController.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

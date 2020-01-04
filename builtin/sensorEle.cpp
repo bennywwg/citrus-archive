@@ -43,6 +43,7 @@ namespace citrus {
 	}
 
 	sensorEle::sensorEle(entRef const& ent, manager& man, void* usr) :
+		bulletObject(ent._raw(), userData::sensorObject),
 		element(ent, man, usr, typeid(sensorEle)),
 		_world((world*)usr)
 	{
@@ -57,6 +58,7 @@ namespace citrus {
 		_body->setCollisionShape(_shape->wdshape);
 		_body->setUserPointer((void*)"sensorEle");
 		_body->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+		_body->setUserPointer(&data);
 
 		_world->addSensor(_body);
 	}

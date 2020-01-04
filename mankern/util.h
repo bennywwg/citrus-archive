@@ -53,8 +53,6 @@ namespace citrus {
 		mat4 getMat() const;
 		mat4 getMatNoScale() const;
 
-		transform operator*(const transform& rhs) const;
-
 		// direct memory comparison, no epsilon
 		bool operator==(const transform& other) const;
 		bool operator!=(const transform& other) const;

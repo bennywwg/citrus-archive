@@ -190,17 +190,18 @@ namespace citrus {
 	void manager::eclearRelation(entity* child) {
 		if (child->parent)
 			for (int i = 0; i < child->parent->children.size(); i++)
-				child->parent->children.erase(child->parent->children.begin() + i);
+				if(child->parent->children[i] == child)
+					child->parent->children.erase(child->parent->children.begin() + i);
 		child->parent = nullptr;
 	}
 
 	manager::elementInfo* manager::getInfo(type_index const& index) {
-		for (auto const& kvp : _data) if (kvp.type == index) return kvp.info;
+		for (auto const& kvp : _userData) if (kvp.type == index) return kvp.info;
 		return nullptr;
 	}
 
 	manager::elementInfo* manager::getInfoByName(string const& name) {
-		for (auto const& kvp : _data) if (kvp.info->name == name) return kvp.info;
+		for (auto const& kvp : _userData) if (kvp.info->name == name) return kvp.info;
 		return nullptr;
 	}
 
@@ -354,11 +355,11 @@ namespace citrus {
 	}
 
 	void manager::flushToCreate() {
-		for (auto& kvp : _data) {
+		for (auto& kvp : _userData) {
 			kvp.info->toCreateSwap = kvp.info->toCreate;
 			kvp.info->toCreate.clear();
 		}
-		for (auto kvp : _data) {
+		for (auto kvp : _userData) {
 			kvp.info->flushToCreate();
 		}
 	}
@@ -375,7 +376,7 @@ namespace citrus {
 
 		// copy destroy buffer of all to swap destroy buffer
 		// then clear destroy buffer
-		for (auto& kvp : _data) {
+		for (auto& kvp : _userData) {
 			kvp.info->toDestroySwap = kvp.info->toDestroy;
 			kvp.info->toDestroy.clear();
 		}
@@ -385,7 +386,7 @@ namespace citrus {
 		_toDestroy.clear();
 
 		// destroy all queued elements
-		for (auto& kvp : _data) {
+		for (auto& kvp : _userData) {
 			kvp.info->flushToDestroy();
 		}
 
@@ -396,13 +397,13 @@ namespace citrus {
 	}
 
 	void manager::action() {
-		for (auto& kvp : _data) {
+		for (auto& kvp : _userData) {
 			kvp.info->action();
 		}
 	}
 
 	void manager::renderGUI(vector<grouping> &groups) {
-		for (auto& kvp : _data) {
+		for (auto& kvp : _userData) {
 			kvp.info->renderGUI(groups);
 		}
 	}

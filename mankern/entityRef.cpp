@@ -58,9 +58,6 @@ namespace citrus {
 		}
 		return entRef();
 	}
-	entRef entRef::operator[](std::string const& name) const {
-		return getChild(name);
-	}
 
 	// local spatial function
 
@@ -91,14 +88,7 @@ namespace citrus {
 
 	transform entRef::getGlobalTrans() const {
 		if (null()) throw nullEntityException("getGlobalTrans: null entity");
-		if (!_ptr->parent) return _ptr->trans;
-		transform res = _ptr->trans;
-		entity* cur = _ptr->parent;
-		while (cur) {
-			res = res * cur->trans;
-			cur = cur->parent;
-		}
-		return res;
+		return _ptr->globalTrans();
 	}
 
 	bool entRef::operator==(entRef const& other) const {

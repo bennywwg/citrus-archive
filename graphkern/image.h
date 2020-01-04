@@ -29,7 +29,7 @@ namespace citrus {
 
 	private:
 		int _width, _height;
-		std::vector<P> _data;
+		std::vector<P> _userData;
 
 		void exceptIfOutOfBounds(unsigned int x, unsigned int y) const {
 			if (x >= _width || y >= _height) throw std::runtime_error("Image access out of bounds");
@@ -37,17 +37,17 @@ namespace citrus {
 
 	public:
 		const P* data() const {
-			return _data.data();
+			return _userData.data();
 		}
 		P* data() {
-			return _data.data();
+			return _userData.data();
 		}
 
 		size_t size() const {
-			return _data.size() * sizeof(P);
+			return _userData.size() * sizeof(P);
 		}
 		size_t pixelCount() const {
-			return _data.size();
+			return _userData.size();
 		}
 
 		unsigned int width() const {
@@ -60,12 +60,12 @@ namespace citrus {
 		const P& at(unsigned int x, unsigned int y) const {
 			exceptIfOutOfBounds(x, y);
 
-			return _data[y * _width + x];
+			return _userData[y * _width + x];
 		}
 		P& at(unsigned int x, unsigned int y) {
 			exceptIfOutOfBounds(x, y);
 
-			return _data[y * _width + x];
+			return _userData[y * _width + x];
 		}
 
 		unsigned int getNumComponents() const {
@@ -82,8 +82,8 @@ namespace citrus {
 		imageT(unsigned int width, unsigned int height) : _width(width), _height(height) {
 			if (width == 0 || height == 0) throw std::runtime_error("Width and Height of image must be nonzero");
 
-			_data.resize(width * height);
-			memset(_data.data(), 0, _data.size() * sizeof(P)); //zero the data
+			_userData.resize(width * height);
+			memset(_userData.data(), 0, _userData.size() * sizeof(P)); //zero the data
 		}
 
 		//image loaded from png
@@ -97,11 +97,11 @@ namespace citrus {
 			uint32_t dN = hasAlpha ? 4 : 3;
 
 			//process the decoded data
-			_data.resize(_width * _height);
+			_userData.resize(_width * _height);
 
 			if (std::is_integral<T>::value) { //copy value
-				for (uint32_t i = 0; i < _data.size(); i++) {
-					T* px = (T*) & (_data[i]);
+				for (uint32_t i = 0; i < _userData.size(); i++) {
+					T* px = (T*) & (_userData[i]);
 					for (int u = 0; u < N; u++) {
 						if (u < dN) {
 							px[u] = decodedData[i * dN + u];
@@ -113,27 +113,27 @@ namespace citrus {
 				}
 			}
 			else if (std::is_floating_point<T>::value) { //normalize to range [0,1]
-				for (uint32_t i = 0; i < _data.size(); i++) {
+				for (uint32_t i = 0; i < _userData.size(); i++) {
 					for (uint32_t u = 0; u < N; u++) {
 						if (u < dN) {
 							unsigned char decodedVal = decodedData[i * dN + u];
-							((T*)& _data[i])[u] = T(decodedVal) / T(255);
+							((T*)& _userData[i])[u] = T(decodedVal) / T(255);
 						}
 						else {
-							((T*)& _data[i])[u] = T(0);
+							((T*)& _userData[i])[u] = T(0);
 						}
 					}
 				}
 			}
 			else {
-				for (int i = 0; i < (int)_data.size(); i++) { //use constructor taking unsigned char
+				for (int i = 0; i < (int)_userData.size(); i++) { //use constructor taking unsigned char
 					for (uint32_t u = 0; u < N; u++) {
 						if (u < dN) {
 							unsigned char decodedVal = decodedData[i * dN + u];
-							((T*)& _data[i])[u] = T(decodedVal);
+							((T*)& _userData[i])[u] = T(decodedVal);
 						}
 						else {
-							((T*)& _data[i])[u] = T(0);
+							((T*)& _userData[i])[u] = T(0);
 						}
 					}
 				}
@@ -143,12 +143,12 @@ namespace citrus {
 		imageT(imageT && other) {
 			_width = other._width;
 			_height = other._height;
-			_data = std::move(other._data);
+			_userData = std::move(other._userData);
 		}
 		imageT& operator=(imageT && other) {
 			_width = other._width;
 			_height = other._height;
-			_data = std::move(other._data);
+			_userData = std::move(other._userData);
 			return *this;
 		}
 	};

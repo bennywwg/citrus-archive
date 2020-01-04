@@ -429,7 +429,7 @@ namespace citrus {
 			float l2 = glm::length2(v);
 			if (l2 > l2m) l2m = l2;
 		}
-		return l2m;
+		return glm::sqrt(l2m);
 	}
 	void mesh::fillVertexData(void* vdata, meshMemoryStructure desc) const {
 		uint8_t* data = (uint8_t*)vdata;

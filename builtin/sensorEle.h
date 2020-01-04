@@ -5,15 +5,18 @@
 #include "../mankern/entityRef.h"
 #include "shapeEle.h"
 #include "util.h"
+#include "bulletObject.h"
 
 namespace citrus {
-	class sensorEle : public element {
+	class sensorEle : public bulletObject, public element {
 		worldShape* _shape;
 
 		btGhostObject* _body;
 
 		world* _world;
 	public:
+		userData data;
+
 		void action();
 
 		bool touchingAny() const;

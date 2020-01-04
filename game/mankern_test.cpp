@@ -19,6 +19,7 @@
 #include "../editor/editor.h"
 #endif
 
+#include <irrKlang.h>
 
 using namespace citrus;
 
@@ -151,6 +152,15 @@ public:
 	}
 
 	inline engineProper() : resDir(R"(C:\Users\benny\Build\citrus\res)"), win(1280, 720, "Citrus 2", resDir.u8string()) {
+
+		irrklang::ISoundEngine* e = irrklang::createIrrKlangDevice();
+		char * audioPath = (char *)malloc(500);
+		strcpy(audioPath, (resDir / "audio" / "bells-tibetan-daniel_simon.mp3").string().c_str());
+		auto src = e->addSoundSourceFromFile(audioPath, irrklang::ESM_AUTO_DETECT, true);
+		e->play2D(src);
+
+
+
 		try {
 			fpath shaderPath = resDir / "shaders" / "build";
 			sys = new renderSystem(*win.inst(), resDir / "textures", resDir / "meshes", resDir / "animations");

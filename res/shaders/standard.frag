@@ -31,11 +31,13 @@ layout (push_constant) uniform FragPushConstants {
 void main() {
 	vec3 normal_tangentSpace = normalize(texture(colorTex[frag_pc.normalIndex], frag_uv).xyz * 2.0 - 1.0);
 	
-	float brightness = dot(normal_tangentSpace, normalize(lights.directions_tangentSpace[0]));
+	//float brightness = dot(normal_tangentSpace, normalize(lights.directions_tangentSpace[0]));
+	//
+	//for(int i = 1; i < uniformData.lightCount; i++) {
+	//	brightness += dot(normal_tangentSpace, normalize(lights.wp_tangentSpace.xyz - lights.directions_tangentSpace[i]));
+	//}
 	
-	for(int i = 1; i < uniformData.lightCount; i++) {
-		brightness += dot(normal_tangentSpace, normalize(lights.wp_tangentSpace.xyz - lights.directions_tangentSpace[i]));
-	}
+	float brightness = 1.0;
 	
 	brightness = clamp(brightness, 0, 1);
 	color = vec4(vec3(brightness), 1);

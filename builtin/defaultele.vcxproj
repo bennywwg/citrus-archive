@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bulletObject.h" />
     <ClInclude Include="collisionEle.h" />
     <ClInclude Include="common_ele.h" />
     <ClInclude Include="freeCam.h" />
@@ -31,6 +32,7 @@
     <ClInclude Include="world.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="bulletObject.cpp" />
     <ClCompile Include="collisionEle.cpp" />
     <ClCompile Include="freeCam.cpp" />
     <ClCompile Include="modelEle.cpp" />
