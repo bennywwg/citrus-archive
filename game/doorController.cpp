@@ -10,7 +10,7 @@ namespace citrus {
 		barrier->activate();
 	}
 	void doorController::action() {
-		
+		doorModel->setAnimationState(0, 0.5f);
 	}
 	doorController::doorController(entRef const& ent, manager& man, void* usr) : element(ent, man, usr, typeid(doorController)) {
 		barrier = ent.getChild("barrier").getEle<collisionEle>();

@@ -4,14 +4,14 @@
   	  "ID": 1,
   	  "Name": "door",
   	  "Transform": {
-	    "Position": {"x": 0, "y": 4, "z": 0},
+	    "Position": {"x": 1, "y": 4, "z": 0},
 		"Orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
 	  },
       "Parent": 0,
 	  "Elements": [
 	    {
 		  "Name": "modelEle",
-		  "Init": [0, 5, 5, 4]
+		  "Init": [1, 5, 5, 4]
 		},
 		{
 		  "Name": "shapeEle",

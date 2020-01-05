@@ -46,32 +46,24 @@ namespace citrus {
 		return (materialIndex == -1) ? -1 : sys.meshPasses[materialIndex]->items[itemIndex].texIndex;
 	}
 	int modelEle::ani() const {
-		return 0;
+		return animationIndex;
 	}
-	behavior modelEle::mode() const {
-		return _mode;
-	}
-	float modelEle::aniTime() const {
-		return man().time() - _aniStart;
-	}
-
-	void modelEle::startAnimation(int ani, behavior mode) {
-		_aniStart = man().time();
-		_mode = mode;
-		sys.meshPasses[materialIndex]->items[itemIndex].animationIndex = ani;
+	
+	void modelEle::setAnimationState(int aniIndex, float time) {
+		animationIndex = aniIndex;
+		if (materialIndex == -1) return;
+		meshPass& p = *sys.meshPasses[materialIndex];
+		p.items[itemIndex].animationIndex = aniIndex;
+		p.items[itemIndex].aniTime = time;
 	}
 
-	//std::unique_ptr<editor::gui> modelEle::renderGUI() {
-	//	editor::container* c = new	editor::container();
-	//	c->title = "Mesh Filter";
-	//	{
-	//		editor::button* b = new editor::button();
-	//		b->info = "Broken";
-	//		//b->info = "Mesh: " + ((_model == -1) ? string("(None)") : eng()->getAllOfType<meshManager>()[0]->getMesh(_model).name);
-	//		c->items.emplace_back(b);
-	//	}
-	//	return std::unique_ptr<editor::gui>(c);
-	//}
+	void modelEle::action() {
+		if (materialIndex != -1) {
+			meshPass::itemInfo& inf = sys.meshPasses[materialIndex]->items[itemIndex];
+			inf.pos = ent().getGlobalTrans().getPosition();
+			inf.ori = ent().getGlobalTrans().getOrientation();
+		}
+	}
 
 	void modelEle::deserialize(const citrus::json& js) {
 		setState(js[0], js[1], js[2]);
@@ -92,14 +84,6 @@ namespace citrus {
 		}
 	}
 
-	void modelEle::action() {
-		if (materialIndex != -1) {
-			meshPass::itemInfo& inf = sys.meshPasses[materialIndex]->items[itemIndex];
-			inf.pos = ent().getGlobalTrans().getPosition();
-			inf.ori = ent().getGlobalTrans().getOrientation();
-			inf.aniTime = float(time - _aniStart);
-		}
-	}
 	modelEle::modelEle(entRef const& ent, manager & man, void* usr) :
 		element(ent, man, usr, typeid(modelEle)),
 		sys(*((modelEleStruct*)usr)->sys),

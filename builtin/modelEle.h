@@ -17,8 +17,7 @@ namespace citrus {
 
 		int materialIndex = -1;
 		int itemIndex = -1;
-		behavior _mode;
-		double _aniStart = 0.0;
+		int animationIndex = 0;
 
 		vec3 color;
 		bool visible = true;
@@ -30,9 +29,8 @@ namespace citrus {
 		int model() const;
 		int tex() const;
 		int ani() const;
-		behavior mode() const;
-		float aniTime() const;
-		void startAnimation(int ani, behavior mode = behavior::nearest);
+
+		void setAnimationState(int aniIndex, float time);
 
 		void action();
 
