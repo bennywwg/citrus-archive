@@ -44,6 +44,7 @@ namespace citrus {
 		T* res = (T*)inf->elalloc();
 		((element*)res)->_state._ent = ent._ptr;
 		inf->toCreate.emplace_back(res);
+		ent._ptr->eles.push_back(res);
 		return eleRef<T>(res);
 	}
 
@@ -61,6 +62,7 @@ namespace citrus {
 		T* res = (T*)inf->elalloc();
 		((element*)res)->_ent = ent._ptr;
 		inf->toCreate.emplace_back(res, binData);
+		ent._ptr->eles.push_back(res);
 		return eleRef<T>(res);
 	}
 
@@ -78,6 +80,7 @@ namespace citrus {
 		T* res = (T*)inf->elalloc();
 		((element*)res)->_ent = ent._ptr;
 		inf->toCreate.emplace_back(res, j);
+		ent._ptr->eles.push_back(res);
 		return eleRef<T>(res);
 	}
 

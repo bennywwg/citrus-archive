@@ -35,5 +35,8 @@
     <ClInclude Include="doorController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gameState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

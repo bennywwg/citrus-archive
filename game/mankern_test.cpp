@@ -11,7 +11,10 @@
 
 #include "../builtin/common_ele.h"
 
+#include "gameState.h"
 #include "playerController.h"
+#include "doorController.h"
+
 
 #define CT_USE_EDITOR
 
@@ -44,7 +47,7 @@ public:
 
 	world* wd = nullptr;
 
-	double t;
+	gameState gstate;
 
 #ifdef CT_USE_EDITOR
 	uint16_t lastSelectedIndex;
@@ -70,14 +73,19 @@ public:
 
 		man.registerType<freeCam>("freeCam", true, sys);
 
-		man.registerType<playerController>("playerController", true, &win);
+		man.registerType<playerController>("playerController", true, &gstate);
+
+		man.registerType<doorController>("doorController", true, &gstate);
 
 		modelEleStruct st;
 		st.sys = sys;
-		st.time = &t;
 		man.registerType<modelEle>("modelEle", true, &st);
 
 		man.addElement<freeCam>(man.create("cam"));
+		
+		gstate.dt = 0.01f;
+		gstate.frameNum = 0;
+		gstate.win = &win;
 
 		while (!closed && !man.stopped()) {
 			bool stepFrame = true;
@@ -99,6 +107,8 @@ public:
 			if (win.shouldClose()) {
 				closed = true;
 			}
+
+			gstate.frameNum++;
 
 			//std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
@@ -157,7 +167,7 @@ public:
 		char * audioPath = (char *)malloc(500);
 		strcpy(audioPath, (resDir / "audio" / "bells-tibetan-daniel_simon.mp3").string().c_str());
 		auto src = e->addSoundSourceFromFile(audioPath, irrklang::ESM_AUTO_DETECT, true);
-		e->play2D(src);
+		//e->play2D(src);
 
 
 

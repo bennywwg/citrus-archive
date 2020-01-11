@@ -23,6 +23,8 @@ namespace citrus {
 
 		int numTouching() const;
 
+		bool touching(entRef const& e) const;
+
 		std::vector<eleRef<shapeEle>> touching() const;
 
 		sensorEle(entRef const& ent, manager& man, void* usr);

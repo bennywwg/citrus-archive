@@ -7,13 +7,11 @@
 namespace citrus {
 	struct modelEleStruct {
 		renderSystem* sys;
-		double *time;
 	};
 
 	class modelEle : public element {
 	public:
 		renderSystem &sys;
-		double &time;
 
 		int materialIndex = -1;
 		int itemIndex = -1;

@@ -86,8 +86,7 @@ namespace citrus {
 
 	modelEle::modelEle(entRef const& ent, manager & man, void* usr) :
 		element(ent, man, usr, typeid(modelEle)),
-		sys(*((modelEleStruct*)usr)->sys),
-		time(*((modelEleStruct*)usr)->time)
+		sys(*((modelEleStruct*)usr)->sys)
 	{
 		setState(0, 0, 0);
 	}

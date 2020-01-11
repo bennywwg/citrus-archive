@@ -2,6 +2,8 @@
 #include "../builtin/rigidEle.h"
 #include "../mankern/manager.inl"
 
+#include "gameState.h"
+
 namespace citrus {
 	void playerController::cameraStuff() {
 		//do camera stuff
@@ -24,9 +26,6 @@ namespace citrus {
 	}
 	void playerController::movementStuff() {
 		bool jumpPressed = win->controllerButton(windowInput::ctr_south) || win->getKey(windowInput::space);
-
-
-
 
 		vec2 inputDir = glm::vec2(win->controllerValue(windowInput::ctr_lstick_x), -win->controllerValue(windowInput::ctr_lstick_y));
 		inputDir += glm::vec2((win->getKey(windowInput::d) ? 1.0f : 0.0f) + (win->getKey(windowInput::a) ? -1.0f : 0.0f), (win->getKey(windowInput::w) ? 1.0f : 0.0f) + (win->getKey(windowInput::s) ? -1.0f : 0.0f));
@@ -108,6 +107,8 @@ namespace citrus {
 		cameraStuff();
 		movementStuff();
 		actionStuff();
+		((gameState*)usr())->playerEnt = ent();
+		((gameState*)usr())->playerNavBody = ent();
 	}
 	void playerController::deserialize(json const& j) {
 		dist = j["dist"];
@@ -115,7 +116,7 @@ namespace citrus {
 		targetSpeed = j["targetSpeed"];
 		accelFactor = j["accelFactor"];
 	}
-	playerController::playerController(entRef const& ent, manager& man, void* usr) : element(ent, man, usr, typeid(playerController)), win((window*)usr) {
+	playerController::playerController(entRef const& ent, manager& man, void* usr) : element(ent, man, usr, typeid(playerController)), win(((gameState*)usr)->win) {
 		playerModel = ent.getChild("playerModel");
 		cam = man.ofType<freeCam>()[0];
 		body = ent.getEle<rigidEle>();

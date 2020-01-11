@@ -97,35 +97,47 @@ namespace citrus {
 	}
 
 	void world::addBody(btRigidBody* body, int mask) {
-		_world->addRigidBody(body, 1, mask);
-		_world->computeOverlappingPairs();
-		bodies.insert(body);
+		if (bodies.find(body) == bodies.end()) {
+			_world->addRigidBody(body, 1, mask);
+			_world->computeOverlappingPairs();
+			bodies.insert(body);
+		}
 	}
 	void world::removeBody(btRigidBody* body) {
-		_world->removeRigidBody(body);
-		_world->computeOverlappingPairs();
-		bodies.erase(body);
+		if (bodies.find(body) != bodies.end()) {
+			_world->removeRigidBody(body);
+			_world->computeOverlappingPairs();
+			bodies.erase(body);
+		}
 	}
 	void world::addSensor(btGhostObject* se, int mask) {
-		_world->addCollisionObject(se, 1, mask);
-		_world->computeOverlappingPairs();
-		ghosts.insert(se);
+		if (ghosts.find(se) == ghosts.end()) {
+			_world->addCollisionObject(se, 1, mask);
+			_world->computeOverlappingPairs();
+			ghosts.insert(se);
+		}
 	}
 	void world::removeSensor(btGhostObject* se) {
-		_world->removeCollisionObject(se);
-		_world->computeOverlappingPairs();
-		ghosts.erase(se);
+		if (ghosts.find(se) != ghosts.end()) {
+			_world->removeCollisionObject(se);
+			_world->computeOverlappingPairs();
+			ghosts.erase(se);
+		}
 	}
 
 	void world::addObject(btCollisionObject* object, int mask) {
-		_world->addCollisionObject(object, 1, mask);
-		_world->computeOverlappingPairs();
-		objects.insert(object);
+		if (objects.find(object) == objects.end()) {
+			_world->addCollisionObject(object, 1, mask);
+			_world->computeOverlappingPairs();
+			objects.insert(object);
+		}
 	}
 	void world::removeObject(btCollisionObject* object) {
-		_world->removeCollisionObject(object);
-		_world->computeOverlappingPairs();
-		objects.erase(object);
+		if (objects.find(object) != objects.end()) {
+			_world->removeCollisionObject(object);
+			_world->computeOverlappingPairs();
+			objects.erase(object);
+		}
 	}
 
 	void world::debugDraw() {

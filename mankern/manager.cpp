@@ -47,9 +47,9 @@ namespace citrus {
 			toCreateSwap[i].which->_state.next = oldNext;
 			toCreateSwap[i].which->_state.prev = oldPrev;
 		}
-		for (int i = 0; i < toCreateSwap.size(); i++) {
+		/*for (int i = 0; i < toCreateSwap.size(); i++) {
 			toCreateSwap[i].which->_state._ent->eles.push_back(toCreateSwap[i].which);
-		}
+		}*/
 	}
 
 	void manager::elementInfo::action() {
@@ -263,38 +263,22 @@ namespace citrus {
 			return;
 #endif
 		element* res = inf->elalloc();
+		res->_state._type = t;
 		res->_state._ent = ent._ptr;
 		inf->toCreate.emplace_back(res);
+		ent._ptr->eles.push_back(res);
 		return res;
 	}
 
 	element* manager::addElement(entRef ent, manager::elementInfo* inf, vector<uint8_t> const& binData) {
-		if (!ent) throw nullEntityException("addElement() : invalid entity");
-		auto const& t = inf->type;
-		for (auto const& e : ent._ptr->eles) if (e->_state._type == t)
-#ifndef IGNORE_DUPLICATE_OP
-			throw std::runtime_error("duplicate entity error");
-#else
-			return;
-#endif
-		element* res = inf->elalloc();
-		res->_state._ent = ent._ptr;
-		inf->toCreate.emplace_back(res, binData);
+		element* res = addElement(ent, inf);
+		inf->toCreate.back().binData = binData;
 		return res;
 	}
 
 	element* manager::addElement(entRef ent, manager::elementInfo* inf, json const& j) {
-		if (!ent) throw nullEntityException("addElement() : invalid entity");
-		auto const& t = inf->type;
-		for (auto const& e : ent._ptr->eles) if (e->_state._type == t)
-#ifndef IGNORE_DUPLICATE_OP
-			throw std::runtime_error("duplicate entity error");
-#else
-			return;
-#endif
-		element* res = inf->elalloc();
-		res->_state._ent = ent._ptr;
-		inf->toCreate.emplace_back(res, j);
+		element* res = addElement(ent, inf);
+		inf->toCreate.back().data = j;
 		return res;
 	}
 

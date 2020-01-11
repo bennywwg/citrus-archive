@@ -17,6 +17,19 @@ namespace citrus {
 	bool sensorEle::touchingAny() const {
 		return false;
 	}
+	
+	bool sensorEle::touching(entRef const& e) const {
+		auto pairs = _body->getOverlappingPairs();
+
+		for (int i = 0; i < pairs.size(); i++) {
+			if (entRef(((userData*)pairs[i]->getUserPointer())->ent) == e) {
+				customCB cb;
+				_world->_world->contactPairTest(_body, pairs.at(i), cb);
+				if (!cb.objs.empty()) return true;
+			}
+		}
+		return false;
+	}
 
 	int sensorEle::numTouching() const {
 		auto pairs = _body->getOverlappingPairs();
@@ -59,6 +72,7 @@ namespace citrus {
 		_body->setUserPointer((void*)"sensorEle");
 		_body->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
 		_body->setUserPointer(&data);
+		_body->setCustomDebugColor(btVector3(0.0f, 1.0f, 0.0f));
 
 		_world->addSensor(_body);
 	}

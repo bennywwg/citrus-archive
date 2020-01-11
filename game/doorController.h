@@ -21,6 +21,9 @@ namespace citrus {
 		eleRef<sensorEle> barrierSensor, frontSensor, backSensor;
 		eleRef<modelEle> doorModel;
 
+		float ds = 0.0f;
+		bool opening = false;
+
 		void openDoor();
 		void closeDoor();
 
