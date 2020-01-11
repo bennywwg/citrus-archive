@@ -31,7 +31,7 @@ namespace citrus {
 		void setEnt(entRef ent);
 		void refresh();
 		
-		void update();
+		void update(ctEditor& ed);
 
 		void addButtons();
 

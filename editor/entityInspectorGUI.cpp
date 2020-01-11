@@ -64,11 +64,11 @@ namespace citrus {
 			}
 		}
 	}
-	void entityInspector::update() {
+	void entityInspector::update(ctEditor& ed) {
 		if (ent) {
-			//vec->setState(vec4(ent.getGlobalTrans().getPosition(), 0.0f));
-			//auto qt = ent.getGlobalTrans().getOrientation();
-			//ori->setState(vec4(qt.x, qt.y, qt.z, qt.w));
+			vec->setState(vec4(ent.getGlobalTrans().getPosition(), 0.0f));
+			auto qt = ent.getGlobalTrans().getOrientation();
+			ori->setState(vec4(qt.x, qt.y, qt.z, qt.w));
 		}
 	}
 	inline void entityInspector::addButtons() {
