@@ -181,7 +181,7 @@ namespace citrus {
 			_ed.numFocused--;
 			stringIndex = -1;
 			focused = false;
-			if (updateFunc) updateFunc(_state);
+			if (onChange) onChange(*this, _state);
 		}
 	}
 	void textField::edit(windowInput::button b) {
@@ -333,7 +333,7 @@ namespace citrus {
 			auto field = std::make_shared<textField>(ed);
 			items.push_back(field);
 			field->editable = i < numComponents;
-			field->updateFunc = [this, &field, i](string str) {
+			field->onChange = [this, &field, i](textField& tf, string str) {
 				try {
 					_vec[i] = std::stof(str);
 				} catch (std::invalid_argument const& arg) {

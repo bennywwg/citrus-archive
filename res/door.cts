@@ -18,6 +18,20 @@
       },
       "Parent": 0,
       "Elements": [
+		{
+		  "Name": "shapeEle",
+		  "Init": {
+		    "type": 4,
+			"state": {"x": 0, "y": 0, "z": 0},
+			"ext": "C:/Users/benny/Build/citrus/res/unused/transitionDoor_collision.dae",
+			"verts": [],
+			"indices": []
+		  }
+		},
+		{
+		  "Name": "collisionEle",
+		  "Init": { }
+		},
         {
           "Name": "modelEle",
           "Init": [ 1, 5, 5, 4 ]

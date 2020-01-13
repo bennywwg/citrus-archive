@@ -23,7 +23,7 @@ namespace citrus {
 
 		auto nameField = std::make_shared<textField>(ed);
 		nameField->setState(ent.name());
-		nameField->updateFunc = [ent](string val) {
+		nameField->onChange = [ent](textField&tf, string val) {
 			if (ent) ent.setName(val);
 		};
 

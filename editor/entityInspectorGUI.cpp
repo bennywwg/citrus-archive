@@ -32,7 +32,9 @@ namespace citrus {
 		return res;
 	}
 	void entityInspector::setEnt(entRef ent) {
+		entRef oldEnt = this->ent;
 		this->ent = ent;
+		if(oldEnt != ent || !ent) refresh();
 	}
 	void entityInspector::refresh() {
 		eleNames.clear();
@@ -45,6 +47,8 @@ namespace citrus {
 					man->destroyElement(ei);
 				});
 				auto tf = std::make_shared<textField>(_ed);
+				tf->setState(man->getInfo(ei->_raw()._type)->name);
+
 				auto ll = std::make_shared<linearLayout>(_ed);
 				ll->direction = linearLayout::right;
 				ll->items = { db, tf };
@@ -52,10 +56,20 @@ namespace citrus {
 				auto itf = std::make_shared<textField>(_ed);
 
 				if (ei->_raw()._man) {
-					tf->setState(man->getInfo(ei->_raw()._type)->name + "\n" + ei->serialize().dump(2));
 					itf->setState(ei->serialize().dump(2));
+					itf->onChange = [ei](textField& tfp, string cp) {
+						tfp.defocus();
+						string old = tfp.state();
+						json jp;
+						try {
+							jp = json::parse(cp);
+						} catch (...) {
+							std::cout << "invalid json\n";
+							return;
+						}
+						ei->deserialize(jp);
+					};
 				} else {
-					tf->setState(man->getInfo(ei->_raw()._type)->name + "\n(Not Initialized)");
 					itf->setState("(Not Initialized)");
 				}
 

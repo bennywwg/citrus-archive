@@ -42,8 +42,19 @@ namespace citrus {
 		weak_ptr<gui> owner;
 		viewType type = viewType::noType;
 		void sizeFromText(bool useMargin = false) {
-			size = ivec2((useMargin ? margin * 2 : 0) + text.length() * textWidth, (useMargin ? margin * 2 : 0) + textHeight);
-			for (char c : text) if (c == '\n') size.y += textHeight;
+			int numCharsWidth = 0;
+			int maxNumCharsWidth = 0;
+			int numCharsHeight = 1;
+			for (char c : text) {
+				if (c == '\n') {
+					numCharsHeight++;
+					if (numCharsWidth > maxNumCharsWidth) maxNumCharsWidth = numCharsWidth;
+					numCharsWidth = 0;
+				}
+				else numCharsWidth++;
+			}
+			if (numCharsWidth > maxNumCharsWidth) maxNumCharsWidth = numCharsWidth;
+			size = ivec2((useMargin ? margin * 2 : 0) + maxNumCharsWidth * textWidth, (useMargin ? margin * 2 : 0) + numCharsHeight * textHeight);
 		}
 	};
 
@@ -192,8 +203,6 @@ namespace citrus {
 	private:
 		string _state;
 	public:
-
-		std::function<void(string)> updateFunc;
 
 		string info;
 		string state();
