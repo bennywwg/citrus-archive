@@ -1,5 +1,6 @@
 #include "manager.h"
 #include "elementRef.inl"
+#include "util.h"
 
 namespace citrus {
 	element* manager::elementInfo::access(size_t index) {
@@ -427,10 +428,18 @@ namespace citrus {
 
 		{
 			for (json const& entDesc : data["Entities"]) {
+				entRef er;
+				if (entDesc.find("Load") == entDesc.end()) {
+					er = ealloc(entDesc["Name"]);
+				} else {
+					string content = loadEntireFile(entDesc["Load"]);
+					json j = json::parse(content);
+					er = deserializePrefab(j);
+				}
 				int64_t id = entDesc["ID"].get<int64_t>();
 				if (idMap.find(id) != idMap.end()) throw invalidPrefabHierarchyException("deserializePrefab: duplicate entity id");
-				idMap[id] = ealloc(entDesc["Name"].get<string>());
-				if (!res) res = idMap[id]; // first element is always the base node in the hierarchy
+				idMap[id] = er;
+				if (!res) res = er; // first element is always the base node in the hierarchy
 			}
 
 			try {

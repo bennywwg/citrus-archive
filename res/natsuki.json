@@ -1,7 +1,0 @@
-{
-	"type": "model",
-	"name": "Natsuki Model",
-	"texture": "Natsuki Skin",
-	"shader": "Textured Surface",
-	"meshPath": "meshes/natsuki.dae"
-}
