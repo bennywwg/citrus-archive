@@ -181,11 +181,12 @@ public:
 		void								destroy(entRef ent);
 		void							setRelation(entRef parent, entRef child);
 		void						  clearRelation(entRef child);
-		
-	private:
-		void				deserializeEleemntsInto(entRef ent, json::array_t const& data);
 
 	public:
+		void					   verifyEntLocal(json const& data);
+		/// throw exception if json does not represent valid tree
+		/// returns a list of all entities to load, with first ent as base object
+		void						   verifyTree(json const& data, json::array_t& ea);
 		entRef					  deserializeTree(json const& data);
 		vector<entRef>			 deserializeScene(json const& data);
 
