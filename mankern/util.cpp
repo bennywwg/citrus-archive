@@ -86,6 +86,31 @@ namespace citrus {
 	quat loadQuat(json q) {
 		return quat(q["w"].get<float>(), q["x"].get<float>(), q["y"].get<float>(), q["z"].get<float>());
 	}
+	bool isVec2(json const& vec) {
+		if (!vec.is_object()) return false;
+		if (vec.find("x") == vec.end() || !vec["x"].is_number()) return false;
+		if (vec.find("y") == vec.end() || !vec["y"].is_number()) return false;
+		return true;
+	}
+	bool isVec3(json const& vec) {
+		if (!vec.is_object()) return false;
+		if (vec.find("x") == vec.end() || !vec["x"].is_number()) return false;
+		if (vec.find("y") == vec.end() || !vec["y"].is_number()) return false;
+		if (vec.find("z") == vec.end() || !vec["z"].is_number()) return false;
+		return true;
+	}
+	bool isVec4(json const& vec) {
+		if (!vec.is_object()) return false;
+		if (vec.find("x") == vec.end() || !vec["x"].is_number()) return false;
+		if (vec.find("y") == vec.end() || !vec["y"].is_number()) return false;
+		if (vec.find("z") == vec.end() || !vec["z"].is_number()) return false;
+		if (vec.find("w") == vec.end() || !vec["w"].is_number()) return false;
+		return true;
+	}
+	bool isQuat(json const& q) {
+		return isVec4(q);
+	}
+
 	std::vector<vec3> loadVec3Array(json v) {
 		if (!v.is_array()) return { };
 		json::array_t ar = v;
@@ -131,6 +156,12 @@ namespace citrus {
 			loadVec3(trans["Position"]),
 			loadQuat(trans["Orientation"])
 		);
+	}
+	bool isTransform(json const& trans) {
+		if (!trans.is_object()) return false;
+		if (trans.find("Position") == trans.end() || !isVec3(trans["Position"])) return false;
+		if (trans.find("Orientation") == trans.end() || !isQuat(trans["Orientation"])) return false;
+		return true;
 	}
 
 	std::string loadEntireFile(std::string path) {

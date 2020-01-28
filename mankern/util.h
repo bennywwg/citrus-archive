@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #ifdef __linux__
 #include <experimental/optional>
@@ -22,6 +23,8 @@ using optional_t = std::optional<T>;
 #include <nlohmann/json.hpp>
 
 namespace citrus {
+	typedef std::filesystem::path fpath;
+
 	using glm::quat;
 	using glm::vec2;
 	using glm::vec3;
@@ -70,6 +73,11 @@ namespace citrus {
 	vec3 loadVec3(json vec);
 	vec4 loadVec4(json vec);
 	quat loadQuat(json q);
+	bool isVec2(json const& vec);
+	bool isVec3(json const& vec);
+	bool isVec4(json const& vec);
+	bool isQuat(json const& q);
+
 	std::vector<vec3> loadVec3Array(json v);
 	std::vector<int> loadIntArray(json v);
 	json save(std::vector<vec3> v);
@@ -77,6 +85,7 @@ namespace citrus {
 
 	json save(transform trans);
 	transform loadTransform(json trans);
+	bool isTransform(json const& trans);
 
 	template<class UnaryFunction>
 	inline void recursive_iterate(json& j, UnaryFunction f) {

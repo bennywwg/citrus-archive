@@ -59,6 +59,9 @@ namespace citrus {
 		double _dt;
 		bool _stopped;
 
+		// where trees and scenes are located in filesystem
+		fpath ctcPath;
+
 		entity*	entities;
 		entity *allocBegin, *allocEnd, *freeBegin;
 		int64_t	currentID;
@@ -178,11 +181,15 @@ public:
 		void								destroy(entRef ent);
 		void							setRelation(entRef parent, entRef child);
 		void						  clearRelation(entRef child);
+		
+	private:
+		void				deserializeEleemntsInto(entRef ent, json::array_t const& data);
 
-		json						serializePrefab(entRef const& toSave);
-		entRef					  deserializePrefab(json const& data);
+	public:
+		entRef					  deserializeTree(json const& data);
+		vector<entRef>			 deserializeScene(json const& data);
 
-		manager();
+		manager(fpath ctcPath);
 		~manager();
 
 private:

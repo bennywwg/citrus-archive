@@ -404,7 +404,7 @@ namespace citrus {
 				entElements.push_back({
 					{ "Name", getInfo(ele->_state._type)->name },
 					{ "Init", ele->serialize() }
-					});
+				});
 			}
 
 			json j = {
@@ -421,7 +421,9 @@ namespace citrus {
 		};
 	}
 
-	entRef manager::deserializePrefab(json const& data) {
+	entRef manager::deserializeTree(json const& data) {
+		bool isTree = true;
+
 		json::array_t remappedEntities;
 		std::map<int64_t, entRef> idMap;
 		entRef res;
@@ -434,7 +436,7 @@ namespace citrus {
 				} else {
 					string content = loadEntireFile(entDesc["Load"]);
 					json j = json::parse(content);
-					er = deserializePrefab(j);
+					er = deserializeTree(j);
 				}
 				int64_t id = entDesc["ID"].get<int64_t>();
 				if (idMap.find(id) != idMap.end()) throw invalidPrefabHierarchyException("deserializePrefab: duplicate entity id");
@@ -465,7 +467,7 @@ namespace citrus {
 				if (parentID && idMap.find(parentID) == idMap.end()) throw invalidPrefabHierarchyException("deserializePrefab: parent entity not found");
 				entRef parent = parentID ? idMap[parentID] : entRef();
 
-				if(parent) setRelation(parent, ent);
+				if (parent) setRelation(parent, ent);
 				ent.setLocalTrans(trans);
 
 				for (json const& eleDesc : elementsJson) {
@@ -478,7 +480,117 @@ namespace citrus {
 		return res;
 	}
 
-	manager::manager() {
+	/*struct entityInfo {
+		string name;
+		int64_t id;
+		int64_t parent;
+		transform trans;
+		vector<string> elementNames;
+		vector<json> elementCreate;
+	};*/
+
+	vector<entRef> manager::deserializeScene(json const& data) {
+		
+
+		vector<entity*> allCreated;
+		json::array_t remappedEntities;
+		std::map<int64_t, entRef> idMap;
+		entRef res;
+
+		json::array_t ents = data["Entities"];
+
+		if (ents.size() < 1) throw invalidPrefabException("empty tree");
+
+		// check correctness
+		for (int i = 0; i < ents.size(); i++) {
+			json const& entDesc = ents[i];
+
+			if (entDesc.find("Name") == entDesc.end() || !entDesc.find("Name")->is_string()) throw invalidPrefabException("missing or invalid prefab property 'Name'");
+			if (entDesc.find("ID") == entDesc.end() || !entDesc.find("ID")->is_number_integer()) throw invalidPrefabException("missing or invalid prefab property 'ID'");
+			if (entDesc.find("Parent") == entDesc.end() || !entDesc.find("Parent")->is_number_integer()) throw invalidPrefabException("missing or invalid prefab property 'Parent'");
+			if (entDesc.find("Transform") == entDesc.end() || !isTransform(entDesc["Transform"])) throw invalidPrefabException("missing or invalid prefab property 'Transform'");
+			if (entDesc.find("Elements") == entDesc.end() || !entDesc.find("Elements")->is_array()) {
+				if (entDesc.find("Load") == entDesc.end() || !entDesc["Load"].is_string()) {
+					throw invalidPrefabException("missing or invalid prefab property 'Elements' or 'Load'");
+				} else {
+					fpath p = ctcPath / entDesc["Load"].get<string>();
+					string content = loadEntireFile(p.string());
+					json j = json::parse(content);
+
+				}
+			} else {
+				json::array_t const& el = entDesc["Elements"];
+
+				for (int i = 0; i < el.size(); i++) {
+					json const& elDesc = el[i];
+
+					if (elDesc.find("Name") == elDesc.end() || !entDesc.find("Name")->is_string() || getInfoByName(elDesc["Name"]) == nullptr) throw invalidPrefabException("missing or unknown element name");
+					if (elDesc.find("Init") == elDesc.end()) throw invalidPrefabException("missing prefab property 'Init' for elment type '" + elDesc["Name"].get<string>() + "'");
+				}
+			}
+		}
+
+		try {
+			for (int i = 0; i < ents.size(); i++) {
+				if (i == 0) {
+					res = ealloc("");
+					allCreated.push_back(res._ptr);
+				} else {
+					json entDesc = ents[i];
+
+					// check correctness
+
+					string name = entDesc["Name"].get<string>();
+					int64_t id = entDesc["ID"].get<int64_t>();
+
+					entRef er;
+
+					if (entDesc.find("Load") == entDesc.end()) {
+						er = ealloc(entDesc["Name"]);
+					} else {
+						string content = loadEntireFile(entDesc["Load"]);
+						json j = json::parse(content);
+						er = deserializeTree(j);
+
+						int64_t id = entDesc["ID"].get<int64_t>();
+						if (idMap.find(id) != idMap.end()) throw invalidPrefabHierarchyException("deserializePrefab: duplicate entity id");
+						idMap[id] = er;
+					}
+				}
+			}
+
+			for (json const& entDesc : data["Entities"]) {
+				remappedEntities.push_back(remapEleInitIDs(entDesc, idMap));
+			}
+		} catch (...) {
+			throw invalidPrefabException("invalid json");
+		}
+
+		{
+			for (json const& entDesc : remappedEntities) {
+				string name = entDesc["Name"].get<string>();
+				transform trans = loadTransform(entDesc["Transform"]);
+				int64_t parentID = entDesc["Parent"].get<int64_t>();
+				json::array_t const& elementsJson = entDesc["Elements"];
+
+				entRef ent = idMap[entDesc["ID"].get<int64_t>()];
+				if (parentID && idMap.find(parentID) == idMap.end()) throw invalidPrefabHierarchyException("deserializePrefab: parent entity not found");
+				entRef parent = parentID ? idMap[parentID] : entRef();
+
+				if (parent) setRelation(parent, ent);
+				ent.setLocalTrans(trans);
+
+				for (json const& eleDesc : elementsJson) {
+					elementInfo* inf = getInfoByName(eleDesc["Name"].get<string>());
+					if (!inf) throw unknownElementException("deserializePrefab: unknown element");
+					addElement(ent, inf, eleDesc["Init"]);
+				}
+			}
+		}
+		return res;
+	}
+
+	manager::manager(fpath ctcPath) : ctcPath(ctcPath) {
 		_frame = 0;
 		_dt = 0.01;
 		einit();
