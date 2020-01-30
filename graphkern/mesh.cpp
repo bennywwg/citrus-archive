@@ -7,6 +7,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "../basicUtil/basicUtil.h"
+
 namespace citrus {
 	static glm::mat4 convertMat(const aiMatrix4x4& m) {
 		/*return glm::mat4(

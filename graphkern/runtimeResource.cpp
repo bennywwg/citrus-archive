@@ -1,4 +1,5 @@
 #include "runtimeResource.h"
+#include "../basicUtil/basicUtil.h"
 
 namespace citrus {
 	uint16_t frameStore::getPixelIndex(uint32_t frameIndex, uint32_t x, uint32_t y) {

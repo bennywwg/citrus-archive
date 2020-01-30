@@ -99,8 +99,5 @@ namespace citrus {
 		}
 	}
 
-	std::string loadEntireFile(std::string path);
-	void saveEntireFile(std::string path, std::string content);
-
 	std::string formatFloat(float f);
 }

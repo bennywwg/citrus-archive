@@ -140,7 +140,7 @@ namespace citrus {
 		elementInfo* getInfo(type_index const& index);
 		elementInfo* getInfoByName(string const& name);
 
-		json remapEleInitIDs(json remappedData, std::map<int64_t, entRef>const& remappedIDs);
+		json remapEleInitIDs(json remappedData, std::map<int64_t, int64_t>const& remappedIDs);
 
 		//template<class T> eleRef<T> dereferenceElement(const json& data);
 		//template<class T> json referenceElement(entRef ent);
@@ -188,7 +188,7 @@ public:
 		/// returns a list of all entities to load, with first ent as base object
 		void						   verifyTree(json const& data, json::array_t& ea);
 		entRef					  deserializeTree(json const& data);
-		vector<entRef>			 deserializeScene(json const& data);
+		json					   sereializeTree(entRef const& ref);
 
 		manager(fpath ctcPath);
 		~manager();

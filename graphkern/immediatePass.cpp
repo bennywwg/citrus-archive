@@ -1,4 +1,5 @@
 #include "immediatePass.h"
+#include "../basicUtil/basicUtil.h"
 
 namespace citrus {
 	void immediatePass::initializeDescriptors() {

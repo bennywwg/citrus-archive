@@ -164,20 +164,6 @@ namespace citrus {
 		return true;
 	}
 
-	std::string loadEntireFile(std::string path) {
-		std::ifstream f(path, std::ios::binary);
-		if (!f.is_open()) throw std::runtime_error("Couldn't open file: " + path);
-		std::string res;
-		f.seekg(0, std::ios::end);
-		res.reserve(size_t(f.tellg()));
-		f.seekg(0, std::ios::beg);
-		res.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
-		return res;
-	}
-	void saveEntireFile(std::string path, std::string content) {
-		std::ofstream(path, std::ofstream::out | std::ofstream::trunc) << content;
-	}
-
 	std::string formatFloat(float f) {
 		char buf[50];
 		sprintf_s(buf, "%10.3f", f);

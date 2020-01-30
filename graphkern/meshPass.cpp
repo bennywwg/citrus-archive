@@ -1,4 +1,5 @@
 #include "meshPass.h"
+#include "../basicUtil/basicUtil.h"
 
 namespace citrus {
 	void meshPass::initializeDescriptors() {

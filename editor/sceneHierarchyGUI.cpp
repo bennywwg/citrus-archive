@@ -1,6 +1,7 @@
 #include "sceneHierarchyGUI.h"
 #include "util.h"
 #include "../graphkern/util.h"
+#include "../basicUtil/basicUtil.h"
 
 namespace citrus {
 	void sceneHierarchy::addEnt(ctEditor& ed, entRef ent, int level) {
@@ -114,7 +115,7 @@ namespace citrus {
 				return;
 			}
 			try {
-				ed.man->deserializePrefab(parsed);
+				ed.man->deserializeTree(parsed);
 			} catch (managerException const& er) {
 				std::cout << "failed to parse prefab (hierarchy)\n";
 			}

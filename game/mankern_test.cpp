@@ -161,7 +161,7 @@ public:
 #endif
 	}
 
-	inline engineProper() : resDir(R"(C:\Users\benny\Build\citrus\res)"), win(1280, 720, "Citrus 2", resDir.u8string()) {
+	inline engineProper() : resDir(R"(C:\Users\benny\Build\citrus\res)"), win(1280, 720, "Citrus 2", resDir.u8string()), man(resDir / "trees") {
 
 		irrklang::ISoundEngine* e = irrklang::createIrrKlangDevice();
 		char * audioPath = (char *)malloc(500);

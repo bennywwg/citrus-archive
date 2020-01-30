@@ -1,14 +1,5 @@
 {
-  "Entities": [
-    {
-  	  "ID": 1,
-  	  "Name": "character",
-  	  "Transform": {
-	    "Position": {"x": 0, "y": 4, "z": 0},
-		"Orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
-	  },
-      "Parent": 0,
-	  "Elements": [
+	"Elements": [
 	    {
 		  "Name": "shapeEle",
 		  "Init": {
@@ -36,8 +27,8 @@
 			"accelFactor": 0.1
 		  }
 		}
-	  ]
-    },
+	  ],
+  "Entities": [
 	{
   	  "ID": 6,
   	  "Name": "playerModel",
@@ -45,7 +36,7 @@
 	    "Position": {"x": 0, "y": 0, "z": 0},
 		"Orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
 	  },
-      "Parent": 1,
+      "Parent": 0,
 	  "Elements": [
 		{
 		  "Name": "modelEle",
@@ -60,7 +51,7 @@
 			"Position": {"x": 0, "y": -0.75, "z": 0},
 			"Orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
 		},
-		"Parent": 1,
+		"Parent": 0,
 		"Elements": [
 			{
 				"Name": "shapeEle",
@@ -84,7 +75,7 @@
 			"Position": {"x": 0, "y": 0, "z": 0},
 			"Orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
 		},
-		"Parent": 1,
+		"Parent": 0,
 		"Elements": [
 			{
 				"Name": "shapeEle",

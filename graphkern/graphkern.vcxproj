@@ -51,6 +51,11 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\basicUtil\basicUtil.vcxproj">
+      <Project>{083b574e-87e3-4dcb-9e72-89fcdf09d4af}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{4C811E70-B148-4145-A6F6-AEDA0F5B17C1}</ProjectGuid>

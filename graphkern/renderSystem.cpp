@@ -4,6 +4,7 @@
 #include <shared_mutex>
 #include "image.h"
 #include "mesh.h"
+#include "../basicUtil/basicUtil.h"
 
 namespace citrus {
 	void renderSystem::loadTextures() {

@@ -4,6 +4,8 @@
 #include <iostream>
 #include <array>
 
+#include "../basicUtil/basicUtil.h"
+
 namespace citrus {
 	void finalPass::fillCommandBuffer(uint32_t frameIndex, VkDescriptorImageInfo colorInfo, VkDescriptorImageInfo indexInfo, VkDescriptorImageInfo depthInfo) {
 
