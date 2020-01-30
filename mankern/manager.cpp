@@ -447,10 +447,16 @@ namespace citrus {
 
 		int64_t cur = 1;
 
+		for (json const& entDesc : ents) {
+			verifyEntLocal(entDesc);
+
+			int64_t id = entDesc["ID"].get<int64_t>();
+			if (id >= cur) cur = id + 1;
+		}
+
 		// check correctness
 		for (int i = 0; i < ents.size(); i++) {
 			json entDesc = ents[i];
-			verifyEntLocal(entDesc);
 			
 			if (entDesc.find("Elements") == entDesc.end() || !entDesc["Elements"].is_array()) {
 				if (entDesc.find("Load") == entDesc.end() || !entDesc["Load"].is_string()) {
@@ -474,8 +480,9 @@ namespace citrus {
 					if (js.find("Entities") == js.end() || !js["Entities"].is_array()) throw invalidPrefabException("loaded tree " + p.string() + " has no Entities list");
 
 					std::map<int64_t, int64_t> idMap;
+					idMap[0] = entDesc["ID"].get<int64_t>();
 
-					entDesc["Elements"] = js["Elements"];
+					ents[i]["Elements"] = js["Elements"];
 
 					//remap parents and add to global list
 					for (int j = 0; j < js["Entities"].size(); j++) {
@@ -489,7 +496,7 @@ namespace citrus {
 					for (int j = 0; j < js["Entities"].size(); j++) {
 						int64_t oldParentID = js["Entities"][j]["Parent"].get<int64_t>();
 						if (!j) {
-							js["Entities"][j]["Parent"] = ents[i]["ID"].get<int64_t>();
+							js["Entities"][j]["Parent"] = idMap[0];
 						} else if (idMap.find(oldParentID) == idMap.end()) {
 							throw invalidPrefabException("invalid parent");
 						} else {
@@ -499,7 +506,7 @@ namespace citrus {
 					}
 				}
 			}
-			json::array_t const& el = entDesc["Elements"];
+			json::array_t const& el = ents[i]["Elements"];
 
 			for (int i = 0; i < el.size(); i++) {
 				json const& elDesc = el[i];

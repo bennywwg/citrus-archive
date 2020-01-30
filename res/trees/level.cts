@@ -5,7 +5,7 @@
 			"ID": 888,
 			"Parent": 0,
 			"Transform": {
-				"Position": {"x": 0, "y": 0, "z": 0},
+				"Position": {"x": 0, "y": 2, "z": 0},
 				"Orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
 			},
 			"Load": "char.cts"
