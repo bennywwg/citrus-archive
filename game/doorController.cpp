@@ -32,10 +32,10 @@ namespace citrus {
 		doorModel->setAnimationState(0, ds);
 	}
 	doorController::doorController(entRef const& ent, manager& man, void* usr) : element(ent, man, usr, typeid(doorController)) {
-		barrier = ent.getChild("barrier").getEle<collisionEle>();
-		barrierSensor = ent.getChild("barrierSensor").getEle<sensorEle>();
-		frontSensor = ent.getChild("frontSensor").getEle<sensorEle>();
-		backSensor = ent.getChild("backSensor").getEle<sensorEle>();
+		barrier = (ent / "barrier").getEle<collisionEle>();
+		barrierSensor = (ent / "barrierSensor").getEle<sensorEle>();
+		frontSensor = (ent / "frontSensor").getEle<sensorEle>();
+		backSensor = (ent / "backSensor").getEle<sensorEle>();
 		doorModel = ent.getEle<modelEle>();
 	}
 }

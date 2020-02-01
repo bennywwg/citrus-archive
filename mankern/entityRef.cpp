@@ -101,6 +101,10 @@ namespace citrus {
 		return !null();
 	}
 
+	entRef entRef::operator/(std::string const& child) const {
+		return getChild(child);
+	}
+
 	entRef& entRef::operator=(const entRef& other) {
 		_ptr = other._ptr;
 		_id = other._id;

@@ -423,6 +423,23 @@ namespace citrus {
 		};
 	}
 
+	entRef manager::loadTree(string const& path) {
+		fpath p = ctcPath / path;
+		string content;
+		try {
+			content = loadEntireFile(p.string());
+		} catch (std::runtime_error const& er) {
+			throw invalidPrefabException("non-existant tree " + p.string());
+		}
+		json js;
+		try {
+			js = json::parse(content);
+		} catch (std::exception const& er) {
+			throw invalidPrefabException("loaded tree " + p.string() + " is not valid json");
+		}
+		return deserializeTree(js);
+	}
+
 	void manager::verifyEntLocal(json const& data) {
 		if (data.find("Name") == data.end() || !data["Name"].is_string()) throw invalidPrefabException("missing or invalid prefab property 'Name'");
 		if (data.find("ID") == data.end() || !data["ID"].is_number_integer()) throw invalidPrefabException("missing or invalid prefab property 'ID'");

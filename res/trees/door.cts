@@ -1,23 +1,5 @@
 {
-  "Entities": [
-    {
-      "ID": 1,
-      "Name": "door",
-      "Transform": {
-        "Position": {
-          "x": 1,
-          "y": 4,
-          "z": 0
-        },
-        "Orientation": {
-          "x": 0,
-          "y": 0,
-          "z": 0,
-          "w": 1
-        }
-      },
-      "Parent": 0,
-      "Elements": [
+	"Elements": [
 		{
 		  "Name": "shapeEle",
 		  "Init": {
@@ -40,8 +22,8 @@
           "Name": "doorController",
           "Init": {}
         }
-      ]
-    },
+    ],
+  "Entities": [
     {
       "ID": 2,
       "Name": "barrier",
@@ -58,7 +40,7 @@
           "w": 1
         }
       },
-      "Parent": 1,
+      "Parent": 0,
       "Elements": [
         {
           "Name": "shapeEle",
@@ -95,7 +77,7 @@
           "w": 1
         }
       },
-      "Parent": 1,
+      "Parent": 0,
       "Elements": [
         {
           "Name": "shapeEle",
@@ -132,7 +114,7 @@
           "w": 1
         }
       },
-      "Parent": 1,
+      "Parent": 0,
       "Elements": [
         {
           "Name": "shapeEle",
@@ -169,7 +151,7 @@
           "w": 1
         }
       },
-      "Parent": 1,
+      "Parent": 0,
       "Elements": [
         {
           "Name": "shapeEle",

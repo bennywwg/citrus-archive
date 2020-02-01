@@ -182,13 +182,14 @@ public:
 		void							setRelation(entRef parent, entRef child);
 		void						  clearRelation(entRef child);
 
-	public:
 		void					   verifyEntLocal(json const& data);
 		/// throw exception if json does not represent valid tree
 		/// returns a list of all entities to load, with first ent as base object
 		void						   verifyTree(json const& data, json::array_t& ea);
+	public:
 		entRef					  deserializeTree(json const& data);
 		json					   sereializeTree(entRef const& ref);
+		entRef							 loadTree(string const& path);
 
 		manager(fpath ctcPath);
 		~manager();

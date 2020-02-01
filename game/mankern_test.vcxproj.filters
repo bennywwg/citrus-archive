@@ -24,6 +24,9 @@
     <ClCompile Include="doorController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="roomController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -36,6 +39,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gameState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="roomController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

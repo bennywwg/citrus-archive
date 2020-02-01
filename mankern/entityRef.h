@@ -66,6 +66,8 @@ namespace citrus {
 		bool operator!=(entRef const& other) const;
 		operator bool() const;
 
+		entRef operator/(std::string const& child) const;
+
 		entRef& operator=(const entRef& other);
 
 		entRef();

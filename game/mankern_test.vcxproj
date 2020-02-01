@@ -164,6 +164,7 @@
     <ClCompile Include="doorController.cpp" />
     <ClCompile Include="mankern_test.cpp" />
     <ClCompile Include="playerController.cpp" />
+    <ClCompile Include="roomController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -189,6 +190,7 @@
     <ClInclude Include="doorController.h" />
     <ClInclude Include="gameState.h" />
     <ClInclude Include="playerController.h" />
+    <ClInclude Include="roomController.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
