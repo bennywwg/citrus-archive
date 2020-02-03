@@ -11,11 +11,9 @@ namespace citrus {
 	class roomController : public element {
 		struct roomLinkage {
 			string name;
-			transform myTrans;
 
 			string connectedLevelTree;
-			string connectedLinkageName;
-			transform connectedRoomTrans;
+			string connectedName;
 
 			entRef loaded;
 

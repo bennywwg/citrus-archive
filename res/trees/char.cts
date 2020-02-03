@@ -21,7 +21,7 @@
 		{
 		  "Name": "playerController",
 		  "Init": {
-			"dist": 2.0,
+			"dist": 1.7,
 			"jumpStrength": 2.0,
 			"targetSpeed": 5.0,
 			"accelFactor": 0.1

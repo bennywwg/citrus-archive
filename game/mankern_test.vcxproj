@@ -162,7 +162,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="doorController.cpp" />
-    <ClCompile Include="mankern_test.cpp" />
+    <ClCompile Include="game.cpp" />
     <ClCompile Include="playerController.cpp" />
     <ClCompile Include="roomController.cpp" />
   </ItemGroup>

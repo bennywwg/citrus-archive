@@ -14,6 +14,7 @@
 #include "gameState.h"
 #include "playerController.h"
 #include "doorController.h"
+#include "roomController.h";
 
 
 #define CT_USE_EDITOR
@@ -75,7 +76,10 @@ public:
 
 		man.registerType<playerController>("playerController", true, &gstate);
 
+		man.registerType<roomController>("roomController", true, &gstate);
+
 		man.registerType<doorController>("doorController", true, &gstate);
+
 
 		modelEleStruct st;
 		st.sys = sys;

@@ -48,18 +48,14 @@ namespace citrus {
 
 	void roomController::roomLinkage::deserialize(json const& l) {
 		name = l["name"].get<string>();
-		myTrans = loadTransform(l["trans"]);
 		connectedLevelTree = l["connectedLevelTree"].get<string>();
-		connectedLinkageName = l["connectedLinkageName"].get<string>();
-		connectedRoomTrans = loadTransform(l["connectedRoomTrans"]);
+		connectedName = l["connectedName"].get<string>();
 	}
 	json roomController::roomLinkage::serialize() const {
 		json l;
 		l["name"] = name;
-		l["trans"] = citrus::save(myTrans);
 		l["connectedLevelTree"] = connectedLevelTree;
-		l["connectedLinkageName"] = connectedLinkageName;
-		l["connectedRoomTrans"] = citrus::save(connectedRoomTrans);
+		l["connectedName"] = connectedName;
 		return l;
 	}
 }

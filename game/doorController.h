@@ -6,6 +6,7 @@
 #include "../builtin/modelEle.h"
 #include "../builtin/sensorEle.h"
 #include "../builtin/collisionEle.h"
+#include "roomController.h"
 
 namespace citrus {
 	class doorController : public element {
@@ -20,6 +21,8 @@ namespace citrus {
 		eleRef<collisionEle> barrier;
 		eleRef<sensorEle> barrierSensor, frontSensor, backSensor;
 		eleRef<modelEle> doorModel;
+
+		eleRef<roomController> posRoom, negRoom;
 
 		float ds = 0.0f;
 		bool opening = false;
