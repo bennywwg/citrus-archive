@@ -12,7 +12,7 @@ namespace citrus {
 		try {
 			entRef res = man().loadTree(linkages[index].connectedLevelTree);
 			mat4 outer = ent().getLocalTrans().getMat();
-			outer = outer * linkages[index].connectedRoomTrans.getMat();
+			//outer = outer * linkages[index].connectedRoomTrans.getMat();
 			res.setLocalTrans(outer);
 		} catch (invalidPrefabException const& ex) {
 			std::cout << "failed to load level: " << ex.message << "\n";

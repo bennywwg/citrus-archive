@@ -32,6 +32,7 @@ namespace citrus {
 		void deserialize(json const& js);
 		json serialize();
 
+	public:
 		roomController(entRef const& ent, manager& man, void* usr);
 	};
 }
