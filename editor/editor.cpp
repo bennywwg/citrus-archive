@@ -286,6 +286,8 @@ namespace citrus {
 		}
 	}
 
+
+	// to be moved to separate project
 	/*
 	void ctEditor::setupShell() {
 		lua.open_libraries(sol::lib::base, sol::lib::package);

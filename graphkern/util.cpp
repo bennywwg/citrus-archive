@@ -9,6 +9,7 @@
 namespace citrus {
 	using std::string;
 
+	// used with glsl row major formatting, compact packing
 	void copyMat4x3ToRowMajor(mat4x3 const& m, float f[4 * 3]) {
 		f[0] = m[0].x;
 		f[1] = m[1].x;

@@ -1,6 +1,7 @@
 #include "world.h"
 
 namespace citrus {
+	// draw interface for bullet debugging, lines only
 	class ctBulletDebugDraw : public btIDebugDraw {
 	public:
 		immediatePass& pass;

@@ -18,6 +18,7 @@ namespace citrus {
 		return (val / align) * align;
 	}
 
+	// forward declare operations for float and double
 	template<typename T>
 	T rmod(T val, T mod) {
 		static_assert(std::is_floating_point<T>::value, "can only rmod a floating point type");
