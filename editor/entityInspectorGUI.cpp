@@ -79,6 +79,7 @@ namespace citrus {
 		}
 	}
 	void entityInspector::update(ctEditor& ed) {
+		floatingGui::update(ed);
 		if (ent) {
 			vec->setState(vec4(ent.getGlobalTrans().getPosition(), 0.0f));
 			auto qt = ent.getGlobalTrans().getOrientation();

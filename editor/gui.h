@@ -157,6 +157,7 @@ namespace citrus {
 
 	struct floatingGui : public gui {
 		ivec2 pos = ivec2(0, 0);
+		ivec2 dragPosStart = ivec2(0, 0);
 		ivec2 dragStart = ivec2(0, 0);
 		bool beingDragged = false;
 		shared_ptr<button> pinButton;
@@ -167,6 +168,7 @@ namespace citrus {
 		bool justCreated = true;
 		void mouseDown(ctEditor& ed, ivec2 cursor, view* selectedView);
 		void mouseUp(ctEditor& ed, ivec2 cursor, view* selectedView);
+		void update(ctEditor& ed);
 		vector<weak_ptr<gui>> children();
 		virtual void addButtons();
 		partial render();

@@ -70,6 +70,7 @@ namespace citrus {
 		}
 	}
 	void sceneHierarchy::update(ctEditor& ed) {
+		floatingGui::update(ed);
 		for (int i = 0; i < items.size(); i++) {
 			if (items[i].ent == ed.selected) {
 				items[i].nameField->color = vec3(0.8f, 1.0f, 0.8f);

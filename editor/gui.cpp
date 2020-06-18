@@ -370,13 +370,19 @@ namespace citrus {
 		}
 		if (clickedThis) {
 			beingDragged = true;
+			dragPosStart = pos;
 			dragStart = cursor;
 		}
 	}
 	void floatingGui::mouseUp(ctEditor& ed, ivec2 cursor, view* selectedView) {
 		if (beingDragged) {
 			beingDragged = false;
-			pos += cursor - dragStart;
+			pos = cursor - dragStart + dragPosStart;
+		}
+	}
+	void floatingGui::update(ctEditor& ed) {
+		if (beingDragged) {
+			pos = (ed.cursorPx - dragStart) + dragPosStart;
 		}
 	}
 
