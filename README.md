@@ -22,11 +22,11 @@ With great regret, I have removed official support for linux; Only Windows 10 is
 
 For other goals see the roadmap:
 
-![roadmap](https://raw.githubusercontent.com/bennywwg/citrus/master/media/roadmap.png "Roadmap")
+![roadmap](https://raw.githubusercontent.com/bennywwg/citrus-archive/master/media/roadmap.png "Roadmap")
 
-![sample](https://raw.githubusercontent.com/bennywwg/citrus/master/media/sample.png "Sample Scene")
+![sample](https://raw.githubusercontent.com/bennywwg/citrus-archive/master/media/sample.png "Sample Scene")
 
-![rigging](https://raw.githubusercontent.com/bennywwg/citrus/master/media/rigging.gif "Rigging")
+![rigging](https://raw.githubusercontent.com/bennywwg/citrus-archive/master/media/rigging.gif "Rigging")
 
 Credit to the following libraries (and all of their dependencies)used in citrus:
 * Bullet3D physics engine
